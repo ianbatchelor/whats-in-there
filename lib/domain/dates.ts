@@ -1,0 +1,61 @@
+/**
+ * Dates are stored as ISO calendar dates (YYYY-MM-DD) and always shown as "03 Nov 2026",
+ * never 03/11, so UK and US readers cannot misread them.
+ */
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"] as const;
+
+const ISO_DATE = /^(\d{4})-(\d{2})-(\d{2})$/;
+
+export function parseIsoDate(value: string): { y: number; m: number; d: number } | null {
+  const match = ISO_DATE.exec(value);
+  if (!match) return null;
+  const [y, m, d] = [Number(match[1]), Number(match[2]), Number(match[3])];
+  const probe = new Date(Date.UTC(y, m - 1, d));
+  if (probe.getUTCFullYear() !== y || probe.getUTCMonth() !== m - 1 || probe.getUTCDate() !== d) return null;
+  return { y, m, d };
+}
+
+export function formatDay(value: string | null | undefined, opts: { year?: boolean } = {}): string {
+  if (!value) return "";
+  const p = parseIsoDate(value.slice(0, 10));
+  if (!p) return "";
+  const day = String(p.d).padStart(2, "0");
+  return opts.year === false ? `${day} ${MONTHS[p.m - 1]}` : `${day} ${MONTHS[p.m - 1]} ${p.y}`;
+}
+
+/** Today's date in the user's local time zone, as YYYY-MM-DD. */
+export function todayIso(now: Date = new Date()): string {
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, "0");
+  const d = String(now.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+/** Whole calendar months between two ISO dates (b later than a). Used for "Frozen 5 months ago". */
+export function monthsBetween(a: string, b: string): number {
+  const pa = parseIsoDate(a);
+  const pb = parseIsoDate(b);
+  if (!pa || !pb) return 0;
+  let months = (pb.y - pa.y) * 12 + (pb.m - pa.m);
+  if (pb.d < pa.d) months -= 1;
+  return Math.max(0, months);
+}
+
+/** Plain description of time in storage. States a fact; never a safety verdict. */
+export function storageAge(since: string | null | undefined, today: string = todayIso()): string {
+  if (!since) return "";
+  const months = monthsBetween(since.slice(0, 10), today);
+  if (months >= 12) {
+    const years = Math.floor(months / 12);
+    return years === 1 ? "over a year" : `over ${years} years`;
+  }
+  if (months >= 1) return months === 1 ? "1 month" : `${months} months`;
+  const pa = parseIsoDate(since.slice(0, 10));
+  const pb = parseIsoDate(today);
+  if (!pa || !pb) return "";
+  const days = Math.round((Date.UTC(pb.y, pb.m - 1, pb.d) - Date.UTC(pa.y, pa.m - 1, pa.d)) / 86_400_000);
+  if (days <= 0) return "today";
+  if (days === 1) return "1 day";
+  if (days < 14) return `${days} days`;
+  return `${Math.floor(days / 7)} weeks`;
+}
