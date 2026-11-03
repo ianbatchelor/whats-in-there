@@ -6,8 +6,8 @@ const token = "q3J9kV0xP_2mZ-7aB4cD6eF8gH1iJ3kL5mN7oP9qR0s";
 
 describe("invitation links", () => {
   it("round-trips a token", () => {
-    const url = buildInviteUrl("https://APP_DOMAIN/", token);
-    expect(url).toBe(`https://APP_DOMAIN/invite/?token=${token}`);
+    const url = buildInviteUrl("https://seewhatsinhere.com/", token);
+    expect(url).toBe(`https://seewhatsinhere.com/invite/?token=${token}`);
     expect(readInviteToken(new URL(url).search)).toBe(token);
   });
   it("ignores malformed tokens", () => {

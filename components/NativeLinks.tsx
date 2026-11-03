@@ -6,7 +6,7 @@ import { Capacitor } from "@capacitor/core";
 import { App } from "@capacitor/app";
 
 /**
- * In the iOS and Android apps, links like https://APP_DOMAIN/invite/?token=… or /l/<code>
+ * In the iOS and Android apps, links like https://seewhatsinhere.com/invite/?token=… or /l/<code>
  * (from a sticker, QR code or message) open the app; route them to the matching screen.
  */
 export function NativeLinks() {

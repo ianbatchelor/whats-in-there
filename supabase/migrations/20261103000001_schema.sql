@@ -10,7 +10,7 @@ create type public.stock_unit      as enum ('item', 'portion', 'pack', 'g', 'kg'
 create type public.stock_status    as enum ('in_stock', 'used_up', 'discarded');
 create type public.movement_action as enum ('add', 'remove', 'adjust', 'move', 'undo');
 
--- 10 random base62 characters (~59 bits). Used in sticker URLs: https://APP_DOMAIN/l/<code>
+-- 10 random base62 characters (~59 bits). Used in sticker URLs: https://seewhatsinhere.com/l/<code>
 create function public.generate_link_code()
 returns text
 language plpgsql
