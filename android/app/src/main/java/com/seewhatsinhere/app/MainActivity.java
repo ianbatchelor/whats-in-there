@@ -1,4 +1,4 @@
-package com.whatsinthere.app;
+package com.seewhatsinhere.app;
 
 import com.getcapacitor.BridgeActivity;
 

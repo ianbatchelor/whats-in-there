@@ -25,4 +25,4 @@ Supabase's local stack needs Docker, which isn't always available (including in 
 
 ## Placeholders to settle before Milestone 4
 - Domain: `seewhatsinhere.com` (bought 2026-11-03). It is written onto every sticker as `https://seewhatsinhere.com/l/<code>`, so it must never lapse.
-- Bundle id `com.whatsinthere.app`: changing it after store submission means new listings.
+- Bundle id `com.seewhatsinhere.app`: changing it after store submission means new listings.

@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">What\'s in There?</string>
-    <string name="title_activity_main">What\'s in There?</string>
-    <string name="package_name">com.whatsinthere.app</string>
-    <string name="custom_url_scheme">com.whatsinthere.app</string>
+    <string name="app_name">See What\'s in Here</string>
+    <string name="title_activity_main">See What\'s in Here</string>
+    <string name="package_name">com.seewhatsinhere.app</string>
+    <string name="custom_url_scheme">com.seewhatsinhere.app</string>
 </resources>

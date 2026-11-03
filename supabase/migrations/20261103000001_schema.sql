@@ -1,4 +1,4 @@
--- What's in There? core schema.
+-- See What's in Here core schema.
 -- Every household-scoped table carries household_id so each RLS policy is one membership check.
 
 create extension if not exists pgcrypto with schema extensions;

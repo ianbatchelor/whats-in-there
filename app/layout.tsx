@@ -8,10 +8,10 @@ const atkinson = Atkinson_Hyperlegible({ subsets: ["latin"], weight: ["400", "70
 const dmMono = DM_Mono({ subsets: ["latin"], weight: ["400", "500"], variable: "--font-dm-mono" });
 
 export const metadata: Metadata = {
-  title: "What's in There?",
+  title: "See What's in Here",
   description: "Know what's in every freezer, fridge and cupboard. Tap, photograph, store.",
-  applicationName: "What's in There?",
-  appleWebApp: { capable: true, title: "What's in There?", statusBarStyle: "default" },
+  applicationName: "See What's in Here",
+  appleWebApp: { capable: true, title: "See What's in Here", statusBarStyle: "default" },
 };
 
 export const viewport: Viewport = {

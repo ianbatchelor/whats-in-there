@@ -94,7 +94,7 @@ function Household({ session }: { session: Session }) {
     if (!link) return;
     try {
       if (navigator.share) {
-        await navigator.share({ title: `Join ${current?.name} on What's in There?`, url: link });
+        await navigator.share({ title: `Join ${current?.name} on See What's in Here`, url: link });
         return;
       }
       await navigator.clipboard.writeText(link);
