@@ -4,15 +4,20 @@ A household food inventory for every freezer, fridge and cupboard. Tap the stick
 
 One Next.js + TypeScript codebase is served on the web (Vercel) and wrapped by Capacitor into the iOS and Android apps. Supabase provides sign-in, Postgres with Row Level Security, private photo storage and realtime sync.
 
-**Status:** Milestone 1 (foundation) of 5. See [docs/adr/0001-foundation.md](docs/adr/0001-foundation.md) for the decisions behind it and the design concepts in [docs/design/concepts.html](docs/design/concepts.html).
+**Status:** Milestone 2 (storage and inventory) of 5. See [docs/adr/0001-foundation.md](docs/adr/0001-foundation.md) for the decisions behind it and the design concepts in [docs/design/concepts.html](docs/design/concepts.html).
 
 ## What works today
 
 - Email one-time-code sign-in (no passwords)
 - Create a household, name yourself, invite people with a single-use link that expires in 7 days
 - Members, owners, removing people, leaving, switching households
-- Add places (freezer, fridge, pantry, cupboard, wine, other) and see them update live for everyone
-- Full database for Milestone 2 onwards: stock, quantities, movement history, undo, sticker codes, private photos, all behind RLS and proven by tests
+- Add places (freezer, fridge, pantry, cupboard, wine, other), rename them, change their type or remove them
+- Open a place to see everything in it, sorted "use first": printed dates within two weeks, then the longest stored
+- Add food by hand: name, how many (items, portions, packs) or how much (g, kg, ml, litres), frozen date, use-by, best-before, brand, notes
+- Take out food, including part of a pack, with Undo straight after and a history of who added and took out what
+- Search everything in every place from home, and a "Use first" list across the household
+- Everyone in the household sees changes live
+- Database for later milestones: sticker codes, private photos, all behind RLS and proven by tests
 
 ## Run it locally
 
