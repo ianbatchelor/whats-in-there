@@ -6,7 +6,7 @@ import { PlaceArt } from "./PlaceArt";
  * so adding a picture is just dropping a file in public/places and listing it here.
  */
 const PHOTOS: Partial<Record<LocationType, { card: string; wide?: string; position?: string }>> = {
-  freezer: { card: "/places/freezer.webp" },
+  freezer: { card: "/places/freezer.webp", wide: "/places/freezer-wide.webp", position: "50% 60%" },
   fridge: { card: "/places/fridge.webp" },
   pantry: { card: "/places/pantry.webp" },
   wardrobe: { card: "/places/wardrobe.webp" },
