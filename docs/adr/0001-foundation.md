@@ -24,5 +24,5 @@ SQL functions raise codes such as `insufficient_quantity`; `lib/supabase/errors.
 Supabase's local stack needs Docker, which isn't always available (including in CI sandboxes). `scripts/db-test.sh` runs the real migrations on PostgreSQL 16 with a minimal shim for `auth.users`, `auth.uid()`, the API roles and `storage.objects`. The shim reproduces Supabase's default grants so the "revoke everything first" step is genuinely exercised.
 
 ## Placeholders to settle before Milestone 4
-- Domain (`APP_DOMAIN`): written onto every sticker, so buy it before real stickers are programmed.
-- Bundle id `com.whatsinthere.app`: changing it after store submission means new listings.
+- Domain: `seewhatsinhere.com` (bought 2026-11-03). It is written onto every sticker as `https://seewhatsinhere.com/l/<code>`, so it must never lapse.
+- Bundle id `com.seewhatsinhere.app`: changing it after store submission means new listings.

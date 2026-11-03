@@ -51,7 +51,7 @@ export default function SignInPage() {
     if (error) return setError(friendlyError(error));
     setEmail(address);
     setStep("code");
-    setInfo(`We've emailed a 6-digit code to ${address}.`);
+    setInfo(`We've emailed a sign-in code to ${address}.`);
   }
 
   async function verify(e: React.FormEvent) {
@@ -100,12 +100,12 @@ export default function SignInPage() {
           <form onSubmit={verify} className="flex flex-col gap-4" noValidate>
             {info ? <Notice tone="info">{info}</Notice> : null}
             <Field
-              label="6-digit code"
+              label="Code from the email"
               inputMode="numeric"
               autoComplete="one-time-code"
               pattern="[0-9]*"
-              maxLength={8}
-              placeholder="123456"
+              maxLength={10}
+              placeholder="12345678"
               value={code}
               onChange={(e) => setCode(e.target.value)}
               className="[&_input]:font-mono [&_input]:text-xl [&_input]:tracking-[0.3em]"

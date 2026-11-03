@@ -19,7 +19,7 @@ export function BrandMark({ size = 40, className = "" }: { size?: number; classN
 export function Wordmark({ className = "" }: { className?: string }) {
   return (
     <span className={`font-display font-extrabold tracking-tight ${className}`}>
-      What&apos;s in There<span className="text-[#b98a12] dark:text-tape">?</span>
+      See What&apos;s in <span className="text-[#b98a12] dark:text-tape">Here</span>
     </span>
   );
 }

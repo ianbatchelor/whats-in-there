@@ -14,5 +14,5 @@ export const isConfigured = Boolean(config.supabaseUrl && config.supabaseKey);
 export function publicOrigin(): string {
   if (config.appUrl) return config.appUrl;
   if (typeof window !== "undefined" && window.location.protocol.startsWith("http")) return window.location.origin;
-  return "https://APP_DOMAIN";
+  return "https://seewhatsinhere.com";
 }

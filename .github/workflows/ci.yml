@@ -24,7 +24,7 @@ jobs:
         env:
           NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
           NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_ci
-          NEXT_PUBLIC_APP_URL: https://APP_DOMAIN
+          NEXT_PUBLIC_APP_URL: https://seewhatsinhere.com
 
   database:
     name: Migrations and RLS tests

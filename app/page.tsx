@@ -4,7 +4,12 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { Session } from "@supabase/supabase-js";
+import { Capacitor } from "@capacitor/core";
 import { AuthGate } from "@/components/AuthGate";
+import { Landing } from "@/components/landing/Landing";
+import { SetupNeeded } from "@/components/SetupNeeded";
+import { isConfigured } from "@/lib/config";
+import { useSession } from "@/lib/hooks/useSession";
 import { loadMembers, loadMemberships, loadPlaces, pickCurrent, type Member, type Membership, type Place } from "@/lib/household";
 import { friendlyError } from "@/lib/supabase/errors";
 import { supabase } from "@/lib/supabase/client";
@@ -17,7 +22,12 @@ import { AddPlaceSheet } from "@/components/home/AddPlaceSheet";
 import { placeType } from "@/components/home/placeTypes";
 
 export default function HomePage() {
-  return <AuthGate>{(session) => <Home session={session} />}</AuthGate>;
+  const { session, loading } = useSession();
+  if (!isConfigured) return <SetupNeeded />;
+  if (loading) return <Splash />;
+  // Signed-out web visitors see the front page; the native apps go straight to sign-in.
+  if (!session) return Capacitor.isNativePlatform() ? <AuthGate>{() => null}</AuthGate> : <Landing />;
+  return <Home session={session} />;
 }
 
 function greeting(now = new Date()) {
