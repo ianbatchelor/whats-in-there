@@ -23,3 +23,5 @@ export const IconCheck = ({ className }: P) => svg(<path d="m5 12.5 4.5 4.5L19 7
 export const IconPeople = ({ className }: P) =>
   svg(<><circle cx="9" cy="8.5" r="3.5" /><path d="M2.5 20a6.5 6.5 0 0 1 13 0" /><circle cx="17" cy="9.5" r="2.7" /><path d="M16.5 14.6a5 5 0 0 1 5 4.9" /></>, className);
 export const IconMail = ({ className }: P) => svg(<><rect x="3" y="5" width="18" height="14" rx="2.5" /><path d="m4 7 8 6 8-6" /></>, className);
+export const IconCamera = ({ className }: P) =>
+  svg(<><path d="M4 8.5A2.5 2.5 0 0 1 6.5 6H8l1.5-2h5L16 6h1.5A2.5 2.5 0 0 1 20 8.5v8a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 16.5z" /><circle cx="12" cy="12.5" r="3.5" /></>, className);
