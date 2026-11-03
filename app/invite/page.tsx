@@ -9,10 +9,10 @@ import { readInviteToken } from "@/lib/domain/invite";
 import { rememberHousehold } from "@/lib/household";
 import { useSession } from "@/lib/hooks/useSession";
 import { KEYS, writeLocal } from "@/lib/storage";
-import { Screen, Splash } from "@/components/ui/Screen";
+import { AuthFrame } from "@/components/AuthFrame";
+import { Splash } from "@/components/ui/Screen";
 import { Button } from "@/components/ui/Button";
 import { Notice } from "@/components/ui/Notice";
-import { BrandMark } from "@/components/brand/BrandMark";
 import { SetupNeeded } from "@/components/SetupNeeded";
 
 const noopSubscribe = () => () => {};
@@ -52,13 +52,12 @@ export default function InvitePage() {
   }
 
   return (
-    <Screen className="justify-center">
-      <BrandMark size={56} />
+    <AuthFrame>
       {token ? (
         <>
           <div className="flex flex-col gap-2">
-            <h1 className="font-display text-4xl leading-none font-extrabold tracking-tight">You&apos;re invited</h1>
-            <p className="text-mute">Join the household to see and update the same freezers, fridges and cupboards.</p>
+            <h1 className="font-display text-[2.2rem] leading-none font-extrabold tracking-[-0.03em]">You&apos;re invited</h1>
+            <p className="text-mute">Join the household to see and update the same places and everything in them.</p>
           </div>
           {error ? <Notice>{error}</Notice> : null}
           <Button onClick={join} busy={busy} className="w-full">
@@ -75,6 +74,6 @@ export default function InvitePage() {
           <Button variant="ghost" onClick={() => router.replace("/")}>Go to the app</Button>
         </>
       )}
-    </Screen>
+    </AuthFrame>
   );
 }

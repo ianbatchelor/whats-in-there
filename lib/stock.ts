@@ -137,3 +137,32 @@ export async function loadHistory(itemId: string): Promise<Movement[]> {
     at: r.created_at as string,
   }));
 }
+
+export type Activity = Movement & { itemId: string; itemName: string; unit: StockUnit; locationId: string | null };
+
+/** What the household added and took out recently, newest first. */
+export async function loadActivity(householdId: string, limit = 60): Promise<Activity[]> {
+  const { data, error } = await supabase()
+    .from("stock_movements")
+    .select("id, action, quantity_delta, quantity_after, actor_user_id, created_at, stock_item_id, item:stock_items(product_name, unit, location_id)")
+    .eq("household_id", householdId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  return (data ?? []).map((r) => {
+    const raw = (r as Row).item as Row | Row[] | null;
+    const item = Array.isArray(raw) ? raw[0] : raw;
+    return {
+      id: r.id as string,
+      action: r.action as Movement["action"],
+      delta: Number(r.quantity_delta),
+      after: Number(r.quantity_after),
+      actor: (r.actor_user_id as string | null) ?? null,
+      at: r.created_at as string,
+      itemId: r.stock_item_id as string,
+      itemName: (item?.product_name as string | undefined) ?? "Something",
+      unit: ((item?.unit as StockUnit | undefined) ?? "item") as StockUnit,
+      locationId: (item?.location_id as string | undefined) ?? null,
+    };
+  });
+}

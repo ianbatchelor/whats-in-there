@@ -8,11 +8,10 @@ import { supabase } from "@/lib/supabase/client";
 import { friendlyError } from "@/lib/supabase/errors";
 import { rememberHousehold } from "@/lib/household";
 import { KEYS, readLocal } from "@/lib/storage";
-import { Screen } from "@/components/ui/Screen";
+import { AuthFrame } from "@/components/AuthFrame";
 import { Field } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 import { Notice } from "@/components/ui/Notice";
-import { BrandMark } from "@/components/brand/BrandMark";
 
 export default function WelcomePage() {
   return <AuthGate>{(session) => <Welcome session={session} />}</AuthGate>;
@@ -58,10 +57,9 @@ function Welcome({ session }: { session: Session }) {
   }
 
   return (
-    <Screen>
-      <BrandMark size={44} className="mt-4" />
-      <div className="flex flex-col gap-2">
-        <h1 className="font-display text-4xl leading-none font-extrabold tracking-tight">Welcome in</h1>
+    <AuthFrame>
+      <div className="rise flex flex-col gap-2">
+        <h1 className="font-display text-[2.2rem] leading-none font-extrabold tracking-[-0.03em]">Welcome in</h1>
         <p className="text-mute">Set up your household. You can invite everyone else in a moment.</p>
       </div>
       <form onSubmit={create} className="flex flex-col gap-4">
@@ -79,10 +77,10 @@ function Welcome({ session }: { session: Session }) {
           Create household
         </Button>
       </form>
-      <div className="mt-auto rounded-[var(--radius-card)] border border-dashed border-line p-4 text-sm text-mute">
+      <div className="rounded-[var(--radius-card)] border-2 border-dashed border-line bg-sunk/40 p-4 text-sm text-mute">
         <strong className="text-fg">Joining someone else?</strong> Open the invitation link they sent you on this phone and
         you&apos;ll go straight in.
       </div>
-    </Screen>
+    </AuthFrame>
   );
 }

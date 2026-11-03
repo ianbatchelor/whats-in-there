@@ -11,14 +11,14 @@ export function Field({
   const describedBy = error ? `${id}-error` : hint ? `${id}-hint` : undefined;
   return (
     <div className={`flex flex-col gap-1.5 ${className}`}>
-      <label htmlFor={id} className="text-sm font-bold">
+      <label htmlFor={id} className="font-display text-sm font-bold">
         {label}
       </label>
       <input
         id={id}
         aria-invalid={error ? true : undefined}
         aria-describedby={describedBy}
-        className="min-h-12 rounded-xl border border-line bg-card px-3.5 text-base text-fg placeholder:text-mute focus:border-go focus:outline-none aria-[invalid]:border-warn"
+        className="min-h-12 rounded-2xl border border-line bg-card px-4 text-base text-fg shadow-[inset_0_1px_2px_rgba(23,36,42,0.04)] placeholder:text-mute/80 focus:border-leaf focus:ring-4 focus:ring-leaf/15 focus:outline-none aria-[invalid]:border-warn"
         {...input}
       />
       {error ? (

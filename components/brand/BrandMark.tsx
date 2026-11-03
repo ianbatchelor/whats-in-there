@@ -1,25 +1,21 @@
-/** App mark: an appliance door with its handle and a strip of tape. */
+/** App mark: an open box with light coming out of it. "Make the invisible visible." */
 export function BrandMark({ size = 40, className = "" }: { size?: number; className?: string }) {
   return (
     <span
-      className={`inline-grid shrink-0 place-items-center bg-gradient-to-br from-[#17404b] to-[#0b2128] ${className}`}
-      style={{ width: size, height: size, borderRadius: size * 0.23 }}
+      className={`inline-grid shrink-0 place-items-center bg-[#183f32] ${className}`}
+      style={{ width: size, height: size, borderRadius: size * 0.28 }}
       aria-hidden="true"
     >
-      <svg viewBox="0 0 64 64" width={size * 0.62} height={size * 0.62}>
-        <rect x="13" y="6" width="38" height="52" rx="8" fill="none" stroke="#EAF2F3" strokeWidth="4.5" />
-        <path d="M13 24h38" stroke="#EAF2F3" strokeWidth="4.5" />
-        <path d="M43 12v6" stroke="#EAF2F3" strokeWidth="4.5" strokeLinecap="round" />
-        <path d="M18 33.5 44 30.2l.9 8.6-26 3.3z" fill="#F5C84C" />
+      <svg viewBox="0 0 64 64" width={size * 0.7} height={size * 0.7} fill="none" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M32 6v7M17 10l3.5 6M47 10l-3.5 6M9 21l6 3M55 21l-6 3" stroke="#f6c65b" strokeWidth="3.4" />
+        <path d="M14 30 32 23l18 7-18 7z" fill="#f6c65b" fillOpacity="0.22" stroke="#f6c65b" strokeWidth="3.4" />
+        <path d="M14 30v17l18 8 18-8V30M32 37v18" stroke="#f6c65b" strokeWidth="3.4" />
       </svg>
     </span>
   );
 }
 
+/** The name, set in the editorial serif. Use for branding only, never for controls. */
 export function Wordmark({ className = "" }: { className?: string }) {
-  return (
-    <span className={`font-display font-extrabold tracking-tight ${className}`}>
-      See What&apos;s in <span className="text-[#b98a12] dark:text-tape">Here</span>
-    </span>
-  );
+  return <span className={`font-serif font-bold tracking-[-0.01em] ${className}`}>See What&apos;s In Here</span>;
 }
