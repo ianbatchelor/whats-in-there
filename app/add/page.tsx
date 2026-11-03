@@ -68,11 +68,11 @@ function Add({ session }: { session: Session }) {
           </li>
         </ul>
       )}
-      {target ? (
+      {target && current ? (
         <AddItemSheet
           open
           onClose={() => setTarget(null)}
-          place={target}
+          place={{ ...target, householdId: current.householdId }}
           onAdded={(item, movementId) => {
             refresh();
             announce(`Added ${item.productName} to ${target.name}`, movementId);

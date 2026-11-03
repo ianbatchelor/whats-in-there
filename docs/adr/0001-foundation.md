@@ -26,3 +26,6 @@ Supabase's local stack needs Docker, which isn't always available (including in 
 ## Placeholders to settle before Milestone 4
 - Domain: `seewhatsinhere.com` (bought 2026-11-03). It is written onto every sticker as `https://seewhatsinhere.com/l/<code>`, so it must never lapse.
 - Bundle id `com.seewhatsinhere.app`: changing it after store submission means new listings.
+
+## Label photos through one Edge Function
+Date: 3 November 2026. `extract-product` is a single self-contained file so it can be pasted into the Supabase dashboard as well as deployed by the CLI. The app uploads a shrunk photo to the household's private folder first and sends only its path; the function reads it as the caller, so storage RLS still applies, and uses the service role only to count and log attempts. The Anthropic key lives only in Supabase secrets. The model's JSON is checked twice (strict schema on the API, then `lib/domain/extraction.ts` in the app) and nothing is saved until the person confirms.

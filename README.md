@@ -4,7 +4,7 @@ A household food inventory for every freezer, fridge and cupboard. Tap the stick
 
 One Next.js + TypeScript codebase is served on the web (Vercel) and wrapped by Capacitor into the iOS and Android apps. Supabase provides sign-in, Postgres with Row Level Security, private photo storage and realtime sync.
 
-**Status:** Milestone 2 (storage and inventory) of 5. See [docs/adr/0001-foundation.md](docs/adr/0001-foundation.md) for the decisions behind it and the design concepts in [docs/design/concepts.html](docs/design/concepts.html).
+**Status:** Milestone 3 (label photos) of 5. See [docs/adr/0001-foundation.md](docs/adr/0001-foundation.md) for the decisions behind it and the design concepts in [docs/design/concepts.html](docs/design/concepts.html).
 
 ## What works today
 
@@ -14,6 +14,7 @@ One Next.js + TypeScript codebase is served on the web (Vercel) and wrapped by C
 - My Places: picture cards for every place, grouped by kind (freezers, attic, garden, wardrobe, garage, shed, boxes and more), with your own names
 - Add places, rename them, change their kind or remove them (the newer kinds need migration `20261104000001_more_place_types.sql`)
 - Open a place to see a picture header, search, category filters and everything in it, sorted "use first": printed dates within two weeks, then the longest stored
+- Snap the label: a photo fills in the name, amount, pack size, brand and printed dates for you to check (needs the `extract-product` Edge Function, see [docs/label-photos.md](docs/label-photos.md))
 - Add things by hand: name, how many (items, portions, packs) or how much (g, kg, ml, litres), frozen date, use-by, best-before, brand, notes
 - Take out things, including part of a pack, with Undo straight after and a history of who added and took out what
 - Bottom tabs on phones (sidebar on desktop): Home, Search (every place at once, showing where each thing is), Add, Activity (who added or took out what) and Household
