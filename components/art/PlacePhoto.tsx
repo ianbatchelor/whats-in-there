@@ -12,7 +12,7 @@ const PHOTOS: Partial<Record<LocationType, { card: string; wide?: string; positi
   wardrobe: { card: "/places/wardrobe.webp", wide: "/places/wardrobe-wide.webp" },
   attic: { card: "/places/attic.webp", wide: "/places/attic-wide.webp" },
   garden: { card: "/places/garden.webp", wide: "/places/garden-wide.webp" },
-  shed: { card: "/places/shed.webp", wide: "/places/welcome.webp", position: "52% 55%" },
+  shed: { card: "/places/shed.webp", wide: "/places/shed-wide.webp" },
   cupboard: { card: "/places/cupboard.webp", wide: "/places/cupboard-wide.webp" },
   garage: { card: "/places/garage.webp", wide: "/places/garage-wide.webp" },
 };
