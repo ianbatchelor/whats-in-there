@@ -17,7 +17,7 @@ const NAV = [
  * Frame for signed-in screens: bottom tabs on phones, a sidebar on wide screens.
  * Every tab is a real screen; nothing here is decoration.
  */
-export function AppShell({ children, wide = false }: { children: React.ReactNode; wide?: boolean }) {
+export function AppShell({ children, wide = false, rail }: { children: React.ReactNode; wide?: boolean; rail?: React.ReactNode }) {
   const path = usePathname() || "/";
   return (
     <div className="min-h-dvh bg-bg lg:flex">
@@ -53,6 +53,10 @@ export function AppShell({ children, wide = false }: { children: React.ReactNode
       >
         {children}
       </main>
+
+      {rail ? (
+        <aside className="sticky top-0 hidden h-dvh w-80 shrink-0 flex-col gap-7 overflow-y-auto border-l border-line bg-card/60 px-6 py-10 xl:flex">{rail}</aside>
+      ) : null}
 
       <nav
         aria-label="Main"

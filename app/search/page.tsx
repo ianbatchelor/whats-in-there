@@ -16,7 +16,7 @@ import { Notice } from "@/components/ui/Notice";
 import { Toast } from "@/components/ui/Toast";
 import { IconChevronRight, IconSearch } from "@/components/ui/icons";
 import { placeType } from "@/components/home/placeTypes";
-import { PlaceArt } from "@/components/art/PlaceArt";
+import { PlacePhoto } from "@/components/art/PlacePhoto";
 import { ItemList, ItemRow } from "@/components/stock/ItemRow";
 import { TakeOutSheet } from "@/components/stock/TakeOutSheet";
 import { useUndoToast } from "@/components/stock/useUndoToast";
@@ -120,7 +120,7 @@ function Search({ session }: { session: Session }) {
                       className="lift flex items-center gap-3 overflow-hidden rounded-2xl border border-line bg-card pr-3 shadow-[var(--shadow-card)]"
                     >
                       <span className="h-14 w-20 shrink-0 overflow-hidden">
-                        <PlaceArt type={p.type} />
+                        <PlacePhoto type={p.type} />
                       </span>
                       <span className="min-w-0 flex-1">
                         <span className="block truncate font-display font-bold">

@@ -1,6 +1,7 @@
 import { supabase } from "@/lib/supabase/client";
 import type { StockItem } from "@/lib/domain/stock";
-import { likePattern, sortUseFirst } from "@/lib/domain/stock";
+import { SOON_DAYS, addDays, likePattern, sortUseFirst } from "@/lib/domain/stock";
+import { todayIso } from "@/lib/domain/dates";
 import type { StockUnit } from "@/lib/domain/quantity";
 
 const COLUMNS =
@@ -165,4 +166,35 @@ export async function loadActivity(householdId: string, limit = 60): Promise<Act
       locationId: (item?.location_id as string | undefined) ?? null,
     };
   });
+}
+
+/** Things with a printed date inside the "use soon" window, for badges on place cards. */
+export async function loadSoon(householdId: string): Promise<{ locationId: string; useByDate: string | null; bestBeforeDate: string | null }[]> {
+  const cutoff = addDays(todayIso(), SOON_DAYS);
+  const { data, error } = await supabase()
+    .from("stock_items")
+    .select("location_id, use_by_date, best_before_date")
+    .eq("household_id", householdId)
+    .eq("status", "in_stock")
+    .or(`use_by_date.lte.${cutoff},best_before_date.lte.${cutoff}`)
+    .limit(500);
+  if (error) throw error;
+  return (data ?? []).map((r) => ({
+    locationId: r.location_id as string,
+    useByDate: (r.use_by_date as string | null) ?? null,
+    bestBeforeDate: (r.best_before_date as string | null) ?? null,
+  }));
+}
+
+/** Who last added or took something from a place, and when. */
+export async function loadPlaceLastActivity(locationId: string): Promise<{ actor: string | null; at: string } | null> {
+  const { data, error } = await supabase()
+    .from("stock_movements")
+    .select("actor_user_id, created_at, stock_items!inner(location_id)")
+    .eq("stock_items.location_id", locationId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  return data ? { actor: (data.actor_user_id as string | null) ?? null, at: data.created_at as string } : null;
 }

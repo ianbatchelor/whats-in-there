@@ -24,7 +24,7 @@ type Dated = Pick<StockItem, "useByDate" | "bestBeforeDate" | "frozenAt" | "adde
 /** Days ahead within which a printed date jumps the queue. */
 export const SOON_DAYS = 14;
 
-function addDays(iso: string, days: number): string {
+export function addDays(iso: string, days: number): string {
   const d = new Date(`${iso}T00:00:00Z`);
   d.setUTCDate(d.getUTCDate() + days);
   return d.toISOString().slice(0, 10);
