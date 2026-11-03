@@ -9,7 +9,7 @@ const PHOTOS: Partial<Record<LocationType, { card: string; wide?: string; positi
   freezer: { card: "/places/freezer.webp", wide: "/places/freezer-wide.webp", position: "50% 60%" },
   fridge: { card: "/places/fridge.webp", wide: "/places/fridge-wide.webp" },
   pantry: { card: "/places/pantry.webp", wide: "/places/pantry-wide.webp" },
-  wardrobe: { card: "/places/wardrobe.webp" },
+  wardrobe: { card: "/places/wardrobe.webp", wide: "/places/wardrobe-wide.webp" },
   attic: { card: "/places/attic.webp", wide: "/places/attic-wide.webp" },
   garden: { card: "/places/garden.webp", wide: "/places/garden-wide.webp" },
   shed: { card: "/places/shed.webp", wide: "/places/welcome.webp", position: "52% 55%" },
