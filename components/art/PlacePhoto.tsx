@@ -15,6 +15,7 @@ const PHOTOS: Partial<Record<LocationType, { card: string; wide?: string; positi
   shed: { card: "/places/shed.webp", wide: "/places/shed-wide.webp" },
   cupboard: { card: "/places/cupboard.webp", wide: "/places/cupboard-wide.webp" },
   garage: { card: "/places/garage.webp", wide: "/places/garage-wide.webp" },
+  box: { card: "/places/box.webp", wide: "/places/box-wide.webp" },
 };
 
 export function hasPhoto(type: LocationType): boolean {
