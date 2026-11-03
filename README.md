@@ -30,7 +30,7 @@ Without a Supabase project the app opens on a "needs its database" screen.
 
 1. Create a project at supabase.com, region **London (eu-west-2)**.
 2. Apply the migrations in `supabase/migrations/` in order. Either `npx supabase link --project-ref <ref>` then `npx supabase db push`, or paste each file into the SQL editor.
-3. **Authentication → Email templates → Magic link**: make the body show the code, for example `Your See What's in Here code is {{ .Token }}`. The app asks for the 6-digit code rather than following a link, which works reliably inside the native apps.
+3. **Authentication → Emails**: in both the **Magic link or OTP** and **Confirm sign up** templates, make the body show the code, for example `<p>Your See What's in Here code is {{ .Token }}</p>`. New users get the Confirm sign up email the first time. The app asks for the code rather than following a link, which works reliably inside the native apps. Code length (6 to 10 digits) is set under Authentication → Sign In / Providers → Email.
 4. **Authentication → URL configuration**: set the Site URL to your web address (`NEXT_PUBLIC_APP_URL`).
 5. Copy the project URL and publishable key (Settings → API) into `.env.local`, and into the Vercel project's environment variables.
 
