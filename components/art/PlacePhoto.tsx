@@ -8,7 +8,7 @@ import { PlaceArt } from "./PlaceArt";
 const PHOTOS: Partial<Record<LocationType, { card: string; wide?: string; position?: string }>> = {
   freezer: { card: "/places/freezer.webp", wide: "/places/freezer-wide.webp", position: "50% 60%" },
   fridge: { card: "/places/fridge.webp", wide: "/places/fridge-wide.webp" },
-  pantry: { card: "/places/pantry.webp" },
+  pantry: { card: "/places/pantry.webp", wide: "/places/pantry-wide.webp" },
   wardrobe: { card: "/places/wardrobe.webp" },
   attic: { card: "/places/attic.webp", wide: "/places/attic-wide.webp" },
   garden: { card: "/places/garden.webp", wide: "/places/garden-wide.webp" },
