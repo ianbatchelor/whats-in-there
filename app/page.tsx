@@ -12,21 +12,23 @@ import { isConfigured } from "@/lib/config";
 import { useSession } from "@/lib/hooks/useSession";
 import { useHousehold } from "@/lib/hooks/useHousehold";
 import { friendlyError } from "@/lib/supabase/errors";
-import { groupPlaces } from "@/lib/domain/places";
+import { SECTION_LABELS, countThings, groupPlaces, recentPlaces, sectionOf, soonCounts, usedSections, type PlaceSection } from "@/lib/domain/places";
+import { SOON_DAYS, addDays } from "@/lib/domain/stock";
+import { todayIso, timeAgo } from "@/lib/domain/dates";
+import { activitySentence } from "@/lib/domain/activity";
 import type { StockItem } from "@/lib/domain/stock";
 import { formatQuantity } from "@/lib/domain/quantity";
-import { loadUseFirst } from "@/lib/stock";
+import { loadActivity, loadSoon, loadUseFirst, type Activity } from "@/lib/stock";
 import { Splash } from "@/components/ui/Screen";
 import { Avatar } from "@/components/ui/Avatar";
 import { Notice } from "@/components/ui/Notice";
 import { Button } from "@/components/ui/Button";
 import { Toast } from "@/components/ui/Toast";
 import { IconPlus, IconSearch } from "@/components/ui/icons";
-import { BrandMark, Wordmark } from "@/components/brand/BrandMark";
-import { PlaceArt } from "@/components/art/PlaceArt";
+import { PlacePhoto } from "@/components/art/PlacePhoto";
 import { AddPlaceSheet } from "@/components/home/AddPlaceSheet";
 import { AddPlaceTile, GroupCard } from "@/components/home/PlaceCard";
-import { ItemList, ItemRow } from "@/components/stock/ItemRow";
+import { ItemList, ItemRow, itemContext } from "@/components/stock/ItemRow";
 import { TakeOutSheet } from "@/components/stock/TakeOutSheet";
 import { useUndoToast } from "@/components/stock/useUndoToast";
 
@@ -39,22 +41,27 @@ export default function HomePage() {
   return <Home session={session} />;
 }
 
-function greeting(now = new Date()) {
-  const h = now.getHours();
-  return h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
-}
-
 function Home({ session }: { session: Session }) {
   const hh = useHousehold(session);
-  const { current, members, places, names, placeById, me, error, version, refresh } = hh;
+  const { current, members, places, names, placeById, error, version, refresh } = hh;
   const [adding, setAdding] = useState(false);
   const [useFirst, setUseFirst] = useState<StockItem[]>([]);
+  const [activity, setActivity] = useState<Activity[]>([]);
+  const [soon, setSoon] = useState<Map<string, number>>(new Map());
+  const [section, setSection] = useState<PlaceSection | "all">("all");
   const [open, setOpen] = useState<StockItem | null>(null);
 
-  const loadFirst = useCallback(async () => {
+  const loadExtras = useCallback(async () => {
     if (!current) return;
     try {
-      setUseFirst(await loadUseFirst(current.householdId, 3));
+      const [first, acts, soonRows] = await Promise.all([
+        loadUseFirst(current.householdId, 4),
+        loadActivity(current.householdId, 40),
+        loadSoon(current.householdId),
+      ]);
+      setUseFirst(first);
+      setActivity(acts);
+      setSoon(soonCounts(soonRows, addDays(todayIso(), SOON_DAYS)));
     } catch (e) {
       hh.setError(friendlyError(e));
     }
@@ -62,8 +69,8 @@ function Home({ session }: { session: Session }) {
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    loadFirst();
-  }, [loadFirst, version]);
+    loadExtras();
+  }, [loadExtras, version]);
 
   const { toast, clear, announce } = useUndoToast(() => {
     refresh();
@@ -81,78 +88,185 @@ function Home({ session }: { session: Session }) {
   }
   if (!current) return <Splash />;
 
-  const groups = places ? groupPlaces(places) : null;
+  const sections = places ? usedSections(places) : [];
+  const shownPlaces = places && section !== "all" ? places.filter((p) => sectionOf(p.type) === section) : places;
+  const groups = shownPlaces ? groupPlaces(shownPlaces) : null;
+  const total = places?.reduce((n, p) => n + p.itemCount, 0) ?? 0;
+  const recent = recentPlaces(activity, 3).filter((r) => r.locationId && placeById.has(r.locationId));
+  const who = (id: string | null) => (id === session.user.id ? "You" : (id && names.get(id)) || "Someone");
+
+  const useFirstList =
+    useFirst.length > 0 ? (
+      <ItemList>
+        {useFirst.map((item, i) => (
+          <ItemRow key={item.id} index={i} item={item} place={placeById.get(item.locationId)?.name} onOpen={setOpen} />
+        ))}
+      </ItemList>
+    ) : null;
+
+  const rail = (
+    <>
+      <section className="flex flex-col gap-3" aria-labelledby="rail-first">
+        <SectionLabel id="rail-first">Use first</SectionLabel>
+        {useFirst.length > 0 ? (
+          <ul className="flex flex-col gap-1">
+            {useFirst.map((item) => (
+              <li key={item.id}>
+                <button onClick={() => setOpen(item)} className="flex w-full items-center gap-3 rounded-xl py-1.5 text-left hover:bg-sunk">
+                  <span className="size-11 shrink-0 overflow-hidden rounded-xl">
+                    {placeById.get(item.locationId) ? <PlacePhoto type={placeById.get(item.locationId)!.type} /> : null}
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block truncate font-display text-[14.5px] font-bold">{item.productName}</span>
+                    <span className="block truncate text-[12.5px] text-mute">
+                      {placeById.get(item.locationId)?.name} · {itemContext(item)}
+                    </span>
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-sm text-mute">Nothing needs using up soon.</p>
+        )}
+      </section>
+      <section className="flex flex-col gap-3" aria-labelledby="rail-act">
+        <div className="flex items-baseline justify-between">
+          <SectionLabel id="rail-act">Activity</SectionLabel>
+          <Link href="/activity/" className="text-[13px] font-semibold text-leaf">
+            See all
+          </Link>
+        </div>
+        {activity.length > 0 ? (
+          <ul className="flex flex-col gap-3">
+            {activity.slice(0, 6).map((a) => (
+              <li key={a.id} className="flex items-start gap-3">
+                <Avatar name={a.actor ? (names.get(a.actor) ?? "?") : "?"} index={Math.max(0, members.findIndex((m) => m.userId === a.actor))} size={30} />
+                <span className="min-w-0 text-[13.5px] leading-snug">
+                  <span className="font-semibold">{who(a.actor)}</span> {activitySentence(a)}
+                  <span className="block text-[12px] text-mute">
+                    {a.locationId ? placeById.get(a.locationId)?.name : ""} · {timeAgo(a.at)}
+                  </span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-sm text-mute">Nothing yet. Changes from everyone at home show up here.</p>
+        )}
+      </section>
+    </>
+  );
 
   return (
-    <AppShell wide>
-      {/* Phone header band; the sidebar carries the brand on wide screens. */}
-      <div className="-mx-4 -mt-[max(16px,env(safe-area-inset-top))] flex items-center justify-between bg-brand px-4 pt-[max(14px,env(safe-area-inset-top))] pb-4 text-[#fffdf8] sm:-mx-6 sm:px-6 lg:hidden">
-        <Link href="/" className="flex items-center gap-2.5">
-          <BrandMark size={34} className="ring-1 ring-white/15" />
-          <Wordmark className="text-[1.2rem] leading-none" />
-        </Link>
-        <Link href="/household/" className="flex items-center" aria-label="Household and members">
-          {members.slice(0, 3).map((m, i) => (
-            <span key={m.userId} className="-ml-2 first:ml-0">
-              <Avatar name={m.displayName} index={i} size={34} />
-            </span>
-          ))}
-        </Link>
-      </div>
-
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="text-sm text-mute">
-            {greeting()}
-            {me ? `, ${me.displayName}` : ""} · {current.name}
-          </p>
-          <h1 className="font-display text-[2.3rem] leading-none font-extrabold tracking-[-0.03em] sm:text-[2.7rem]">My Places</h1>
-          <p className="mt-1.5 text-mute">Your spaces, storage and growing areas.</p>
+    <AppShell wide rail={rail}>
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-[13.5px] text-mute">
+              {current.name}
+              {places ? ` · ${places.length === 1 ? "1 place" : `${places.length} places`} · ${countThings(total)}` : ""}
+            </p>
+            <h1 className="font-display text-[2rem] leading-tight font-extrabold tracking-[-0.03em] sm:text-[2.4rem]">My Places</h1>
+          </div>
+          <Link href="/household/" className="mt-1 flex items-center sm:hidden" aria-label="Household and members">
+            {members.slice(0, 3).map((m, i) => (
+              <span key={m.userId} className="-ml-2 rounded-full ring-2 ring-bg first:ml-0">
+                <Avatar name={m.displayName} index={i} size={36} />
+              </span>
+            ))}
+          </Link>
         </div>
         <Link
           href="/search/"
-          className="flex min-h-12 w-full items-center gap-3 rounded-2xl border border-line bg-card px-4 text-mute shadow-[var(--shadow-card)] transition hover:text-fg sm:w-80"
+          className="flex min-h-12 items-center gap-3 rounded-2xl bg-sunk px-4 text-[15px] text-mute transition hover:text-fg sm:w-80"
         >
           <IconSearch className="size-5" />
-          Search everything you have
+          {total > 0 ? `Search ${countThings(total)}` : "Search everything you have"}
         </Link>
       </header>
 
       {error ? <Notice>{error}</Notice> : null}
 
-      {useFirst.length > 0 ? (
-        <section aria-labelledby="first-h" className="flex flex-col gap-2.5">
-          <div className="flex items-center gap-2">
-            <span className="tape inline-block h-2.5 w-6" aria-hidden="true" />
-            <SectionLabel id="first-h">Use first</SectionLabel>
+      {recent.length > 0 ? (
+        <section className="flex flex-col gap-2.5" aria-labelledby="recent-h">
+          <div className="flex items-baseline justify-between">
+            <SectionLabel id="recent-h">Recently opened</SectionLabel>
+            <Link href="/activity/" className="text-[13px] font-semibold text-leaf xl:hidden">
+              Activity
+            </Link>
           </div>
-          <ItemList>
-            {useFirst.map((item, i) => (
-              <ItemRow key={item.id} index={i} item={item} place={placeById.get(item.locationId)?.name} onOpen={setOpen} />
-            ))}
-          </ItemList>
+          <ul className="grid grid-cols-3 gap-2.5 sm:max-w-xl">
+            {recent.map((r) => {
+              const p = placeById.get(r.locationId!)!;
+              return (
+                <li key={p.id}>
+                  <Link href={`/place/?id=${p.id}`} className="group block">
+                    <span className="block aspect-[4/3] overflow-hidden rounded-2xl bg-sunk">
+                      <PlacePhoto type={p.type} className="transition duration-500 group-hover:scale-[1.05]" />
+                    </span>
+                    <span className="mt-1.5 block truncate text-[13px] font-semibold">{p.name}</span>
+                    <span className="block truncate text-[12px] text-mute">
+                      {who(r.actor)} · {timeAgo(r.at)}
+                    </span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
         </section>
       ) : null}
 
       <section className="flex flex-col gap-3" aria-labelledby="places-h">
-        <SectionLabel id="places-h">Places</SectionLabel>
+        <h2 id="places-h" className="sr-only">
+          Places
+        </h2>
+        {sections.length > 1 ? (
+          <div className="flex rounded-xl bg-sunk p-[3px] sm:w-fit" role="group" aria-label="Show places">
+            {(["all", ...sections] as const).map((s) => (
+              <button
+                key={s}
+                onClick={() => setSection(s)}
+                aria-pressed={section === s}
+                className={`h-9 flex-1 rounded-[10px] px-4 text-[13.5px] font-semibold transition sm:flex-none ${
+                  section === s ? "bg-card text-fg shadow-[0_1px_3px_rgba(0,0,0,0.08)]" : "text-mute hover:text-fg"
+                }`}
+              >
+                {s === "all" ? "All" : SECTION_LABELS[s]}
+              </button>
+            ))}
+          </div>
+        ) : null}
         {groups === null ? (
-          <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4" aria-busy="true">
+          <ul className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3.5" aria-busy="true">
             {[0, 1, 2, 3].map((i) => (
-              <li key={i} className="aspect-[4/3.6] animate-pulse rounded-[var(--radius-card)] bg-sunk" />
+              <li key={i} className="aspect-square animate-pulse rounded-[20px] bg-sunk sm:aspect-auto sm:h-60" />
             ))}
           </ul>
-        ) : groups.length === 0 ? (
+        ) : places!.length === 0 ? (
           <FirstPlace onAdd={() => setAdding(true)} />
         ) : (
-          <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
+          <ul className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3.5">
             {groups.map((g, i) => (
-              <GroupCard key={g.type} group={g} index={i} />
+              <GroupCard
+                key={g.type}
+                group={g}
+                index={i}
+                feature={i === 0 && groups.length >= 4}
+                soon={g.places.reduce((n, p) => n + (soon.get(p.id) ?? 0), 0)}
+              />
             ))}
             <AddPlaceTile onClick={() => setAdding(true)} />
           </ul>
         )}
       </section>
+
+      {useFirstList ? (
+        <section aria-labelledby="first-h" className="flex flex-col gap-2.5 xl:hidden">
+          <SectionLabel id="first-h">Use first</SectionLabel>
+          {useFirstList}
+        </section>
+      ) : null}
 
       <AddPlaceSheet open={adding} onClose={() => setAdding(false)} householdId={current.householdId} onAdded={refresh} />
       <TakeOutSheet
@@ -173,16 +287,17 @@ function Home({ session }: { session: Session }) {
 
 function FirstPlace({ onAdd }: { onAdd: () => void }) {
   return (
-    <div className="overflow-hidden rounded-[var(--radius-card)] border border-line bg-card shadow-[var(--shadow-card)] sm:flex">
-      <div className="aspect-[16/9] sm:aspect-auto sm:w-1/2">
-        <PlaceArt type="other" />
+    <div className="relative overflow-hidden rounded-[24px] bg-brand text-[#fffdf8]">
+      <div className="absolute inset-0 opacity-60">
+        <PlacePhoto type="attic" variant="wide" eager />
       </div>
-      <div className="flex flex-col items-start gap-3 p-5 sm:w-1/2 sm:justify-center sm:p-8">
-        <h3 className="font-display text-2xl font-extrabold tracking-tight">Add your first place</h3>
-        <p className="text-mute">
+      <div className="absolute inset-0 bg-gradient-to-t from-[#0f1c17] via-[#0f1c17]/70 to-[#0f1c17]/10" aria-hidden="true" />
+      <div className="relative flex min-h-80 flex-col items-start justify-end gap-3 p-6 sm:min-h-96 sm:p-9">
+        <h3 className="font-serif text-[2rem] leading-tight font-semibold">Add your first place</h3>
+        <p className="max-w-md text-[#fffdf8]/80">
           A freezer, the attic, a wardrobe, a raised bed. Anywhere you put things. Give each its own name, like Garage Freezer or Blue Box.
         </p>
-        <Button onClick={onAdd}>
+        <Button variant="gold" onClick={onAdd}>
           <IconPlus /> Add a place
         </Button>
       </div>

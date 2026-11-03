@@ -1,7 +1,7 @@
 "use client";
 
 import type { LocationType } from "@/lib/household";
-import { PlaceArt } from "@/components/art/PlaceArt";
+import { PlacePhoto } from "@/components/art/PlacePhoto";
 import { IconCheck } from "@/components/ui/icons";
 import { PLACE_TYPES } from "./placeTypes";
 
@@ -21,7 +21,7 @@ export function PlaceTypePicker({ value, onChange, name }: { value: LocationType
             >
               <input type="radio" name={name} value={v} checked={selected} onChange={() => onChange(v)} className="sr-only" />
               <span className="block aspect-[4/3]">
-                <PlaceArt type={v} />
+                <PlacePhoto type={v} />
               </span>
               <span className="block truncate px-2 py-1.5 text-center text-[12.5px] font-bold">{label}</span>
               {selected ? (

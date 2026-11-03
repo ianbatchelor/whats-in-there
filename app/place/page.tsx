@@ -10,7 +10,7 @@ import { useQueryParam } from "@/lib/hooks/useQueryParam";
 import { loadMembers, type LocationType } from "@/lib/household";
 import type { StockItem } from "@/lib/domain/stock";
 import { formatQuantity } from "@/lib/domain/quantity";
-import { loadItems } from "@/lib/stock";
+import { loadItems, loadPlaceLastActivity } from "@/lib/stock";
 import { countThings } from "@/lib/domain/places";
 import { AppShell, SectionLabel } from "@/components/AppShell";
 import { Screen, Splash } from "@/components/ui/Screen";
@@ -18,7 +18,8 @@ import { Button } from "@/components/ui/Button";
 import { Notice } from "@/components/ui/Notice";
 import { Toast } from "@/components/ui/Toast";
 import { IconChevronLeft, IconPencil, IconPlus, IconSearch } from "@/components/ui/icons";
-import { PlaceArt } from "@/components/art/PlaceArt";
+import { PlacePhoto } from "@/components/art/PlacePhoto";
+import { timeAgo } from "@/lib/domain/dates";
 import { placeType } from "@/components/home/placeTypes";
 import { ItemList, ItemRow } from "@/components/stock/ItemRow";
 import { useUndoToast } from "@/components/stock/useUndoToast";
@@ -29,10 +30,10 @@ import { EditPlaceSheet } from "@/components/stock/EditPlaceSheet";
 type PlaceInfo = { id: string; name: string; type: LocationType; householdId: string };
 
 export default function PlacePage() {
-  return <AuthGate>{() => <Place />}</AuthGate>;
+  return <AuthGate>{(session) => <Place me={session.user.id} />}</AuthGate>;
 }
 
-function Place() {
+function Place({ me }: { me: string }) {
   const id = useQueryParam("id");
   const router = useRouter();
   const [place, setPlace] = useState<PlaceInfo | null>(null);
@@ -45,10 +46,13 @@ function Place() {
   const [editing, setEditing] = useState(false);
   const [open, setOpen] = useState<StockItem | null>(null);
   const [category, setCategory] = useState<string | null>(null);
+  const [last, setLast] = useState<{ actor: string | null; at: string } | null>(null);
 
   const refresh = useCallback(async (locationId: string) => {
     try {
-      setItems(await loadItems(locationId));
+      const [list, latest] = await Promise.all([loadItems(locationId), loadPlaceLastActivity(locationId).catch(() => null)]);
+      setItems(list);
+      setLast(latest);
     } catch (e) {
       setError(friendlyError(e));
     }
@@ -150,68 +154,78 @@ function Place() {
   if (!place) return <Splash />;
 
   const info = placeType(place.type);
-  const { Icon } = info;
   const count = items?.length ?? 0;
   const filtering = filter.trim() !== "" || category !== null;
+  const lastWho = last ? (last.actor === me ? "You" : (last.actor && names.get(last.actor)) || "Someone") : null;
+  const catCount = (c: string) => (items ?? []).filter((i) => i.category?.trim() === c).length;
 
   return (
-    <AppShell>
-      <div className="relative -mx-4 -mt-[max(16px,env(safe-area-inset-top))] sm:mx-0 sm:mt-0">
-        <div className="aspect-[16/8] overflow-hidden sm:rounded-[var(--radius-card)] lg:aspect-[16/6]">
-          <PlaceArt type={place.type} className="h-full w-full object-cover" />
+    <AppShell wide>
+      <div className="reveal relative -mx-4 -mt-[max(16px,env(safe-area-inset-top))] overflow-hidden sm:mx-0 sm:mt-0 sm:rounded-[24px]">
+        <div className="h-64 sm:h-72 lg:h-[22rem]">
+          <PlacePhoto type={place.type} variant="wide" eager className="reveal-img" />
         </div>
-        <div className="absolute inset-x-0 top-0 flex items-center justify-between px-3 pt-[max(12px,env(safe-area-inset-top))] sm:pt-3">
-          <Link href="/" aria-label="Back to My Places" className="grid size-11 place-items-center rounded-full bg-card/90 text-fg shadow-[var(--shadow-card)] backdrop-blur transition hover:bg-card">
+        <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/0 to-black/70" aria-hidden="true" />
+        <div className="absolute inset-x-0 top-0 flex items-center justify-between px-4 pt-[max(12px,env(safe-area-inset-top))] sm:p-4">
+          <Link href="/" aria-label="Back to My Places" className="grid size-11 place-items-center rounded-full bg-[#fffdf8]/92 text-[#17242a] shadow-[var(--shadow-card)] backdrop-blur transition hover:bg-[#fffdf8]">
             <IconChevronLeft className="size-5" />
           </Link>
           <button
             onClick={() => setEditing(true)}
             aria-label={`Edit ${place.name}`}
-            className="grid size-11 place-items-center rounded-full bg-card/90 text-fg shadow-[var(--shadow-card)] backdrop-blur transition hover:bg-card"
+            className="grid size-11 place-items-center rounded-full bg-[#fffdf8]/92 text-[#17242a] shadow-[var(--shadow-card)] backdrop-blur transition hover:bg-[#fffdf8]"
           >
             <IconPencil className="size-[18px]" />
           </button>
         </div>
+        <div className="absolute inset-x-5 bottom-4 text-[#fffdf8] sm:inset-x-7 sm:bottom-6">
+          <h1 className="truncate font-display text-[2.1rem] leading-tight font-extrabold tracking-[-0.03em] [text-shadow:0_2px_12px_rgba(0,0,0,0.3)] sm:text-[2.6rem]">
+            {place.name}
+          </h1>
+          <p className="truncate text-[14px] text-[#fffdf8]/85">{info.blurb}</p>
+        </div>
       </div>
 
-      <header className="rise relative z-10 -mt-14 flex flex-col gap-4 rounded-[var(--radius-card)] border border-line bg-card p-4 shadow-[var(--shadow-lift)] sm:mx-4 sm:p-5">
-        <div className="flex items-center gap-3.5">
-          <span className="inline-grid size-12 shrink-0 place-items-center rounded-2xl bg-ice text-leaf" aria-hidden="true">
-            <Icon className="size-6" />
-          </span>
-          <div className="min-w-0 flex-1">
-            <h1 className="truncate font-display text-[1.75rem] leading-tight font-extrabold tracking-[-0.025em]">{place.name}</h1>
-            <p className="truncate text-sm text-mute">{info.blurb}</p>
-          </div>
+      <dl className="-mx-4 -mt-6 grid grid-cols-3 border-b border-line bg-card sm:mx-0 sm:mt-0 sm:rounded-2xl sm:border sm:shadow-[var(--shadow-card)]">
+        <div className="px-4 py-3 sm:px-5">
+          <dt className="sr-only">Things</dt>
+          <dd className="font-display text-xl font-extrabold tabular-nums">{count}</dd>
+          <dd className="text-[12.5px] text-mute">{count === 1 ? "thing" : "things"}</dd>
         </div>
-        <div className="flex items-center justify-between gap-3 border-t border-line pt-3.5">
-          <p className="text-sm">
-            <span className="font-display text-lg font-extrabold tabular-nums">{count}</span>{" "}
-            <span className="text-mute">{count === 1 ? "thing" : "things"} in here</span>
-          </p>
-          <Button className="min-h-11 px-4" onClick={() => setAdding(true)}>
-            <IconPlus /> Add item
-          </Button>
+        <div className="border-l border-line px-4 py-3 sm:px-5">
+          <dt className="sr-only">Categories</dt>
+          <dd className="font-display text-xl font-extrabold tabular-nums">{categories.length}</dd>
+          <dd className="text-[12.5px] text-mute">{categories.length === 1 ? "category" : "categories"}</dd>
         </div>
-      </header>
+        <div className="min-w-0 border-l border-line px-4 py-3 sm:px-5">
+          <dt className="sr-only">Last change</dt>
+          <dd className="truncate font-display text-xl font-extrabold">{lastWho ?? "None"}</dd>
+          <dd className="truncate text-[12.5px] text-mute">{last ? `last change · ${timeAgo(last.at)}` : "no changes yet"}</dd>
+        </div>
+      </dl>
 
       {error ? <Notice>{error}</Notice> : null}
 
       {items && items.length > 0 ? (
         <div className="flex flex-col gap-3">
-          <label className="flex min-h-12 items-center gap-3 rounded-2xl border border-line bg-card px-4 shadow-[var(--shadow-card)] focus-within:border-leaf">
-            <IconSearch className="size-5 shrink-0 text-mute" />
-            <input
-              type="search"
-              value={filter}
-              onChange={(e) => setFilter(e.target.value)}
-              placeholder={`Search ${place.name}`}
-              aria-label={`Search ${place.name}`}
-              className="min-w-0 flex-1 bg-transparent text-base placeholder:text-mute focus:outline-none focus-visible:outline-none"
-            />
-          </label>
+          <div className="flex gap-2">
+            <label className="flex min-h-12 min-w-0 flex-1 items-center gap-3 rounded-2xl bg-sunk px-4">
+              <IconSearch className="size-5 shrink-0 text-mute" />
+              <input
+                type="search"
+                value={filter}
+                onChange={(e) => setFilter(e.target.value)}
+                placeholder={`Search ${place.name}`}
+                aria-label={`Search ${place.name}`}
+                className="min-w-0 flex-1 bg-transparent text-base placeholder:text-mute focus:outline-none focus-visible:outline-none"
+              />
+            </label>
+            <Button className="min-h-12 shrink-0 px-4" onClick={() => setAdding(true)}>
+              <IconPlus /> Add item
+            </Button>
+          </div>
           {categories.length > 1 ? (
-            <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0" role="group" aria-label="Filter by category">
+            <div className="-mx-4 flex gap-1.5 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0" role="group" aria-label="Filter by category">
               {[null, ...categories].map((c) => {
                 const on = category === c;
                 return (
@@ -219,11 +233,11 @@ function Place() {
                     key={c ?? "all"}
                     onClick={() => setCategory(c)}
                     aria-pressed={on}
-                    className={`min-h-9 shrink-0 rounded-full border px-3.5 text-sm font-semibold transition ${
-                      on ? "border-go bg-go text-on-go" : "border-line bg-card text-mute hover:text-fg"
+                    className={`min-h-9 shrink-0 rounded-full px-3.5 text-[13px] font-semibold transition ${
+                      on ? "bg-go text-on-go" : "bg-sunk text-fg/80 hover:text-fg"
                     }`}
                   >
-                    {c ?? "All"}
+                    {c ?? "All"} <span className={on ? "opacity-80" : "text-mute"}>{c ? catCount(c) : count}</span>
                   </button>
                 );
               })}
@@ -239,9 +253,12 @@ function Place() {
           ))}
         </div>
       ) : items!.length === 0 ? (
-        <div className="flex flex-col items-start gap-3 rounded-[var(--radius-card)] border-2 border-dashed border-line bg-sunk/40 p-5">
-          <h2 className="font-display text-xl font-bold">Nothing in here yet</h2>
-          <p className="text-sm text-mute">
+        <div className="flex flex-col items-center gap-3 rounded-[24px] bg-sunk/60 px-6 py-10 text-center">
+          <span className="block h-28 w-40 overflow-hidden rounded-2xl opacity-90 shadow-[var(--shadow-card)]">
+            <PlacePhoto type={place.type} />
+          </span>
+          <h2 className="mt-2 font-display text-xl font-bold">Nothing recorded here yet</h2>
+          <p className="max-w-sm text-sm text-mute">
             Add what&apos;s in {place.name} as you put it in, like &ldquo;{info.thing}&rdquo;. It takes a few seconds per thing.
           </p>
           <Button onClick={() => setAdding(true)}>
@@ -255,7 +272,7 @@ function Place() {
         </p>
       ) : (
         <section aria-labelledby="items-h" className="flex flex-col gap-2.5">
-          <SectionLabel id="items-h">{filtering ? countThings(shown.length) : "Use first"}</SectionLabel>
+          <SectionLabel id="items-h">{filtering ? countThings(shown.length) : ["freezer", "fridge", "pantry"].includes(place.type) ? "Use first" : "In here"}</SectionLabel>
           <ItemList>
             {shown.map((item, i) => (
               <ItemRow key={item.id} index={i} item={item} onOpen={setOpen} />

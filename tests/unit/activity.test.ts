@@ -25,3 +25,15 @@ describe("groupByDay", () => {
     expect(g[0]!.rows).toHaveLength(2);
   });
 });
+
+import { timeAgo } from "@/lib/domain/dates";
+
+describe("timeAgo", () => {
+  const now = new Date(2026, 10, 3, 15, 0);
+  it("reads naturally", () => {
+    expect(timeAgo(new Date(2026, 10, 3, 14, 50).toISOString(), now)).toBe("10m ago");
+    expect(timeAgo(new Date(2026, 10, 3, 12, 0).toISOString(), now)).toBe("3h ago");
+    expect(timeAgo(new Date(2026, 10, 2, 20, 0).toISOString(), now)).toBe("yesterday");
+    expect(timeAgo(new Date(2026, 9, 10, 9, 0).toISOString(), now)).toBe("10 Oct");
+  });
+});

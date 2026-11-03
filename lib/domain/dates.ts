@@ -59,3 +59,16 @@ export function storageAge(since: string | null | undefined, today: string = tod
   if (days < 14) return `${days} days`;
   return `${Math.floor(days / 7)} weeks`;
 }
+
+/** "just now", "2h ago", "yesterday", "Mon", "3 Nov": short and human. */
+export function timeAgo(iso: string, now: Date = new Date()): string {
+  const then = new Date(iso);
+  const mins = Math.round((now.getTime() - then.getTime()) / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  if (then.getTime() >= startOfToday) return `${Math.round(mins / 60)}h ago`;
+  if (then.getTime() >= startOfToday - 86400000) return "yesterday";
+  if (then.getTime() >= startOfToday - 6 * 86400000) return then.toLocaleDateString("en-GB", { weekday: "short" });
+  return then.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+}

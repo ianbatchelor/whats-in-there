@@ -12,7 +12,7 @@ import { Notice } from "@/components/ui/Notice";
 import { Toast } from "@/components/ui/Toast";
 import { IconPlus } from "@/components/ui/icons";
 import { placeType } from "@/components/home/placeTypes";
-import { PlaceArt } from "@/components/art/PlaceArt";
+import { PlacePhoto } from "@/components/art/PlacePhoto";
 import { AddPlaceSheet } from "@/components/home/AddPlaceSheet";
 import { AddItemSheet } from "@/components/stock/AddItemSheet";
 import { useUndoToast } from "@/components/stock/useUndoToast";
@@ -44,7 +44,7 @@ function Add({ session }: { session: Session }) {
                 className="lift flex w-full items-center gap-3.5 overflow-hidden rounded-2xl border border-line bg-card pr-4 text-left shadow-[var(--shadow-card)]"
               >
                 <span className="h-[72px] w-24 shrink-0 overflow-hidden">
-                  <PlaceArt type={p.type} />
+                  <PlacePhoto type={p.type} />
                 </span>
                 <span className="min-w-0 flex-1 py-2">
                   <span className="block truncate font-display text-[16px] font-bold">{p.name}</span>

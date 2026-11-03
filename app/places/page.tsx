@@ -13,7 +13,7 @@ import { Notice } from "@/components/ui/Notice";
 import { PLACE_TYPES, countPlaces, placeType } from "@/components/home/placeTypes";
 import { AddPlaceSheet } from "@/components/home/AddPlaceSheet";
 import { AddPlaceTile, PlaceCard } from "@/components/home/PlaceCard";
-import { PlaceArt } from "@/components/art/PlaceArt";
+import { PlacePhoto } from "@/components/art/PlacePhoto";
 
 export default function PlacesPage() {
   return <AuthGate>{(session) => <Places session={session} />}</AuthGate>;
@@ -32,7 +32,7 @@ function Places({ session }: { session: Session }) {
     <AppShell wide>
       <div className="relative -mx-4 -mt-[max(16px,env(safe-area-inset-top))] overflow-hidden sm:mx-0 sm:mt-0 sm:rounded-[var(--radius-card)]">
         <div className="aspect-[16/7] lg:aspect-[16/5]">
-          <PlaceArt type={type} />
+          <PlacePhoto type={type} variant="wide" eager />
         </div>
         <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-black/5 to-transparent" aria-hidden="true" />
       </div>

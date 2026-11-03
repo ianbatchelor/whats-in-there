@@ -91,6 +91,32 @@ body {
   animation: rise 0.35s cubic-bezier(0.2, 0.7, 0.2, 1) both;
 }
 
+/* Entering a place: the picture opens out from slightly closer, like a door swinging wide. */
+@keyframes reveal {
+  from {
+    clip-path: inset(6% 8% 6% 8% round 28px);
+  }
+  to {
+    clip-path: inset(0 0 0 0 round 0);
+  }
+}
+@keyframes reveal-img {
+  from {
+    transform: scale(1.12);
+    filter: brightness(0.7);
+  }
+  to {
+    transform: scale(1);
+    filter: none;
+  }
+}
+.reveal {
+  animation: reveal 0.55s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.reveal-img {
+  animation: reveal-img 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
 /* Cards that lift a little under the finger or pointer. */
 .lift {
   box-shadow: var(--shadow-card);
