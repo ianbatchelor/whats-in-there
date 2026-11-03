@@ -12,6 +12,7 @@ import { Field } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 import { Notice } from "@/components/ui/Notice";
 import { Stepper } from "./Stepper";
+import { placeType } from "@/components/home/placeTypes";
 
 const UNITS: { value: StockUnit; label: string }[] = [
   { value: "item", label: "Items" },
@@ -103,7 +104,7 @@ export function AddItemSheet({
       <form onSubmit={save} className="flex max-h-[75dvh] flex-col gap-4 overflow-y-auto" noValidate>
         <Field
           label="What is it?"
-          placeholder="Chicken curry"
+          placeholder={placeType(place.type).thing}
           value={name}
           onChange={(e) => setName(e.target.value)}
           maxLength={120}

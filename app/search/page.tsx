@@ -1,0 +1,193 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import type { Session } from "@supabase/supabase-js";
+import { AuthGate } from "@/components/AuthGate";
+import { AppShell, SectionLabel } from "@/components/AppShell";
+import { PageHeader } from "@/components/common/PageHeader";
+import { useHousehold } from "@/lib/hooks/useHousehold";
+import { friendlyError } from "@/lib/supabase/errors";
+import { searchItems } from "@/lib/stock";
+import { countThings } from "@/lib/domain/places";
+import type { StockItem } from "@/lib/domain/stock";
+import { formatQuantity } from "@/lib/domain/quantity";
+import { Notice } from "@/components/ui/Notice";
+import { Toast } from "@/components/ui/Toast";
+import { IconChevronRight, IconSearch } from "@/components/ui/icons";
+import { placeType } from "@/components/home/placeTypes";
+import { PlaceArt } from "@/components/art/PlaceArt";
+import { ItemList, ItemRow } from "@/components/stock/ItemRow";
+import { TakeOutSheet } from "@/components/stock/TakeOutSheet";
+import { useUndoToast } from "@/components/stock/useUndoToast";
+
+export default function SearchPage() {
+  return <AuthGate>{(session) => <Search session={session} />}</AuthGate>;
+}
+
+function Search({ session }: { session: Session }) {
+  const {
+    current,
+    places,
+    placeById,
+    names,
+    error,
+    setError,
+    version,
+    refresh,
+  } = useHousehold(session);
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<StockItem[] | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [open, setOpen] = useState<StockItem | null>(null);
+  const q = query.trim();
+
+  useEffect(() => {
+    if (!current || q.length < 2) return;
+    let active = true;
+    const t = setTimeout(async () => {
+      setBusy(true);
+      try {
+        const found = await searchItems(current.householdId, q);
+        if (active) setResults(found);
+      } catch (e) {
+        if (active) setError(friendlyError(e));
+      } finally {
+        if (active) setBusy(false);
+      }
+    }, 220);
+    return () => {
+      active = false;
+      clearTimeout(t);
+    };
+  }, [current, q, version, setError]);
+
+  const matchingPlaces = useMemo(() => {
+    if (q.length < 2 || !places) return [];
+    const lower = q.toLowerCase();
+    return places.filter(
+      (p) =>
+        p.name.toLowerCase().includes(lower) ||
+        placeType(p.type).label.toLowerCase().includes(lower),
+    );
+  }, [places, q]);
+
+  const { toast, clear, announce } = useUndoToast(() => {
+    refresh();
+  });
+
+  const shown = q.length >= 2 ? results : null;
+
+  return (
+    <AppShell>
+      <PageHeader title="Search" sub="Everything you have, in every place." />
+      <label className="sticky top-[max(8px,env(safe-area-inset-top))] z-20 flex min-h-14 items-center gap-3 rounded-2xl border border-line bg-card px-4 shadow-[var(--shadow-lift)] focus-within:border-leaf">
+        <IconSearch className="size-5 shrink-0 text-mute" />
+        <input
+          type="search"
+          autoFocus
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Try passport, curry or Christmas lights"
+          aria-label="Search everything"
+          className="min-w-0 flex-1 bg-transparent text-[17px] placeholder:text-mute focus:outline-none focus-visible:outline-none"
+        />
+        {busy ? (
+          <span
+            className="size-4 animate-spin rounded-full border-2 border-leaf border-r-transparent"
+            role="status"
+            aria-label="Searching"
+          />
+        ) : null}
+      </label>
+
+      {error ? <Notice>{error}</Notice> : null}
+
+      {q.length < 2 ? (
+        <p className="text-mute">
+          Type at least two letters. Results show which place each thing is in.
+        </p>
+      ) : (
+        <div className="flex flex-col gap-6" aria-live="polite">
+          {matchingPlaces.length > 0 ? (
+            <section className="flex flex-col gap-2.5" aria-labelledby="sp-h">
+              <SectionLabel id="sp-h">Places</SectionLabel>
+              <ul className="flex flex-col gap-2">
+                {matchingPlaces.map((p) => (
+                  <li key={p.id}>
+                    <Link
+                      href={`/place/?id=${p.id}`}
+                      className="lift flex items-center gap-3 overflow-hidden rounded-2xl border border-line bg-card pr-3 shadow-[var(--shadow-card)]"
+                    >
+                      <span className="h-14 w-20 shrink-0 overflow-hidden">
+                        <PlaceArt type={p.type} />
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate font-display font-bold">
+                          {p.name}
+                        </span>
+                        <span className="block text-[13px] text-mute">
+                          {countThings(p.itemCount)}
+                        </span>
+                      </span>
+                      <IconChevronRight className="size-4 text-mute/60" />
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
+          {shown && shown.length === 0 && matchingPlaces.length > 0 ? null : (
+            <section className="flex flex-col gap-2.5" aria-labelledby="si-h">
+              <SectionLabel id="si-h">
+                {shown ? countThings(shown.length) : "Things"}
+              </SectionLabel>
+              {shown === null ? (
+                <div
+                  className="h-16 animate-pulse rounded-[var(--radius-card)] bg-sunk"
+                  aria-busy="true"
+                />
+              ) : shown.length === 0 ? (
+                <p className="text-mute">
+                  Nothing called &ldquo;{q}&rdquo; yet. Check the spelling, or
+                  add it to a place.
+                </p>
+              ) : (
+                <ItemList>
+                  {shown.map((item, i) => (
+                    <ItemRow
+                      key={item.id}
+                      index={i}
+                      item={item}
+                      place={placeById.get(item.locationId)?.name}
+                      onOpen={setOpen}
+                    />
+                  ))}
+                </ItemList>
+              )}
+            </section>
+          )}
+        </div>
+      )}
+
+      <TakeOutSheet
+        item={open}
+        placeName={open ? placeById.get(open.locationId)?.name : undefined}
+        names={names}
+        onClose={() => setOpen(null)}
+        onTaken={(before, after, amount, movementId) => {
+          refresh();
+          const left =
+            after.quantity > 0
+              ? `, ${formatQuantity(after.quantity, after.unit)} left`
+              : ", all gone";
+          announce(
+            `Took out ${formatQuantity(amount, before.unit)} of ${before.productName}${left}`,
+            movementId,
+          );
+        }}
+      />
+      <Toast toast={toast} onDone={clear} />
+    </AppShell>
+  );
+}

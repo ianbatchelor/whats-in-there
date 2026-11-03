@@ -4,7 +4,7 @@ import { KEYS, readLocal, writeLocal } from "@/lib/storage";
 export type Role = "owner" | "member";
 export type Membership = { householdId: string; name: string; role: Role };
 export type Member = { userId: string; role: Role; joinedAt: string; displayName: string };
-export type LocationType = "freezer" | "fridge" | "pantry" | "cupboard" | "wine" | "other";
+export type LocationType = "freezer" | "fridge" | "pantry" | "cupboard" | "wine" | "attic" | "garage" | "shed" | "wardrobe" | "garden" | "box" | "other";
 export type Place = { id: string; name: string; type: LocationType; itemCount: number };
 
 export async function loadMemberships(userId: string): Promise<Membership[]> {

@@ -1,4 +1,4 @@
-const fills = ["bg-ice text-fg", "bg-tape text-on-tape", "bg-go text-on-go", "bg-fg text-bg"];
+const fills = ["bg-tape text-on-tape", "bg-[#cfe3d3] text-[#183f32]", "bg-go text-on-go", "bg-[#f1d7c6] text-[#6e3a22]"];
 
 export function Avatar({ name, index = 0, size = 32 }: { name: string; index?: number; size?: number }) {
   const initial = name.trim().charAt(0).toUpperCase() || "?";

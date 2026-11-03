@@ -9,6 +9,7 @@ import { Field } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 import { Notice } from "@/components/ui/Notice";
 import { PLACE_TYPES } from "./placeTypes";
+import { PlaceTypePicker } from "./PlaceTypePicker";
 
 export function AddPlaceSheet({
   open,
@@ -42,23 +43,9 @@ export function AddPlaceSheet({
 
   return (
     <Sheet open={open} onClose={onClose} title="Add a place">
-      <form onSubmit={save} className="flex flex-col gap-4">
-        <fieldset className="grid grid-cols-3 gap-2">
-          <legend className="mb-2 text-sm font-bold">What is it?</legend>
-          {PLACE_TYPES.map(({ value, label, Icon }) => (
-            <label
-              key={value}
-              className={`flex cursor-pointer flex-col items-center gap-1.5 rounded-xl border px-2 py-3 text-sm font-bold has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-go ${
-                type === value ? "border-fg bg-fg text-bg" : "border-line bg-card"
-              }`}
-            >
-              <input type="radio" name="type" value={value} checked={type === value} onChange={() => setType(value)} className="sr-only" />
-              <Icon className="size-6" />
-              {label}
-            </label>
-          ))}
-        </fieldset>
-        <Field label="Name" placeholder={example} value={name} onChange={(e) => setName(e.target.value)} maxLength={60} hint="You can rename it any time. Stickers keep working." />
+      <form onSubmit={save} className="-mx-1 flex max-h-[78dvh] flex-col gap-4 overflow-y-auto px-1 pb-1">
+        <PlaceTypePicker value={type} onChange={setType} name="add-type" />
+        <Field label="Name" placeholder={example} value={name} onChange={(e) => setName(e.target.value)} maxLength={60} hint="Give it its own name, so three freezers or two raised beds are easy to tell apart. You can rename it any time." />
         {error ? <Notice>{error}</Notice> : null}
         <Button type="submit" busy={busy} className="w-full">
           Add {name.trim() || example}

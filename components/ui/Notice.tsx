@@ -5,7 +5,7 @@ export function Notice({ tone = "error", children }: { tone?: "error" | "info" |
     success: "border-go/40 bg-go/10 text-fg",
   } as const;
   return (
-    <div role={tone === "error" ? "alert" : "status"} className={`rounded-xl border px-3.5 py-3 text-sm ${tones[tone]}`}>
+    <div role={tone === "error" ? "alert" : "status"} className={`rounded-2xl border px-4 py-3 text-sm ${tones[tone]}`}>
       {children}
     </div>
   );

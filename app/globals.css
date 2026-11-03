@@ -1,43 +1,52 @@
 @import "tailwindcss";
 
-/* Freezer tape design tokens. Semantic names so dark mode only swaps values. */
+/* "Warm storage" design tokens. Semantic names so dark mode only swaps values. */
 @theme {
-  --color-bg: #eef4f5;
-  --color-card: #ffffff;
-  --color-fg: #0f2a33;
-  --color-mute: #5a7178;
-  --color-line: #dfe8ea;
-  --color-ice: #d9e9ec;
-  --color-go: #0f7b66;
-  --color-on-go: #ffffff;
-  --color-tape: #f5c84c;
-  --color-on-tape: #2a2412;
-  --color-warn: #b8452a;
-  --color-check: #fff7dc;
-  --color-check-line: #e7c55a;
-  --color-brand: #0f2a33;
+  --color-bg: #faf7f0;
+  --color-card: #fffdf8;
+  --color-sunk: #f3efe5;
+  --color-fg: #17242a;
+  --color-mute: #65716d;
+  --color-line: #e7e3da;
+  --color-ice: #edf0e6;
+  --color-go: #183f32;
+  --color-on-go: #fffdf8;
+  --color-leaf: #326b50;
+  --color-tape: #f6c65b;
+  --color-on-tape: #2a2112;
+  --color-warn: #b4472c;
+  --color-check: #fff4d6;
+  --color-check-line: #e9c46a;
+  --color-brand: #183f32;
 
-  --font-display: var(--font-bricolage), "Avenir Next", system-ui, sans-serif;
-  --font-sans: var(--font-atkinson), "Segoe UI", system-ui, sans-serif;
-  --font-mono: var(--font-dm-mono), ui-monospace, Menlo, monospace;
+  --font-display: var(--font-jakarta), "Avenir Next", system-ui, sans-serif;
+  --font-sans: var(--font-inter), "Segoe UI", system-ui, sans-serif;
+  --font-serif: var(--font-fraunces), Georgia, serif;
+  --font-mono: var(--font-inter), system-ui, sans-serif;
 
-  --radius-card: 18px;
+  --radius-card: 22px;
   --radius-btn: 16px;
+
+  --shadow-card: 0 1px 2px rgba(23, 36, 42, 0.04), 0 8px 24px -14px rgba(23, 36, 42, 0.18);
+  --shadow-lift: 0 2px 4px rgba(23, 36, 42, 0.05), 0 18px 36px -18px rgba(23, 36, 42, 0.32);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --color-bg: #0b1a1f;
-    --color-card: #13262c;
-    --color-fg: #e6f0f1;
-    --color-mute: #8fa7ac;
-    --color-line: #20363c;
-    --color-ice: #1b3339;
-    --color-go: #2ba68a;
-    --color-on-go: #06231c;
-    --color-warn: #f07a57;
-    --color-check: #33290e;
-    --color-check-line: #8a6a1a;
+    --color-bg: #0e1814;
+    --color-card: #16221d;
+    --color-sunk: #121d19;
+    --color-fg: #eef0ea;
+    --color-mute: #9aa69f;
+    --color-line: #26352e;
+    --color-ice: #1d2c25;
+    --color-go: #8cc7a5;
+    --color-on-go: #0d1f17;
+    --color-leaf: #8cc7a5;
+    --color-warn: #f08a68;
+    --color-check: #2f2712;
+    --color-check-line: #7d6420;
+    --color-brand: #0f241c;
     color-scheme: dark;
   }
 }
@@ -65,6 +74,38 @@ body {
   background: var(--color-tape);
   color: var(--color-on-tape);
   clip-path: polygon(1% 6%, 99% 0, 100% 50%, 98% 100%, 0 94%, 2% 50%);
+}
+
+/* Gentle entrance for lists and new rows. */
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.rise {
+  animation: rise 0.35s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+/* Cards that lift a little under the finger or pointer. */
+.lift {
+  box-shadow: var(--shadow-card);
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease;
+}
+@media (hover: hover) {
+  .lift:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lift);
+  }
+}
+.lift:active {
+  transform: scale(0.985);
 }
 
 @media (prefers-reduced-motion: reduce) {

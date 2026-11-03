@@ -6,11 +6,11 @@ import { supabase } from "@/lib/supabase/client";
 import { friendlyError } from "@/lib/supabase/errors";
 import { isConfigured } from "@/lib/config";
 import { useSession } from "@/lib/hooks/useSession";
-import { Screen, Splash } from "@/components/ui/Screen";
+import { AuthFrame } from "@/components/AuthFrame";
+import { Splash } from "@/components/ui/Screen";
 import { Field } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 import { Notice } from "@/components/ui/Notice";
-import { BrandMark, Wordmark } from "@/components/brand/BrandMark";
 import { SetupNeeded } from "@/components/SetupNeeded";
 
 /** Only allow same-app paths as a return address. */
@@ -67,16 +67,16 @@ export default function SignInPage() {
   }
 
   return (
-    <Screen className="justify-between">
-      <header className="flex items-center gap-2.5 pt-2">
-        <BrandMark size={34} />
-        <Wordmark className="text-lg" />
-      </header>
-
-      <section className="flex flex-col gap-6">
-        <h1 className="font-display text-[2.6rem] leading-[0.98] font-extrabold tracking-[-0.03em] text-balance">
-          Know what&apos;s in <span className="tape inline-block -rotate-1 px-2 pb-1">every</span> freezer.
-        </h1>
+    <AuthFrame>
+      <section className="rise flex flex-col gap-6">
+        <div className="flex flex-col gap-2">
+          <h1 className="font-display text-[2.2rem] leading-[1.02] font-extrabold tracking-[-0.03em] text-balance">
+            {step === "email" ? "Sign in or get started" : "Check your email"}
+          </h1>
+          <p className="text-mute">
+            {step === "email" ? "New here? The same steps create your account." : `We sent a sign-in code to ${email.trim()}.`}
+          </p>
+        </div>
 
         {step === "email" ? (
           <form onSubmit={sendCode} className="flex flex-col gap-4" noValidate>
@@ -126,7 +126,7 @@ export default function SignInPage() {
         )}
       </section>
 
-      <p className="text-center text-xs text-mute">Your household&apos;s food list is private to the people you invite.</p>
-    </Screen>
+      <p className="text-center text-xs text-mute lg:hidden">Your household&apos;s list is private to the people you invite.</p>
+    </AuthFrame>
   );
 }

@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { Session } from "@supabase/supabase-js";
 import { AuthGate } from "@/components/AuthGate";
@@ -12,13 +11,15 @@ import { buildInviteUrl } from "@/lib/domain/invite";
 import { formatDay } from "@/lib/domain/dates";
 import { loadMembers, loadMemberships, pickCurrent, rememberHousehold, type Member, type Membership } from "@/lib/household";
 import { KEYS, writeLocal } from "@/lib/storage";
-import { Screen, Splash } from "@/components/ui/Screen";
+import { Splash } from "@/components/ui/Screen";
+import { AppShell, SectionLabel } from "@/components/AppShell";
+import { PageHeader } from "@/components/common/PageHeader";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { Notice } from "@/components/ui/Notice";
 import { Field } from "@/components/ui/Field";
 import { Sheet } from "@/components/ui/Sheet";
-import { IconCheck, IconChevronLeft, IconCopy } from "@/components/ui/icons";
+import { IconCheck, IconCopy } from "@/components/ui/icons";
 
 type Invite = { id: string; expires_at: string; created_at: string };
 
@@ -150,36 +151,32 @@ function Household({ session }: { session: Session }) {
       router.replace("/sign-in/");
     });
 
-  if (!current) return error ? <Screen><Notice>{error}</Notice></Screen> : <Splash />;
+  if (!current) return error ? <AppShell><Notice>{error}</Notice></AppShell> : <Splash />;
 
   return (
-    <Screen>
-      <Link href="/" className="flex items-center gap-0.5 self-start pt-2 font-bold text-go">
-        <IconChevronLeft className="size-4" /> Home
-      </Link>
-
-      <header className="flex flex-col gap-1">
-        <h1 className="font-display text-[1.9rem] leading-none font-extrabold tracking-[-0.02em]">{current.name}</h1>
-        <p className="text-sm text-mute">
-          {members.length === 1 ? "Just you so far" : `${members.length} people`} · you&apos;re {isOwner ? "an owner" : "a member"}
-        </p>
-        {isOwner ? (
-          <Button variant="quiet" className="min-h-0! self-start px-0! py-1!" onClick={() => { setNewName(current.name); setRenaming(true); }}>
-            Rename household
-          </Button>
-        ) : null}
-      </header>
+    <AppShell>
+      <PageHeader
+        title={current.name}
+        sub={<>{members.length === 1 ? "Just you so far" : `${members.length} people`} · you&apos;re {isOwner ? "an owner" : "a member"}</>}
+        action={
+          isOwner ? (
+            <Button variant="ghost" className="min-h-10! px-4!" onClick={() => { setNewName(current.name); setRenaming(true); }}>
+              Rename
+            </Button>
+          ) : null
+        }
+      />
 
       {error ? <Notice>{error}</Notice> : null}
 
       <section aria-labelledby="people-h" className="flex flex-col gap-2.5">
-        <h2 id="people-h" className="font-mono text-[11px] tracking-[0.1em] text-mute uppercase">People</h2>
-        <ul className="overflow-hidden rounded-[var(--radius-card)] border border-line bg-card">
+        <SectionLabel id="people-h">People</SectionLabel>
+        <ul className="overflow-hidden rounded-[var(--radius-card)] border border-line bg-card shadow-[var(--shadow-card)]">
           {members.map((m, i) => (
             <li key={m.userId} className="flex items-center gap-3 border-t border-line px-3.5 py-3 first:border-t-0">
               <Avatar name={m.displayName} index={i} size={36} />
               <div className="min-w-0 flex-1">
-                <p className="truncate font-bold">
+                <p className="truncate font-display font-bold">
                   {m.displayName}
                   {m.userId === session.user.id ? <span className="font-normal text-mute"> (you)</span> : null}
                 </p>
@@ -206,17 +203,17 @@ function Household({ session }: { session: Session }) {
 
       {isOwner ? (
         <section aria-labelledby="invite-h" className="flex flex-col gap-2.5">
-          <h2 id="invite-h" className="font-mono text-[11px] tracking-[0.1em] text-mute uppercase">Invite someone</h2>
+          <SectionLabel id="invite-h">Invite someone</SectionLabel>
           {link ? (
-            <div className="flex flex-col gap-3 rounded-[var(--radius-card)] border border-line bg-card p-4">
+            <div className="flex flex-col gap-3 rounded-[var(--radius-card)] border border-line bg-card p-4 shadow-[var(--shadow-card)]">
               <p className="text-sm">Send this link to one person. It works once and expires in 7 days.</p>
-              <code className="block rounded-lg bg-bg px-3 py-2 font-mono text-xs break-all text-mute select-all">{link}</code>
+              <code className="block rounded-xl bg-sunk px-3 py-2 font-mono text-xs break-all text-mute select-all">{link}</code>
               <Button onClick={copyLink} className="w-full">
                 {copied ? <><IconCheck /> Copied</> : <><IconCopy /> Share link</>}
               </Button>
             </div>
           ) : (
-            <Button variant="ink" busy={busy === "invite"} onClick={createInvite} className="w-full">
+            <Button busy={busy === "invite"} onClick={createInvite} className="w-full">
               Create an invitation link
             </Button>
           )}
@@ -237,13 +234,13 @@ function Household({ session }: { session: Session }) {
 
       {all.length > 1 ? (
         <section aria-labelledby="switch-h" className="flex flex-col gap-2.5">
-          <h2 id="switch-h" className="font-mono text-[11px] tracking-[0.1em] text-mute uppercase">Your households</h2>
+          <SectionLabel id="switch-h">Your households</SectionLabel>
           <div className="flex flex-wrap gap-2">
             {all.map((h) => (
               <button
                 key={h.householdId}
                 onClick={() => { rememberHousehold(h.householdId); router.replace("/"); }}
-                className={`rounded-full border px-3.5 py-1.5 text-sm ${h.householdId === current.householdId ? "border-fg bg-fg text-bg" : "border-line bg-card"}`}
+                className={`rounded-full border px-3.5 py-1.5 text-sm ${h.householdId === current.householdId ? "border-go bg-go text-on-go" : "border-line bg-card"}`}
               >
                 {h.name}
               </button>
@@ -252,7 +249,7 @@ function Household({ session }: { session: Session }) {
         </section>
       ) : null}
 
-      <div className="mt-auto flex flex-col gap-1 pt-6">
+      <div className="flex flex-col gap-1 border-t border-line pt-6">
         <Button variant="ghost" busy={busy === "signout"} onClick={signOut} className="w-full">
           Sign out
         </Button>
@@ -272,13 +269,13 @@ function Household({ session }: { session: Session }) {
         <p className="text-mute">
           {members.length === 1
             ? "You're the only member, so the household and everything in it will be deleted."
-            : "You'll stop seeing its food. Someone can invite you back later."}
+            : "You'll stop seeing its places and everything in them. Someone can invite you back later."}
         </p>
         <Button variant="go" className="w-full bg-warn" busy={busy === "leave"} onClick={leave}>
           {members.length === 1 ? "Delete household" : "Leave household"}
         </Button>
         <Button variant="quiet" onClick={() => setConfirmLeave(false)}>Keep it</Button>
       </Sheet>
-    </Screen>
+    </AppShell>
   );
 }
