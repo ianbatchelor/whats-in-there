@@ -74,6 +74,8 @@ export type NewItem = {
   bestBeforeDate?: string | null;
   frozenAt?: string | null;
   notes?: string;
+  /** Storage path of the label photo, when the item was read from one. */
+  imagePath?: string | null;
 };
 
 async function latestMovementId(itemId: string, action: "add" | "remove"): Promise<string | null> {
@@ -101,6 +103,8 @@ export async function addItem(input: NewItem): Promise<{ item: StockItem; moveme
     p_best_before_date: input.bestBeforeDate || null,
     p_frozen_at: input.frozenAt || null,
     p_notes: input.notes || null,
+    p_image_path: input.imagePath || null,
+    p_source: input.imagePath ? "photo" : "manual",
   });
   if (error) throw error;
   const item = toItem(data as Row);
