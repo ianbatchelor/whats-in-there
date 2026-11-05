@@ -9,13 +9,19 @@
 // household, applies the usage limits, reads the photo as the caller (so storage RLS applies too),
 // asks Claude for a strict JSON reading, logs the attempt and returns the reading. The app checks
 // every value again before showing it, and nothing is saved until the person confirms.
+//
+// Cost controls: a small, cheap model reads the labels; each person gets PER_USER_PER_MONTH reads in
+// any 30 days on top of the per-minute and per-household-per-day limits; and when a barcode is read,
+// the shared products list supplies the name, brand and weight that earlier scans of that barcode
+// found, so a product reads the same way everywhere. Dates always come from the photo.
 
 import Anthropic from "npm:@anthropic-ai/sdk@1.4.0";
-import { createClient } from "npm:@supabase/supabase-js@2.118.0";
+import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2.118.0";
 
-const MODEL = "claude-opus-5-5";
+const MODEL = "claude-haiku-5-5";
 const PER_HOUSEHOLD_PER_DAY = 50;
 const PER_USER_PER_MINUTE = 6;
+const PER_USER_PER_MONTH = 300; // calls, not items: one add can be 2 or 3 calls (front, then front and back)
 const MAX_BYTES = 8 * 1024 * 1024;
 const MAX_PHOTOS = 3;
 
@@ -44,6 +50,7 @@ const SCHEMA = {
     "use_by_date",
     "best_before_date",
     "uncertain",
+    "barcode",
   ],
   properties: {
     readable: { type: "boolean", description: "False if the photo shows no product or label you can read." },
@@ -56,6 +63,7 @@ const SCHEMA = {
     use_by_date: nullable({ type: "string", description: "YYYY-MM-DD" }),
     best_before_date: nullable({ type: "string", description: "YYYY-MM-DD" }),
     uncertain: { type: "array", items: { type: "string", enum: FIELDS } },
+    barcode: nullable({ type: "string", description: "The digits printed under the barcode, digits only, else null." }),
   },
 } as const;
 
@@ -68,6 +76,7 @@ You may get several photos of the same pack, for example the front and the back.
 - quantity and unit: how many are being put away. A single pack is quantity 1, unit "pack". Loose countable things are "item". Use "portion" only for home-made or portioned food. If unsure, quantity 1, unit "pack".
 - weight_value and weight_unit: the net weight or volume printed (e.g. 750 g, 1.5 l), else null.
 - Dates are en-GB: 03/04 means 3 April. "Use by" goes in use_by_date. "Best before", "BB", "BBE" and "Best before end" go in best_before_date. If no year is printed, use the next date on or after today's date minus 30 days. If only a month and year are printed, use the last day of that month. Use YYYY-MM-DD.
+- barcode: if a barcode is visible, the 8 to 14 digits printed under it, digits only. Null if there is no barcode or you can't read every digit clearly.
 - uncertain: list every field you inferred, guessed or read from blurry or partly hidden print, including any date where you had to supply the year or day.
 - If there is no readable product or label, set readable to false, product_name to "" and everything else to null or the defaults.`;
 
@@ -82,6 +91,17 @@ function mediaType(bytes: Uint8Array): "image/webp" | "image/jpeg" | "image/png"
   const webp = String.fromCharCode(...bytes.slice(8, 12));
   if (riff === "RIFF" && webp === "WEBP") return "image/webp";
   return null;
+}
+
+/** A real EAN-8, UPC-A, EAN-13 or GTIN-14: the right length and a correct check digit. */
+function validBarcode(v: unknown): string | null {
+  if (typeof v !== "string") return null;
+  const code = v.replace(/[\s-]/g, "");
+  if (!/^(\d{8}|\d{12}|\d{13}|\d{14})$/.test(code)) return null;
+  const digits = [...code].map(Number);
+  const check = digits.pop()!;
+  const sum = digits.reverse().reduce((acc, d, i) => acc + d * (i % 2 === 0 ? 3 : 1), 0);
+  return (10 - (sum % 10)) % 10 === check ? code : null;
 }
 
 function base64(bytes: Uint8Array): string {
@@ -133,13 +153,15 @@ Deno.serve(async (req) => {
   // Usage limits, counted from the attempts log (written only by this function).
   const admin = createClient(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
   const since = (ms: number) => new Date(Date.now() - ms).toISOString();
-  const [day, minute] = await Promise.all([
+  const [day, minute, month] = await Promise.all([
     admin.from("ai_extraction_attempts").select("id", { count: "exact", head: true }).eq("household_id", householdId).gte("created_at", since(86_400_000)),
     admin.from("ai_extraction_attempts").select("id", { count: "exact", head: true }).eq("actor_user_id", user.id).gte("created_at", since(60_000)),
+    admin.from("ai_extraction_attempts").select("id", { count: "exact", head: true }).eq("actor_user_id", user.id).gte("created_at", since(30 * 86_400_000)),
   ]);
-  if (day.error || minute.error) return reply(500, { error: "failed" });
-  if ((day.count ?? 0) >= PER_HOUSEHOLD_PER_DAY) return reply(429, { error: "too_many_today" });
+  if (day.error || minute.error || month.error) return reply(500, { error: "failed" });
   if ((minute.count ?? 0) >= PER_USER_PER_MINUTE) return reply(429, { error: "too_many_now" });
+  if ((month.count ?? 0) >= PER_USER_PER_MONTH) return reply(429, { error: "too_many_this_month" });
+  if ((day.count ?? 0) >= PER_HOUSEHOLD_PER_DAY) return reply(429, { error: "too_many_today" });
 
   const log = (fields: Record<string, unknown>) =>
     admin.from("ai_extraction_attempts").insert({ household_id: householdId, actor_user_id: user.id, image_path: imagePath, model: MODEL, ...fields });
@@ -166,11 +188,9 @@ Deno.serve(async (req) => {
   const started = Date.now();
   try {
     const anthropic = new Anthropic({ apiKey, maxRetries: 1, timeout: 45_000 });
-    const response = await anthropic.beta.messages.create({
+    const response = await anthropic.messages.create({
       model: MODEL,
       max_tokens: 4000,
-      betas: ["server-side-fallback-2026-07-01"],
-      fallbacks: "default",
       output_config: { effort: "low", format: { type: "json_schema", schema: SCHEMA } },
       system: SYSTEM,
       messages: [
@@ -199,8 +219,14 @@ Deno.serve(async (req) => {
       return reply(502, { error: "failed" });
     }
     const reading = JSON.parse(text.text);
-    await log({ ...usage, parsed_json: reading });
-    if (reading?.readable === false) return reply(422, { error: "unreadable" });
+    if (reading?.readable === false) {
+      await log({ ...usage, parsed_json: reading });
+      return reply(422, { error: "unreadable" });
+    }
+    const barcode = validBarcode(reading?.barcode);
+    reading.barcode = barcode;
+    const fromCache = barcode ? await useProductList(admin, barcode, reading) : false;
+    await log({ ...usage, parsed_json: reading, barcode, from_cache: fromCache });
     return reply(200, { reading });
   } catch (err) {
     const code =
@@ -217,3 +243,43 @@ Deno.serve(async (req) => {
     return reply(code === "anthropic_auth" ? 503 : 502, { error: code === "anthropic_auth" ? "not_configured" : "failed" });
   }
 });
+
+type Reading = Record<string, unknown> & { uncertain?: unknown };
+
+/**
+ * Shares what a barcode is across households. If the barcode is already known, its name, brand and
+ * weight replace the reading's (an earlier clear reading of the same product) and those fields are
+ * no longer marked uncertain. If it is new, it is added, but only from a reading that was sure of the
+ * name. Dates are never shared. Returns true when the known details were used. Never throws: the
+ * reading stands on its own if the list can't be reached.
+ */
+async function useProductList(admin: SupabaseClient, barcode: string, reading: Reading): Promise<boolean> {
+  try {
+    const uncertain = Array.isArray(reading.uncertain) ? (reading.uncertain as string[]) : [];
+    const { data: known } = await admin.from("products").select("*").eq("barcode", barcode).maybeSingle();
+    if (known) {
+      reading.product_name = known.product_name;
+      reading.brand = known.brand;
+      if (known.weight_value != null && known.weight_unit) {
+        reading.weight_value = Number(known.weight_value);
+        reading.weight_unit = known.weight_unit;
+      }
+      reading.uncertain = uncertain.filter((f) => f !== "product_name" && f !== "brand" && (f !== "weight" || known.weight_value == null));
+      await admin.from("products").update({ times_seen: known.times_seen + 1, updated_at: new Date().toISOString() }).eq("barcode", barcode);
+      return true;
+    }
+    const name = typeof reading.product_name === "string" ? reading.product_name.trim().slice(0, 120) : "";
+    if (!name || uncertain.includes("product_name")) return false;
+    const weightOk = !uncertain.includes("weight") && typeof reading.weight_value === "number" && reading.weight_value > 0 && reading.weight_value <= 100_000 && ["g", "kg", "ml", "l"].includes(String(reading.weight_unit));
+    await admin.from("products").insert({
+      barcode,
+      product_name: name,
+      brand: typeof reading.brand === "string" && reading.brand.trim() && !uncertain.includes("brand") ? reading.brand.trim().slice(0, 80) : null,
+      weight_value: weightOk ? reading.weight_value : null,
+      weight_unit: weightOk ? reading.weight_unit : null,
+    });
+    return false;
+  } catch {
+    return false;
+  }
+}
