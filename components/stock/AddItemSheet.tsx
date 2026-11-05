@@ -30,10 +30,15 @@ const UNITS: { value: StockUnit; label: string }[] = [
 const SIZE_UNITS: StockUnit[] = ["g", "kg", "ml", "l"];
 const CHECK_HINT = "From the photo. Worth a quick check.";
 
+const MAX_SHOTS = 3;
+
+/** One uploaded photo of the pack. The first is the front, and the one kept with the item. */
+type Shot = { preview: string; path: string };
+type Read = { state: "read"; shots: Shot[]; check: ExtractField[]; hasDate: boolean; note?: string };
 type Photo =
   | { state: "none" }
-  | { state: "reading"; preview: string }
-  | { state: "read"; preview: string; path: string; check: ExtractField[] }
+  | { state: "reading"; previews: string[]; adding: boolean }
+  | Read
   | { state: "failed"; preview: string | null; message: string };
 
 export function AddItemSheet({
@@ -65,29 +70,37 @@ export function AddItemSheet({
   const [photo, setPhoto] = useState<Photo>({ state: "none" });
   const camera = useRef<HTMLInputElement>(null);
   const attempt = useRef(0);
-  const keptPath = useRef<string | null>(null);
+  const keptPaths = useRef<string[]>([]);
+  const previews = useRef<string[]>([]);
+  const adding = useRef(false);
 
-  // A photo that was uploaded but never saved with an item is removed when the sheet goes away.
+  // Photos that were uploaded but never saved with an item are removed when the sheet goes away.
   useEffect(() => {
+    const urls = previews.current;
     return () => {
-      if (keptPath.current) void discardLabelPhoto(keptPath.current);
+      void discardLabelPhoto(...keptPaths.current);
+      urls.forEach((u) => URL.revokeObjectURL(u));
     };
   }, []);
 
-  const preview = photo.state === "none" ? null : photo.preview;
-  useEffect(() => {
-    return () => {
-      if (preview) URL.revokeObjectURL(preview);
-    };
-  }, [preview]);
-
   const check = new Set(photo.state === "read" ? photo.check : []);
+
+  function forgetPreviews() {
+    previews.current.forEach((u) => URL.revokeObjectURL(u));
+    previews.current.length = 0;
+  }
 
   function dropPhoto() {
     attempt.current += 1;
-    if (keptPath.current) void discardLabelPhoto(keptPath.current);
-    keptPath.current = null;
+    void discardLabelPhoto(...keptPaths.current);
+    keptPaths.current = [];
+    forgetPreviews();
     setPhoto({ state: "none" });
+  }
+
+  function takePhoto(more: boolean) {
+    adding.current = more;
+    camera.current?.click();
   }
 
   function reset() {
@@ -105,7 +118,8 @@ export function AddItemSheet({
     setError(null);
     setNameError(undefined);
     attempt.current += 1;
-    keptPath.current = null;
+    keptPaths.current = [];
+    forgetPreviews();
     setPhoto({ state: "none" });
   }
 
@@ -134,36 +148,52 @@ export function AddItemSheet({
     }
   }
 
+  /**
+   * A new front photo starts again. An extra photo (the back, a side or the lid) is uploaded and read
+   * together with the ones already taken, so dates printed on the back are found too. If an extra
+   * photo can't be read, the earlier reading stays as it was.
+   */
   async function onPhoto(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
-    if (keptPath.current) void discardLabelPhoto(keptPath.current);
-    keptPath.current = null;
+    const prev = adding.current && photo.state === "read" && photo.shots.length < MAX_SHOTS ? photo : null;
+    if (!prev) {
+      void discardLabelPhoto(...keptPaths.current);
+      keptPaths.current = [];
+      forgetPreviews();
+    }
     const mine = ++attempt.current;
     setError(null);
     let shown: string | null = null;
+    let path: string | null = null;
+    const fail = (message: string) => {
+      if (path) void discardLabelPhoto(path);
+      setPhoto(prev ? { ...prev, note: message } : { state: "failed", preview: shown, message });
+    };
     try {
       const small = await shrinkPhoto(file);
       shown = URL.createObjectURL(small);
-      if (mine !== attempt.current) return URL.revokeObjectURL(shown);
-      setPhoto({ state: "reading", preview: shown });
-      const path = await uploadLabelPhoto(place.householdId, small);
+      previews.current.push(shown);
+      if (mine !== attempt.current) return;
+      const before = prev?.shots ?? [];
+      setPhoto({ state: "reading", previews: [...before.map((s) => s.preview), shown], adding: !!prev });
+      path = await uploadLabelPhoto(place.householdId, small, !prev);
       if (mine !== attempt.current) return void discardLabelPhoto(path);
-      const result = await readLabelPhoto(place.householdId, path);
+      const shots = [...before, { preview: shown, path }];
+      const result = await readLabelPhoto(place.householdId, shots.map((s) => s.path));
       if (mine !== attempt.current) return void discardLabelPhoto(path);
       if (!result.ok) {
-        void discardLabelPhoto(path);
-        setPhoto({ state: "failed", preview: shown, message: readerError(result.code) });
-        return;
+        const limited = result.code.startsWith("too_many");
+        return fail(prev && !limited ? "We couldn't read that photo, so the details from the first one are kept." : readerError(result.code));
       }
-      keptPath.current = path;
+      keptPaths.current = shots.map((s) => s.path);
       fill(result.reading);
-      setPhoto({ state: "read", preview: shown, path, check: result.reading.check });
+      const r = result.reading;
+      setPhoto({ state: "read", shots, check: r.check, hasDate: !!(r.useByDate || r.bestBeforeDate) });
     } catch (err) {
       if (mine !== attempt.current) return;
-      const message = err instanceof Error && err.message === "photo_failed" ? "That photo couldn't be opened. Try another one." : friendlyError(err);
-      setPhoto({ state: "failed", preview: shown, message });
+      fail(err instanceof Error && err.message === "photo_failed" ? "That photo couldn't be opened. Try another one." : friendlyError(err));
     }
   }
 
@@ -191,8 +221,10 @@ export function AddItemSheet({
         useByDate: useBy || null,
         bestBeforeDate: bestBefore || null,
         notes: notes.trim(),
-        imagePath: photo.state === "read" ? photo.path : null,
+        imagePath: photo.state === "read" ? (photo.shots[0]?.path ?? null) : null,
       });
+      // The front photo stays with the item; the back and side photos were only for reading.
+      if (photo.state === "read") void discardLabelPhoto(...photo.shots.slice(1).map((s) => s.path));
       reset();
       onAdded(item, movementId);
       onClose();
@@ -213,7 +245,7 @@ export function AddItemSheet({
         {photo.state === "none" ? (
           <button
             type="button"
-            onClick={() => camera.current?.click()}
+            onClick={() => takePhoto(false)}
             className="lift flex items-center gap-3.5 rounded-2xl border border-line bg-sunk/60 p-3.5 text-left"
           >
             <span className="grid size-12 shrink-0 place-items-center rounded-full bg-tape text-on-tape" aria-hidden="true">
@@ -221,35 +253,45 @@ export function AddItemSheet({
             </span>
             <span className="min-w-0">
               <span className="block font-display text-[15px] font-bold">Snap the label</span>
-              <span className="block text-[13px] text-mute">We&apos;ll fill in the name, size and dates for you to check.</span>
+              <span className="block text-[13px] text-mute">Start with the front. We&apos;ll fill in the name, size and dates for you to check.</span>
             </span>
           </button>
         ) : (
-          <div className="flex items-center gap-3.5 rounded-2xl border border-line bg-sunk/60 p-3" aria-live="polite">
-            {photo.preview ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={photo.preview} alt="Your label photo" className="size-16 shrink-0 rounded-xl object-cover" />
-            ) : null}
+          <div className="flex items-start gap-3.5 rounded-2xl border border-line bg-sunk/60 p-3" aria-live="polite">
+            <PhotoStack previews={shownPreviews(photo)} />
             <div className="min-w-0 flex-1">
-              {reading ? (
+              {photo.state === "reading" ? (
                 <p className="flex items-center gap-2 font-display text-[15px] font-bold">
-                  <Spinner /> Reading the label…
+                  <Spinner /> {photo.adding ? "Reading both sides…" : "Reading the label…"}
                 </p>
               ) : photo.state === "read" ? (
                 <>
-                  <p className="font-display text-[15px] font-bold">Filled in from your photo</p>
-                  <p className="text-[13px] text-mute">{photo.check.length ? "Check the highlighted fields, then add it." : "Have a quick look, then add it."}</p>
+                  <p className="font-display text-[15px] font-bold">Filled in from {photo.shots.length > 1 ? `${photo.shots.length} photos` : "your photo"}</p>
+                  <p className="text-[13px] text-mute">
+                    {photo.note
+                      ? photo.note
+                      : !photo.hasDate && photo.shots.length < MAX_SHOTS
+                        ? "No date found. If it's on the back or the lid, add a photo of that."
+                        : photo.check.length
+                          ? "Check the highlighted fields, then add it."
+                          : "Have a quick look, then add it."}
+                  </p>
                 </>
               ) : (
                 <p className="text-[13px]">{photo.state === "failed" ? photo.message : null}</p>
               )}
-              {!reading ? (
-                <div className="mt-1.5 flex gap-4 text-sm font-bold">
-                  <button type="button" className="text-go" onClick={() => camera.current?.click()}>
-                    {photo.state === "read" ? "Retake" : "Try another photo"}
+              {photo.state !== "reading" ? (
+                <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-sm font-bold">
+                  {photo.state === "read" && photo.shots.length < MAX_SHOTS ? (
+                    <button type="button" className="text-go" onClick={() => takePhoto(true)}>
+                      {photo.shots.length === 1 ? "+ Add the back" : "+ Add another side"}
+                    </button>
+                  ) : null}
+                  <button type="button" className={photo.state === "read" ? "text-mute" : "text-go"} onClick={() => takePhoto(false)}>
+                    {photo.state === "read" ? "Start again" : "Try another photo"}
                   </button>
                   <button type="button" className="text-mute" onClick={dropPhoto}>
-                    Remove photo
+                    {photo.state === "read" && photo.shots.length > 1 ? "Remove photos" : "Remove photo"}
                   </button>
                 </div>
               ) : null}
@@ -378,5 +420,32 @@ export function AddItemSheet({
         </Button>
       </form>
     </Sheet>
+  );
+}
+
+function shownPreviews(photo: Photo): string[] {
+  if (photo.state === "reading") return photo.previews;
+  if (photo.state === "read") return photo.shots.map((s) => s.preview);
+  if (photo.state === "failed" && photo.preview) return [photo.preview];
+  return [];
+}
+
+/** The photos taken so far: the front large, any back or side photos small beneath it. */
+function PhotoStack({ previews }: { previews: string[] }) {
+  if (!previews.length) return null;
+  const [front, ...rest] = previews;
+  return (
+    <div className="flex shrink-0 flex-col items-center gap-1.5">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={front} alt="Front of the pack" className="size-16 rounded-xl object-cover" />
+      {rest.length ? (
+        <div className="flex gap-1">
+          {rest.map((src, i) => (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img key={src} src={src} alt={i === 0 ? "Back of the pack" : "Another side of the pack"} className="size-[30px] rounded-lg object-cover" />
+          ))}
+        </div>
+      ) : null}
+    </div>
   );
 }

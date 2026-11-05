@@ -11,7 +11,7 @@ import { Field } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 import { Notice } from "@/components/ui/Notice";
 import { Stepper } from "./Stepper";
-import { itemContext } from "./ItemRow";
+import { ItemTile, itemContext } from "./ItemRow";
 
 export function TakeOutSheet({
   item,
@@ -87,17 +87,20 @@ function Body({
 
   return (
     <div className="flex max-h-[75dvh] flex-col gap-4 overflow-y-auto">
-      <div className="flex flex-col gap-1">
-        <p className="font-mono text-[12px] text-mute">
-          {placeName ? `${placeName} · ` : ""}
-          {itemContext(item)}
-        </p>
-        <p className="text-sm text-mute">
-          {formatQuantity(qty, item.unit)} left
-          {addedBy ? ` · added by ${addedBy}` : ""}
-          {item.brand ? ` · ${item.brand}` : ""}
-        </p>
-        {item.notes ? <p className="text-sm">{item.notes}</p> : null}
+      <div className="flex items-start gap-3.5">
+        {item.imagePath ? <ItemTile name={item.productName} imagePath={item.imagePath} size={64} /> : null}
+        <div className="flex min-w-0 flex-1 flex-col gap-1">
+          <p className="font-mono text-[12px] text-mute">
+            {placeName ? `${placeName} · ` : ""}
+            {itemContext(item)}
+          </p>
+          <p className="text-sm text-mute">
+            {formatQuantity(qty, item.unit)} left
+            {addedBy ? ` · added by ${addedBy}` : ""}
+            {item.brand ? ` · ${item.brand}` : ""}
+          </p>
+          {item.notes ? <p className="text-sm">{item.notes}</p> : null}
+        </div>
       </div>
 
       <div className="flex flex-col gap-3 rounded-[var(--radius-card)] border border-line bg-card p-4">

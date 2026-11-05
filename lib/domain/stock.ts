@@ -16,6 +16,8 @@ export type StockItem = {
   addedAt: string;
   addedBy: string | null;
   notes: string | null;
+  /** Private storage path of the label photo, when the item was added from one. */
+  imagePath?: string | null;
   version: number;
 };
 
