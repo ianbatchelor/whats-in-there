@@ -5,10 +5,11 @@ Photograph a label in the add sheet and the name, amount, pack size, brand and p
 ## How it works
 
 1. The app shrinks the photo on the phone (longest side 1600px, WebP or JPEG) and uploads it to the private `item-photos` bucket under `{household_id}/labels/`. Storage RLS only lets members of that household write or read there.
-2. It calls the `extract-product` Edge Function with the household id and photo path.
+2. It calls the `extract-product` Edge Function with the household id and photo path. If the date isn't on the front, the person can add a photo of the back (and one more side, up to three). Each extra photo is uploaded and all of them are read together in one call, so the name comes from the front and the dates from the back.
 3. The function checks the caller is signed in and a member, applies the limits (50 photos per household per day, 6 per person per minute), reads the photo as the caller, and asks Claude (`claude-opus-5-5`, low effort, strict JSON schema) what the label says. Every attempt is logged in `ai_extraction_attempts` with tokens, latency and any error code.
 4. The app checks every value again (`lib/domain/extraction.ts`): text is trimmed and capped, units and amounts range-checked, impossible dates dropped. Fields the model was unsure of, or that failed a check, are highlighted for the person to look at.
-5. If the item is saved, the photo path is stored on it (`image_path`, `source = 'photo'`). A photo that isn't used (cancelled, retaken, unreadable) is deleted.
+5. If the item is saved, the front photo's path is stored on it (`image_path`, `source = 'photo'`). The back and side photos, and any photo that isn't used (cancelled, retaken, unreadable), are deleted.
+6. A small copy of the front photo (240px, `x.thumb.webp` beside `x.webp`) is uploaded too. Item lists show it in place of the letter tile, using short-lived signed links because the bucket is private. Items without a small copy show the full photo, and items without a photo keep their letter tile.
 
 Dates are only ever what's printed on the pack. The app never decides whether food is safe.
 

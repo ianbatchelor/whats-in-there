@@ -4,8 +4,8 @@
 // with `supabase functions deploy extract-product`. It needs one secret, ANTHROPIC_API_KEY; Supabase
 // provides SUPABASE_URL, SUPABASE_ANON_KEY and SUPABASE_SERVICE_ROLE_KEY to every function.
 //
-// Flow: the app uploads a resized photo to the private item-photos bucket under its household folder,
-// then calls this function with that path. The function checks the caller is a member of that
+// Flow: the app uploads one to three resized photos of the same pack (say front and back) to the
+// private item-photos bucket under its household folder, then calls this function with their paths. The function checks the caller is a member of that
 // household, applies the usage limits, reads the photo as the caller (so storage RLS applies too),
 // asks Claude for a strict JSON reading, logs the attempt and returns the reading. The app checks
 // every value again before showing it, and nothing is saved until the person confirms.
@@ -17,6 +17,7 @@ const MODEL = "claude-opus-5-5";
 const PER_HOUSEHOLD_PER_DAY = 50;
 const PER_USER_PER_MINUTE = 6;
 const MAX_BYTES = 8 * 1024 * 1024;
+const MAX_PHOTOS = 3;
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -60,8 +61,9 @@ const SCHEMA = {
 
 const SYSTEM = `You read photos of food and household product labels for a UK home inventory app.
 Return only what is printed or clearly visible. Never guess a date that isn't printed, and never decide whether food is safe.
+You may get several photos of the same pack, for example the front and the back. Combine them into one reading: the name usually comes from the front, while dates and weights are often on the back, the side or the lid.
 
-- product_name: a short, natural name a person would use, in sentence case, without marketing words or the brand.
+- product_name: a short, natural name a person would use, in sentence case, without marketing words or the brand. Always write it out in full words (e.g. "Meat-free sausages", never a code or initials).
 - brand: the brand if printed, else null.
 - quantity and unit: how many are being put away. A single pack is quantity 1, unit "pack". Loose countable things are "item". Use "portion" only for home-made or portioned food. If unsure, quantity 1, unit "pack".
 - weight_value and weight_unit: the net weight or volume printed (e.g. 750 g, 1.5 l), else null.
@@ -110,17 +112,20 @@ Deno.serve(async (req) => {
   if (!user) return reply(401, { error: "not_signed_in" });
 
   let householdId = "";
-  let imagePath = "";
+  let imagePaths: string[] = [];
   try {
     const body = await req.json();
     householdId = String(body?.householdId ?? "");
-    imagePath = String(body?.imagePath ?? "");
+    const raw = Array.isArray(body?.imagePaths) ? body.imagePaths : body?.imagePath ? [body.imagePath] : [];
+    imagePaths = raw.map((p: unknown) => String(p));
   } catch {
     return reply(400, { error: "bad_request" });
   }
-  if (!UUID.test(householdId) || !imagePath.startsWith(`${householdId}/`) || imagePath.includes("..") || imagePath.length > 200) {
+  const pathOk = (p: string) => p.startsWith(`${householdId}/`) && !p.includes("..") && p.length <= 200;
+  if (!UUID.test(householdId) || imagePaths.length < 1 || imagePaths.length > MAX_PHOTOS || !imagePaths.every(pathOk)) {
     return reply(400, { error: "bad_request" });
   }
+  const imagePath = imagePaths[0];
 
   const { data: member } = await asUser.rpc("is_member", { hid: householdId });
   if (member !== true) return reply(403, { error: "not_member" });
@@ -139,18 +144,22 @@ Deno.serve(async (req) => {
   const log = (fields: Record<string, unknown>) =>
     admin.from("ai_extraction_attempts").insert({ household_id: householdId, actor_user_id: user.id, image_path: imagePath, model: MODEL, ...fields });
 
-  // Read the photo as the caller, so the bucket's household policy applies as well.
-  const { data: file, error: fileError } = await asUser.storage.from("item-photos").download(imagePath);
-  if (fileError || !file) return reply(400, { error: "bad_request" });
-  if (file.size > MAX_BYTES) {
-    await log({ error_code: "image_too_large" });
-    return reply(413, { error: "image_too_large" });
-  }
-  const bytes = new Uint8Array(await file.arrayBuffer());
-  const type = mediaType(bytes);
-  if (!type) {
-    await log({ error_code: "bad_image" });
-    return reply(400, { error: "unreadable" });
+  // Read the photos as the caller, so the bucket's household policy applies as well.
+  const images: { type: "image/webp" | "image/jpeg" | "image/png"; data: string }[] = [];
+  for (const path of imagePaths) {
+    const { data: file, error: fileError } = await asUser.storage.from("item-photos").download(path);
+    if (fileError || !file) return reply(400, { error: "bad_request" });
+    if (file.size > MAX_BYTES) {
+      await log({ error_code: "image_too_large" });
+      return reply(413, { error: "image_too_large" });
+    }
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    const type = mediaType(bytes);
+    if (!type) {
+      await log({ error_code: "bad_image" });
+      return reply(400, { error: "unreadable" });
+    }
+    images.push({ type, data: base64(bytes) });
   }
 
   const today = new Date().toISOString().slice(0, 10);
@@ -168,8 +177,8 @@ Deno.serve(async (req) => {
         {
           role: "user",
           content: [
-            { type: "image", source: { type: "base64", media_type: type, data: base64(bytes) } },
-            { type: "text", text: `Today is ${today}. Read this label.` },
+            ...images.map((img) => ({ type: "image" as const, source: { type: "base64" as const, media_type: img.type, data: img.data } })),
+            { type: "text", text: `Today is ${today}. Read this label${images.length > 1 ? ` from these ${images.length} photos of the same pack` : ""}.` },
           ],
         },
       ],

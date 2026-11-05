@@ -1,7 +1,11 @@
+"use client";
+
+import { useState } from "react";
 import type { StockItem } from "@/lib/domain/stock";
 import { formatDay, storageAge } from "@/lib/domain/dates";
 import { formatQuantity, isCounted, roundQty } from "@/lib/domain/quantity";
 import { IconChevronRight } from "@/components/ui/icons";
+import { useItemPhoto } from "@/lib/itemPhotos";
 
 /** The one line of context under a name: the most useful date, stated as a fact. */
 export function itemContext(item: StockItem, freezer = true): string {
@@ -21,8 +25,25 @@ const TILES = [
   "bg-[#efe4d2] text-[#5b3a23]",
 ];
 
-/** A monogram tile until items have photos: warm, varied, and never a stock emoji. */
-export function ItemTile({ name, size = 48 }: { name: string; size?: number }) {
+/** The item's own photo when it has one; otherwise a monogram tile: warm, varied, and never a stock emoji. */
+export function ItemTile({ name, imagePath, size = 48 }: { name: string; imagePath?: string | null; size?: number }) {
+  const photo = useItemPhoto(imagePath);
+  const [broken, setBroken] = useState<string | null>(null);
+  if (photo && broken !== photo) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={photo}
+        alt=""
+        aria-hidden="true"
+        loading="lazy"
+        decoding="async"
+        onError={() => setBroken(photo)}
+        className="shrink-0 rounded-[14px] bg-sunk object-cover"
+        style={{ width: size, height: size }}
+      />
+    );
+  }
   const letters = name
     .trim()
     .split(/\s+/)
@@ -51,7 +72,7 @@ export function ItemRow({ item, place, onOpen, index = 0 }: { item: StockItem; p
         className="flex w-full items-center gap-3.5 px-3.5 py-3 text-left transition hover:bg-sunk/70 active:bg-sunk"
         aria-label={`${item.productName}, ${formatQuantity(item.quantity, item.unit)}${place ? `, in ${place}` : ""}. Take out or see details`}
       >
-        <ItemTile name={item.productName} />
+        <ItemTile name={item.productName} imagePath={item.imagePath} />
         <span className="min-w-0 flex-1">
           <span className="block truncate font-display text-[15.5px] font-bold">{item.productName}</span>
           <span className="block truncate text-[13px] text-mute">

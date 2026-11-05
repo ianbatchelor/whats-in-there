@@ -5,7 +5,7 @@ import { todayIso } from "@/lib/domain/dates";
 import type { StockUnit } from "@/lib/domain/quantity";
 
 const COLUMNS =
-  "id, location_id, product_name, brand, category, quantity, unit, weight_value, weight_unit, use_by_date, best_before_date, frozen_at, added_at, added_by, notes, version";
+  "id, location_id, product_name, brand, category, quantity, unit, weight_value, weight_unit, use_by_date, best_before_date, frozen_at, added_at, added_by, notes, image_path, version";
 
 type Row = Record<string, unknown>;
 
@@ -26,6 +26,7 @@ function toItem(r: Row): StockItem {
     addedAt: r.added_at as string,
     addedBy: (r.added_by as string | null) ?? null,
     notes: (r.notes as string | null) ?? null,
+    imagePath: (r.image_path as string | null) ?? null,
     version: r.version as number,
   };
 }
