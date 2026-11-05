@@ -91,6 +91,7 @@ const READER_ERRORS: Record<string, string> = {
   not_signed_in: "You've been signed out. Sign in again to carry on.",
   not_member: "That photo isn't in one of your households.",
   too_many_today: "Your household has read a lot of labels today. Fill this one in yourself, and photos will work again tomorrow.",
+  too_many_this_month: "You've read a lot of labels this month. Fill this one in yourself for now.",
   too_many_now: "That's a lot of photos in a row. Wait a minute, or fill this one in yourself.",
   image_too_large: "That photo is too big. Try again a little further away.",
   unreadable: "We couldn't read a label in that photo. Try again closer up, or fill it in below.",

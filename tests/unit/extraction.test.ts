@@ -93,6 +93,7 @@ describe("validDate", () => {
 describe("readerError", () => {
   it("explains known codes and has a fallback", () => {
     expect(readerError("too_many_today")).toMatch(/tomorrow/);
+    expect(readerError("too_many_this_month")).toMatch(/this month/);
     expect(readerError("not_configured")).toMatch(/isn't switched on/);
     expect(readerError("weird")).toMatch(/couldn't read that label/);
     expect(readerError(null)).toMatch(/couldn't read that label/);
