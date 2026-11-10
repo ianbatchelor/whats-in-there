@@ -159,3 +159,16 @@
     transition: none !important;
   }
 }
+
+/* Printing QR labels (/stickers/): white paper, true sizes, nothing else on the page. */
+@media print {
+  @page {
+    margin: 10mm;
+  }
+  html,
+  body {
+    background: #fff !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+}

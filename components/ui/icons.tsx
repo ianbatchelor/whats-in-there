@@ -59,3 +59,8 @@ export const IconBook = ({ className }: P) => svg(<path d="M5 4.5h11.5a2 2 0 0 1
 export const IconScan = ({ className }: P) =>
   svg(<><path d="M4 8V6.5A2.5 2.5 0 0 1 6.5 4H8M16 4h1.5A2.5 2.5 0 0 1 20 6.5V8M20 16v1.5a2.5 2.5 0 0 1-2.5 2.5H16M8 20H6.5A2.5 2.5 0 0 1 4 17.5V16" /><circle cx="12" cy="12" r="3.2" /></>, className);
 export const IconX = ({ className }: P) => svg(<path d="M6 6l12 12M18 6 6 18" />, className);
+/** A round sticker with contactless waves. */
+export const IconSticker = ({ className }: P) =>
+  svg(<><circle cx="12" cy="12" r="8.5" /><path d="M10 9a4.5 4.5 0 0 1 0 6M13 7a7.5 7.5 0 0 1 0 10" /><circle cx="7.6" cy="12" r=".9" /></>, className);
+export const IconPrinter = ({ className }: P) =>
+  svg(<><path d="M7 8V3.5h10V8M7 17H5a1.5 1.5 0 0 1-1.5-1.5v-6A1.5 1.5 0 0 1 5 8h14a1.5 1.5 0 0 1 1.5 1.5v6A1.5 1.5 0 0 1 19 17h-2" /><path d="M7 13.5h10v7H7z" /></>, className);
