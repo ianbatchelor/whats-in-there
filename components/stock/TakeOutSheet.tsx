@@ -11,7 +11,8 @@ import { Field } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 import { Notice } from "@/components/ui/Notice";
 import { Stepper } from "./Stepper";
-import { ItemTile, itemContext } from "./ItemRow";
+import { ItemTile, StatusPill } from "./ItemRow";
+import { itemStatus } from "@/lib/domain/status";
 
 export function TakeOutSheet({
   item,
@@ -90,9 +91,9 @@ function Body({
       <div className="flex items-start gap-3.5">
         {item.imagePath ? <ItemTile name={item.productName} imagePath={item.imagePath} size={64} /> : null}
         <div className="flex min-w-0 flex-1 flex-col gap-1">
-          <p className="font-mono text-[12px] text-mute">
-            {placeName ? `${placeName} · ` : ""}
-            {itemContext(item)}
+          <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] text-mute">
+            <StatusPill item={item} />
+            <span>{[placeName, itemStatus(item)?.detail].filter(Boolean).join(" · ")}</span>
           </p>
           <p className="text-sm text-mute">
             {formatQuantity(qty, item.unit)} left
@@ -134,7 +135,7 @@ function Body({
       {error ? <Notice>{error}</Notice> : null}
 
       <section aria-labelledby="hist-h" className="flex flex-col gap-2">
-        <h3 id="hist-h" className="font-mono text-[11px] tracking-[0.1em] text-mute uppercase">
+        <h3 id="hist-h" className="text-[13px] font-semibold text-mute">
           History
         </h3>
         {history === null ? (

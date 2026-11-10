@@ -15,7 +15,7 @@ export function AuthFrame({ children }: { children: React.ReactNode }) {
         <div className="relative flex min-h-[38svh] flex-col justify-between gap-6 px-5 pt-[max(18px,env(safe-area-inset-top))] pb-6 lg:sticky lg:top-0 lg:h-dvh lg:justify-between lg:p-12">
           <Link href="/" className="flex w-fit items-center gap-2.5">
             <BrandMark size={34} className="ring-1 ring-white/15" />
-            <Wordmark className="text-[1.15rem]" />
+            <Wordmark serif className="text-[1.15rem]" />
           </Link>
           <p className="font-serif text-[2.4rem] leading-[1] font-medium tracking-[-0.02em] lg:hidden">
             See what&apos;s <em className="font-normal">in here.</em>

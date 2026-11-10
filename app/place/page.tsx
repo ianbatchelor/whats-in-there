@@ -12,6 +12,7 @@ import type { StockItem } from "@/lib/domain/stock";
 import { formatQuantity } from "@/lib/domain/quantity";
 import { loadItems, loadPlaceLastActivity } from "@/lib/stock";
 import { countThings } from "@/lib/domain/places";
+import { needsAttention } from "@/lib/domain/status";
 import { AppShell, SectionLabel } from "@/components/AppShell";
 import { Screen, Splash } from "@/components/ui/Screen";
 import { Button } from "@/components/ui/Button";
@@ -30,10 +31,10 @@ import { EditPlaceSheet } from "@/components/stock/EditPlaceSheet";
 type PlaceInfo = { id: string; name: string; type: LocationType; householdId: string };
 
 export default function PlacePage() {
-  return <AuthGate>{(session) => <Place me={session.user.id} />}</AuthGate>;
+  return <AuthGate>{() => <Place />}</AuthGate>;
 }
 
-function Place({ me }: { me: string }) {
+function Place() {
   const id = useQueryParam("id");
   const router = useRouter();
   const [place, setPlace] = useState<PlaceInfo | null>(null);
@@ -133,7 +134,7 @@ function Place({ me }: { me: string }) {
   if (missing) {
     return (
       <Screen className="justify-center">
-        <h1 className="font-display text-2xl font-extrabold">This place isn&apos;t available</h1>
+        <h1 className="font-display text-2xl font-bold">This place isn&apos;t available</h1>
         <p className="text-mute">It may have been removed, or it belongs to a household you&apos;re not in.</p>
         <Link href="/" className="font-bold text-go">
           Go to your places
@@ -156,13 +157,21 @@ function Place({ me }: { me: string }) {
   const info = placeType(place.type);
   const count = items?.length ?? 0;
   const filtering = filter.trim() !== "" || category !== null;
-  const lastWho = last ? (last.actor === me ? "You" : (last.actor && names.get(last.actor)) || "Someone") : null;
+  const attention = (items ?? []).filter((i) => needsAttention(i)).length;
+  const summary = [
+    info.label,
+    items ? countThings(count) : null,
+    attention > 0 ? `${attention} to use soon` : null,
+    last ? `updated ${timeAgo(last.at)}` : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
   const catCount = (c: string) => (items ?? []).filter((i) => i.category?.trim() === c).length;
 
   return (
     <AppShell wide>
       <div className="reveal relative -mx-4 -mt-[max(16px,env(safe-area-inset-top))] overflow-hidden sm:mx-0 sm:mt-0 sm:rounded-[24px]">
-        <div className="h-64 sm:h-72 lg:h-[22rem]">
+        <div className="h-56 sm:h-64 lg:h-72">
           <PlacePhoto type={place.type} variant="wide" eager className="reveal-img" />
         </div>
         <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/0 to-black/70" aria-hidden="true" />
@@ -179,37 +188,19 @@ function Place({ me }: { me: string }) {
           </button>
         </div>
         <div className="absolute inset-x-5 bottom-4 text-[#fffdf8] sm:inset-x-7 sm:bottom-6">
-          <h1 className="truncate font-display text-[2.1rem] leading-tight font-extrabold tracking-[-0.03em] [text-shadow:0_2px_12px_rgba(0,0,0,0.3)] sm:text-[2.6rem]">
+          <h1 className="truncate font-display text-[1.9rem] leading-tight font-bold tracking-[-0.025em] [text-shadow:0_2px_12px_rgba(0,0,0,0.3)] sm:text-[2.3rem]">
             {place.name}
           </h1>
-          <p className="truncate text-[14px] text-[#fffdf8]/85">{info.blurb}</p>
+          <p className="truncate text-[14px] text-[#fffdf8]/90">{summary}</p>
         </div>
       </div>
-
-      <dl className="-mx-4 -mt-6 grid grid-cols-3 border-b border-line bg-card sm:mx-0 sm:mt-0 sm:rounded-2xl sm:border sm:shadow-[var(--shadow-card)]">
-        <div className="px-4 py-3 sm:px-5">
-          <dt className="sr-only">Things</dt>
-          <dd className="font-display text-xl font-extrabold tabular-nums">{count}</dd>
-          <dd className="text-[12.5px] text-mute">{count === 1 ? "thing" : "things"}</dd>
-        </div>
-        <div className="border-l border-line px-4 py-3 sm:px-5">
-          <dt className="sr-only">Categories</dt>
-          <dd className="font-display text-xl font-extrabold tabular-nums">{categories.length}</dd>
-          <dd className="text-[12.5px] text-mute">{categories.length === 1 ? "category" : "categories"}</dd>
-        </div>
-        <div className="min-w-0 border-l border-line px-4 py-3 sm:px-5">
-          <dt className="sr-only">Last change</dt>
-          <dd className="truncate font-display text-xl font-extrabold">{lastWho ?? "None"}</dd>
-          <dd className="truncate text-[12.5px] text-mute">{last ? `last change · ${timeAgo(last.at)}` : "no changes yet"}</dd>
-        </div>
-      </dl>
 
       {error ? <Notice>{error}</Notice> : null}
 
       {items && items.length > 0 ? (
         <div className="flex flex-col gap-3">
           <div className="flex gap-2">
-            <label className="flex min-h-12 min-w-0 flex-1 items-center gap-3 rounded-2xl bg-sunk px-4">
+            <label className="flex min-h-12 min-w-0 flex-1 items-center gap-3 rounded-xl border border-line bg-card px-4 focus-within:border-leaf">
               <IconSearch className="size-5 shrink-0 text-mute" />
               <input
                 type="search"

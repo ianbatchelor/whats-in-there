@@ -28,7 +28,7 @@ export function Stepper({
       >
         −
       </button>
-      <output aria-live="polite" className="min-w-16 flex-1 text-center font-display text-3xl font-extrabold tabular-nums">
+      <output aria-live="polite" className="min-w-16 flex-1 text-center font-display text-3xl font-bold tabular-nums">
         {value}
       </output>
       <button

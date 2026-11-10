@@ -30,7 +30,7 @@ export function Landing() {
         <header className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 pt-[max(20px,env(safe-area-inset-top))] lg:pt-8">
           <span className="flex items-center gap-2.5">
             <BrandMark size={34} className="ring-1 ring-white/15" />
-            <Wordmark className="text-[1.1rem]" />
+            <Wordmark serif className="text-[1.1rem]" />
           </span>
           <Link href="/sign-in/" className="rounded-full border border-white/25 bg-black/10 px-4 py-1.5 text-sm font-semibold backdrop-blur hover:bg-white/10">
             Sign in

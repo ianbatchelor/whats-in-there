@@ -15,7 +15,7 @@ export function BrandMark({ size = 40, className = "" }: { size?: number; classN
   );
 }
 
-/** The name, set in the editorial serif. Use for branding only, never for controls. */
-export function Wordmark({ className = "" }: { className?: string }) {
-  return <span className={`font-serif font-bold tracking-[-0.01em] ${className}`}>See What&apos;s In Here</span>;
+/** The name. Inside the app it uses the heading face; the public pages pass `serif` for the editorial look. */
+export function Wordmark({ className = "", serif = false }: { className?: string; serif?: boolean }) {
+  return <span className={`${serif ? "font-serif" : "font-display"} font-bold tracking-[-0.01em] whitespace-nowrap ${className}`}>See What&apos;s in Here</span>;
 }

@@ -23,7 +23,7 @@ export function PlaceTypePicker({ value, onChange, name }: { value: LocationType
               <span className="block aspect-[4/3]">
                 <PlacePhoto type={v} />
               </span>
-              <span className="block truncate px-2 py-1.5 text-center text-[12.5px] font-bold">{label}</span>
+              <span className="block px-1 py-1.5 text-center text-[12px] leading-tight font-semibold text-balance">{label}</span>
               {selected ? (
                 <span className="absolute top-1.5 right-1.5 grid size-6 place-items-center rounded-full bg-go text-on-go">
                   <IconCheck className="size-4" />

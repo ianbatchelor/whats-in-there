@@ -56,7 +56,7 @@ export default function InvitePage() {
       {token ? (
         <>
           <div className="flex flex-col gap-2">
-            <h1 className="font-display text-[2.2rem] leading-none font-extrabold tracking-[-0.03em]">You&apos;re invited</h1>
+            <h1 className="font-display text-[2.2rem] leading-none font-bold tracking-[-0.03em]">You&apos;re invited</h1>
             <p className="text-mute">Join the household to see and update the same places and everything in them.</p>
           </div>
           {error ? <Notice>{error}</Notice> : null}
@@ -69,7 +69,7 @@ export default function InvitePage() {
         </>
       ) : (
         <>
-          <h1 className="font-display text-3xl font-extrabold tracking-tight">This link isn&apos;t complete</h1>
+          <h1 className="font-display text-3xl font-bold tracking-tight">This link isn&apos;t complete</h1>
           <p className="text-mute">Ask the person who invited you to send the link again, then open it on this phone.</p>
           <Button variant="ghost" onClick={() => router.replace("/")}>Go to the app</Button>
         </>

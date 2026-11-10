@@ -70,7 +70,7 @@ export default function SignInPage() {
     <AuthFrame>
       <section className="rise flex flex-col gap-6">
         <div className="flex flex-col gap-2">
-          <h1 className="font-display text-[2.2rem] leading-[1.02] font-extrabold tracking-[-0.03em] text-balance">
+          <h1 className="font-display text-[2.2rem] leading-[1.02] font-bold tracking-[-0.03em] text-balance">
             {step === "email" ? "Sign in or get started" : "Check your email"}
           </h1>
           <p className="text-mute">

@@ -72,7 +72,7 @@ function ActivityFeed({ session }: { session: Session }) {
                           </Link>
                         ) : null}
                         {place ? " · " : ""}
-                        {new Date(r.at).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}
+                        {new Date(r.at).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
                       </p>
                     </div>
                   </li>
