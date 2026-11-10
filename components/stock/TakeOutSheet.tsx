@@ -28,7 +28,7 @@ export function TakeOutSheet({
   onTaken: (before: StockItem, after: StockItem, amount: number, movementId: string | null) => void;
 }) {
   return (
-    <Sheet open={item !== null} onClose={onClose} title={item?.productName ?? ""}>
+    <Sheet side open={item !== null} onClose={onClose} title={item?.productName ?? ""}>
       {item ? <Body key={`${item.id}:${item.version}`} item={item} placeName={placeName} names={names} onClose={onClose} onTaken={onTaken} /> : null}
     </Sheet>
   );
@@ -87,7 +87,7 @@ function Body({
   const addedBy = item.addedBy ? names.get(item.addedBy) : undefined;
 
   return (
-    <div className="flex max-h-[75dvh] flex-col gap-4 overflow-y-auto">
+    <div className="flex max-h-[75dvh] flex-col gap-4 overflow-y-auto lg:max-h-none lg:min-h-0 lg:flex-1">
       <div className="flex items-start gap-3.5">
         {item.imagePath ? <ItemTile name={item.productName} imagePath={item.imagePath} size={64} /> : null}
         <div className="flex min-w-0 flex-1 flex-col gap-1">
