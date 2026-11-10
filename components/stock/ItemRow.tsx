@@ -26,6 +26,7 @@ import {
   IconWrench,
 } from "@/components/ui/icons";
 import { useItemPhoto } from "@/lib/itemPhotos";
+import { useFadeIn } from "@/components/ui/useFadeIn";
 
 /**
  * The quiet line under a name: where it is and what it is. The date lives in the status label,
@@ -83,6 +84,7 @@ const KINDS: Record<ItemKind, { Icon: (p: { className?: string }) => React.React
 export function ItemTile({ name, category, imagePath, size = 44 }: { name: string; category?: string | null; imagePath?: string | null; size?: number }) {
   const photo = useItemPhoto(imagePath);
   const [broken, setBroken] = useState<string | null>(null);
+  const { seen, onLoad, className: fadeClass } = useFadeIn();
   if (photo && broken !== photo) {
     return (
       // eslint-disable-next-line @next/next/no-img-element
@@ -92,8 +94,10 @@ export function ItemTile({ name, category, imagePath, size = 44 }: { name: strin
         aria-hidden="true"
         loading="lazy"
         decoding="async"
+        ref={seen}
+        onLoad={onLoad}
         onError={() => setBroken(photo)}
-        className="shrink-0 rounded-xl bg-sunk object-cover"
+        className={`shrink-0 rounded-xl bg-sunk object-cover ${fadeClass}`}
         style={{ width: size, height: size }}
       />
     );
@@ -116,6 +120,7 @@ export function ItemRow({
   onOpen,
   onTakeOne,
   taking = false,
+  addedBy,
   index = 0,
 }: {
   item: StockItem;
@@ -123,6 +128,8 @@ export function ItemRow({
   onOpen: (item: StockItem) => void;
   onTakeOne?: (item: StockItem) => void;
   taking?: boolean;
+  /** Who put it there. Shown as its own column on very wide screens. */
+  addedBy?: string;
   index?: number;
 }) {
   const qty = roundQty(item.quantity);
@@ -144,6 +151,7 @@ export function ItemRow({
             <span className="min-w-0 truncate text-[13px] text-mute">{itemContext(item, place)}</span>
           </span>
         </span>
+        {addedBy !== undefined ? <span className="hidden w-28 shrink-0 truncate text-[13px] text-mute xl:block">{addedBy}</span> : null}
         <span className="hidden w-36 shrink-0 justify-end lg:flex">
           <StatusPill item={item} />
         </span>
@@ -171,4 +179,23 @@ export function ItemRow({
 /** The list container used everywhere items are shown. */
 export function ItemList({ children }: { children: React.ReactNode }) {
   return <ul className="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-card">{children}</ul>;
+}
+
+/** Loading placeholder shaped like the real list, so the page doesn't jump when things arrive. */
+export function ItemListSkeleton({ rows = 3 }: { rows?: number }) {
+  return (
+    <ul aria-busy="true" aria-label="Loading" className="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-card">
+      {Array.from({ length: rows }, (_, i) => (
+        <li key={i} className="flex animate-pulse items-center gap-3 py-2.5 pr-3.5 pl-3.5" style={{ animationDelay: `${i * 120}ms` }}>
+          <span className="size-11 shrink-0 rounded-xl bg-sunk" />
+          <span className="flex min-w-0 flex-1 flex-col gap-2">
+            <span className="h-3.5 rounded-full bg-sunk" style={{ width: `${[46, 34, 52, 40][i % 4]}%` }} />
+            <span className="h-3 rounded-full bg-sunk/70" style={{ width: `${[28, 40, 24, 32][i % 4]}%` }} />
+          </span>
+          <span className="h-4 w-7 shrink-0 rounded-full bg-sunk" />
+          <span className="size-10 shrink-0 rounded-xl bg-sunk/70" />
+        </li>
+      ))}
+    </ul>
+  );
 }

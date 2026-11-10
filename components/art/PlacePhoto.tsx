@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { LocationType } from "@/lib/household";
 import { useItemPhoto } from "@/lib/itemPhotos";
 import { PlaceArt } from "./PlaceArt";
+import { useFadeIn } from "@/components/ui/useFadeIn";
 
 /**
  * Photos for each kind of place. Kinds without a photo yet fall back to the illustration,
@@ -44,6 +45,7 @@ export function PlacePhoto({
 }) {
   const own = useItemPhoto(imagePath, variant === "wide");
   const [broken, setBroken] = useState<string | null>(null);
+  const { seen, onLoad, className: fadeClass } = useFadeIn();
   if (own && broken !== own) {
     return (
       // eslint-disable-next-line @next/next/no-img-element
@@ -53,8 +55,11 @@ export function PlacePhoto({
         aria-hidden="true"
         loading={eager ? "eager" : "lazy"}
         decoding="async"
+        key={own}
+        ref={seen}
+        onLoad={onLoad}
         onError={() => setBroken(own)}
-        className={`block h-full w-full object-cover ${className}`}
+        className={`block h-full w-full bg-sunk object-cover ${fadeClass} ${className}`}
       />
     );
   }
@@ -70,7 +75,9 @@ export function PlacePhoto({
       aria-hidden="true"
       loading={eager ? "eager" : "lazy"}
       decoding="async"
-      className={`block h-full w-full object-cover saturate-[0.88] ${className}`}
+      ref={seen}
+      onLoad={onLoad}
+      className={`block h-full w-full object-cover saturate-[0.88] ${fadeClass} ${className}`}
       style={photo.position ? { objectPosition: photo.position } : undefined}
     />
   );
