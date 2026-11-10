@@ -96,7 +96,7 @@ function Add({ session }: { session: Session }) {
                 <li key={p.id}>
                   <button onClick={() => start(p.id, false)} className="flex w-full items-center gap-3 py-2 pr-3 pl-2 text-left transition hover:bg-sunk/70">
                     <span className="h-11 w-14 shrink-0 overflow-hidden rounded-lg">
-                      <PlacePhoto type={p.type} />
+                      <PlacePhoto type={p.type} imagePath={p.imagePath} />
                     </span>
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-[15px] font-semibold">{p.name}</span>

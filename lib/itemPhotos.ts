@@ -14,6 +14,9 @@ export function thumbPath(path: string): string {
   return dot > path.lastIndexOf("/") ? `${path.slice(0, dot)}.thumb${path.slice(dot)}` : `${path}.thumb`;
 }
 
+/** A request for the full-size photo rather than the small copy is keyed with this prefix. */
+const FULL = "full:";
+
 type Entry = { url: string | null; at: number };
 const cache = new Map<string, Entry>();
 const waiting = new Map<string, ((url: string | null) => void)[]>();
@@ -31,14 +34,14 @@ async function flush() {
   const paths = [...batch.keys()];
   const signed = new Map<string, string | null>();
   try {
-    const all = paths.flatMap((p) => [thumbPath(p), p]);
+    const all = [...new Set(paths.flatMap((p) => (p.startsWith(FULL) ? [p.slice(FULL.length)] : [thumbPath(p), p])))];
     const { data } = await supabase().storage.from(BUCKET).createSignedUrls(all, LIFETIME_S);
     for (const row of data ?? []) if (row.path && row.signedUrl && !row.error) signed.set(row.path, row.signedUrl);
   } catch {
     /* no pictures this time; the letter tiles stay */
   }
   for (const [path, resolvers] of batch) {
-    const url = signed.get(thumbPath(path)) ?? signed.get(path) ?? null;
+    const url = path.startsWith(FULL) ? (signed.get(path.slice(FULL.length)) ?? null) : (signed.get(thumbPath(path)) ?? signed.get(path) ?? null);
     cache.set(path, { url, at: Date.now() });
     for (const done of resolvers) done(url);
   }
@@ -59,8 +62,12 @@ function fresh(path: string | null | undefined): Entry | undefined {
   return hit && Date.now() - hit.at < REUSE_MS ? hit : undefined;
 }
 
-/** A signed link to an item's photo (small version where there is one), or null while loading or if there's none. */
-export function useItemPhoto(path: string | null | undefined): string | null {
+/**
+ * A signed link to a stored photo (the small copy where there is one, or the full photo when
+ * `full` is set), or null while loading or if there's none.
+ */
+export function useItemPhoto(stored: string | null | undefined, full = false): string | null {
+  const path = stored ? (full ? FULL + stored : stored) : stored;
   // Links fetched for this component, by path. A cached link is used straight away, without an effect.
   const [loaded, setLoaded] = useState<{ path: string; url: string | null } | null>(null);
   const hit = fresh(path);
@@ -80,4 +87,5 @@ export function useItemPhoto(path: string | null | undefined): string | null {
 /** Forget a cached link, e.g. after a photo is replaced. */
 export function forgetItemPhoto(path: string) {
   cache.delete(path);
+  cache.delete(FULL + path);
 }
