@@ -203,3 +203,17 @@ export async function loadPlaceLastActivity(locationId: string): Promise<{ actor
   if (error) throw error;
   return data ? { actor: (data.actor_user_id as string | null) ?? null, at: data.created_at as string } : null;
 }
+
+/** Things with a printed date inside the "use soon" window or past it, soonest first. */
+export async function loadAttention(householdId: string): Promise<StockItem[]> {
+  const cutoff = addDays(todayIso(), SOON_DAYS);
+  const { data, error } = await supabase()
+    .from("stock_items")
+    .select(COLUMNS)
+    .eq("household_id", householdId)
+    .eq("status", "in_stock")
+    .or(`use_by_date.lte.${cutoff},best_before_date.lte.${cutoff}`)
+    .limit(500);
+  if (error) throw error;
+  return sortUseFirst((data ?? []).map(toItem));
+}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useImperativeHandle, useRef, useState, type Ref } from "react";
 import type { LocationType } from "@/lib/household";
 import type { StockItem } from "@/lib/domain/stock";
 import { isCounted, roundQty, type StockUnit } from "@/lib/domain/quantity";
@@ -41,16 +41,28 @@ type Photo =
   | Read
   | { state: "failed"; preview: string | null; message: string };
 
+type SheetPlace = { id: string; name: string; type: LocationType };
+
+/** Lets a screen open the camera in the same tap that opens the sheet (phones only allow that inside the tap). */
+export type AddItemHandle = { scan: () => void };
+
 export function AddItemSheet({
   open,
   onClose,
   place,
   onAdded,
+  places,
+  onPickPlace,
+  ref,
 }: {
   open: boolean;
   onClose: () => void;
-  place: { id: string; name: string; type: LocationType; householdId: string };
+  place: SheetPlace & { householdId: string };
   onAdded: (item: StockItem, movementId: string | null) => void;
+  /** When given, the sheet shows these so the place can be chosen or changed after scanning. */
+  places?: SheetPlace[];
+  onPickPlace?: (place: SheetPlace) => void;
+  ref?: Ref<AddItemHandle>;
 }) {
   const isFreezer = place.type === "freezer";
   const [name, setName] = useState("");
@@ -82,6 +94,8 @@ export function AddItemSheet({
       urls.forEach((u) => URL.revokeObjectURL(u));
     };
   }, []);
+
+  useImperativeHandle(ref, () => ({ scan: () => takePhoto(false) }), []);
 
   const check = new Set(photo.state === "read" ? photo.check : []);
 
@@ -238,9 +252,31 @@ export function AddItemSheet({
   const reading = photo.state === "reading";
 
   return (
-    <Sheet open={open} onClose={close} title={`Add to ${place.name}`}>
+    <Sheet open={open} onClose={close} title={places && onPickPlace ? "Add something" : `Add to ${place.name}`}>
       <form onSubmit={save} className="flex max-h-[75dvh] flex-col gap-4 overflow-y-auto" noValidate>
         <input ref={camera} type="file" accept="image/*" capture="environment" className="sr-only" tabIndex={-1} aria-hidden="true" onChange={onPhoto} />
+
+        {places && onPickPlace && places.length > 1 ? (
+          <fieldset className="min-w-0">
+            <legend className="mb-1.5 text-sm font-bold">Where is it going?</legend>
+            <div className="-mx-5 flex gap-1.5 overflow-x-auto px-5 pb-1" role="radiogroup" aria-label="Place">
+              {places.map((p) => (
+                <button
+                  type="button"
+                  key={p.id}
+                  role="radio"
+                  aria-checked={p.id === place.id}
+                  onClick={() => onPickPlace(p)}
+                  className={`min-h-10 shrink-0 rounded-full border px-3.5 text-sm font-semibold ${
+                    p.id === place.id ? "border-fg bg-fg text-bg" : "border-line bg-card text-fg"
+                  }`}
+                >
+                  {p.name}
+                </button>
+              ))}
+            </div>
+          </fieldset>
+        ) : null}
 
         {photo.state === "none" ? (
           <button

@@ -15,6 +15,7 @@ export const IconCupboard = ({ className }: P) =>
   svg(<><rect x="3.5" y="3.5" width="17" height="17" rx="2.5" /><path d="M12 3.5v17M9.5 11v2M14.5 11v2" /></>, className);
 export const IconWine = ({ className }: P) => svg(<path d="M8 3h8l-.5 6a3.5 3.5 0 0 1-7 0zM12 12.5V20M8.5 20.5h7" />, className);
 export const IconBox = ({ className }: P) => svg(<path d="M3.5 7.5 12 3l8.5 4.5v9L12 21l-8.5-4.5zM3.5 7.5 12 12l8.5-4.5M12 12v9" />, className);
+export const IconMinus = ({ className }: P) => svg(<path d="M5 12h14" />, className);
 export const IconPlus = ({ className }: P) => svg(<path d="M12 5v14M5 12h14" />, className);
 export const IconChevronLeft = ({ className }: P) => svg(<path d="m15 5-7 7 7 7" />, className);
 export const IconChevronRight = ({ className }: P) => svg(<path d="m9 5 7 7-7 7" />, className);
@@ -57,3 +58,4 @@ export const IconBulb = ({ className }: P) => svg(<path d="M9 17.5h6M10 20.5h4M8
 export const IconBook = ({ className }: P) => svg(<path d="M5 4.5h11.5a2 2 0 0 1 2 2V20H7a2 2 0 0 1-2-2zM5 17.5a2 2 0 0 1 2-2h11.5M9 8.5h6" />, className);
 export const IconScan = ({ className }: P) =>
   svg(<><path d="M4 8V6.5A2.5 2.5 0 0 1 6.5 4H8M16 4h1.5A2.5 2.5 0 0 1 20 6.5V8M20 16v1.5a2.5 2.5 0 0 1-2.5 2.5H16M8 20H6.5A2.5 2.5 0 0 1 4 17.5V16" /><circle cx="12" cy="12" r="3.2" /></>, className);
+export const IconX = ({ className }: P) => svg(<path d="M6 6l12 12M18 6 6 18" />, className);
