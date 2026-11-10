@@ -12,7 +12,7 @@ export function PageHeader({ title, sub, back, action }: { title: string; sub?: 
       ) : null}
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="min-w-0">
-          <h1 className="font-display text-[2.1rem] leading-none font-extrabold tracking-[-0.03em] sm:text-[2.5rem]">{title}</h1>
+          <h1 className="font-display text-[1.75rem] leading-tight font-bold tracking-[-0.025em] sm:text-[2rem]">{title}</h1>
           {sub ? <p className="mt-1.5 text-mute">{sub}</p> : null}
         </div>
         {action}

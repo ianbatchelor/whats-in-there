@@ -21,10 +21,10 @@ export function AppShell({ children, wide = false, rail }: { children: React.Rea
   const path = usePathname() || "/";
   return (
     <div className="min-h-dvh bg-bg lg:flex">
-      <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col gap-8 border-r border-line bg-card/60 px-5 py-7 lg:flex">
+      <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col gap-7 border-r border-line bg-card/60 px-4 py-6 lg:flex">
         <Link href="/" className="flex items-center gap-2.5">
-          <BrandMark size={36} />
-          <Wordmark className="text-[1.15rem] leading-tight" />
+          <BrandMark size={30} />
+          <Wordmark className="text-[15.5px]" />
         </Link>
         <nav aria-label="Main" className="flex flex-col gap-1">
           {NAV.map(({ href, label, Icon, match }) => {
@@ -34,8 +34,8 @@ export function AppShell({ children, wide = false, rail }: { children: React.Rea
                 key={href}
                 href={href}
                 aria-current={active ? "page" : undefined}
-                className={`flex min-h-11 items-center gap-3 rounded-xl px-3 font-display text-[15px] font-semibold transition ${
-                  active ? "bg-go text-on-go" : "text-mute hover:bg-sunk hover:text-fg"
+                className={`flex min-h-10 items-center gap-3 rounded-[10px] px-3 text-[14.5px] transition ${
+                  active ? "bg-sunk font-semibold text-fg" : "font-medium text-mute hover:bg-sunk/60 hover:text-fg"
                 }`}
               >
                 <Icon className="size-5" />
@@ -84,10 +84,10 @@ export function AppShell({ children, wide = false, rail }: { children: React.Rea
   );
 }
 
-/** Small uppercase label above a section. */
+/** Title above a section. */
 export function SectionLabel({ children, id }: { children: React.ReactNode; id?: string }) {
   return (
-    <h2 id={id} className="font-display text-[12px] font-bold tracking-[0.08em] text-mute uppercase">
+    <h2 id={id} className="font-display text-[15px] font-bold tracking-[-0.01em]">
       {children}
     </h2>
   );

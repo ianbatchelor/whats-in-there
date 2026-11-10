@@ -249,11 +249,11 @@ function Household({ session }: { session: Session }) {
         </section>
       ) : null}
 
-      <div className="flex flex-col gap-1 border-t border-line pt-6">
+      <div className="flex flex-col gap-8 border-t border-line pt-6">
         <Button variant="ghost" busy={busy === "signout"} onClick={signOut} className="w-full">
           Sign out
         </Button>
-        <Button variant="danger" onClick={() => setConfirmLeave(true)}>
+        <Button variant="danger" className="min-h-10 self-center text-[13.5px] font-semibold" onClick={() => setConfirmLeave(true)}>
           Leave this household
         </Button>
       </div>

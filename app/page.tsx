@@ -28,7 +28,7 @@ import { IconPlus, IconSearch } from "@/components/ui/icons";
 import { PlacePhoto } from "@/components/art/PlacePhoto";
 import { AddPlaceSheet } from "@/components/home/AddPlaceSheet";
 import { AddPlaceTile, GroupCard } from "@/components/home/PlaceCard";
-import { ItemList, ItemRow, itemContext } from "@/components/stock/ItemRow";
+import { ItemList, ItemRow, ItemTile, StatusPill } from "@/components/stock/ItemRow";
 import { TakeOutSheet } from "@/components/stock/TakeOutSheet";
 import { useUndoToast } from "@/components/stock/useUndoToast";
 
@@ -112,16 +112,13 @@ function Home({ session }: { session: Session }) {
           <ul className="flex flex-col gap-1">
             {useFirst.map((item) => (
               <li key={item.id}>
-                <button onClick={() => setOpen(item)} className="flex w-full items-center gap-3 rounded-xl py-1.5 text-left hover:bg-sunk">
-                  <span className="size-11 shrink-0 overflow-hidden rounded-xl">
-                    {placeById.get(item.locationId) ? <PlacePhoto type={placeById.get(item.locationId)!.type} /> : null}
+                <button onClick={() => setOpen(item)} className="-mx-2 flex w-[calc(100%+16px)] items-center gap-3 rounded-xl px-2 py-1.5 text-left hover:bg-sunk">
+                  <ItemTile name={item.productName} category={item.category} imagePath={item.imagePath} size={38} />
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-[14px] font-semibold">{item.productName}</span>
+                    <span className="block truncate text-[12.5px] text-mute">{placeById.get(item.locationId)?.name}</span>
                   </span>
-                  <span className="min-w-0">
-                    <span className="block truncate font-display text-[14.5px] font-bold">{item.productName}</span>
-                    <span className="block truncate text-[12.5px] text-mute">
-                      {placeById.get(item.locationId)?.name} · {itemContext(item)}
-                    </span>
-                  </span>
+                  <StatusPill item={item} />
                 </button>
               </li>
             ))}
@@ -167,7 +164,7 @@ function Home({ session }: { session: Session }) {
               {current.name}
               {places ? ` · ${places.length === 1 ? "1 place" : `${places.length} places`} · ${countThings(total)}` : ""}
             </p>
-            <h1 className="font-display text-[2rem] leading-tight font-extrabold tracking-[-0.03em] sm:text-[2.4rem]">My Places</h1>
+            <h1 className="font-display text-[1.75rem] leading-tight font-bold tracking-[-0.025em] sm:text-[2rem]">My Places</h1>
           </div>
           <Link href="/household/" className="mt-1 flex items-center sm:hidden" aria-label="Household and members">
             {members.slice(0, 3).map((m, i) => (
@@ -179,7 +176,7 @@ function Home({ session }: { session: Session }) {
         </div>
         <Link
           href="/search/"
-          className="flex min-h-12 items-center gap-3 rounded-2xl bg-sunk px-4 text-[15px] text-mute transition hover:text-fg sm:w-80"
+          className="flex min-h-12 items-center gap-3 rounded-xl border border-line bg-card px-4 text-[15px] text-mute transition hover:text-fg sm:w-80"
         >
           <IconSearch className="size-5" />
           {total > 0 ? `Search ${countThings(total)}` : "Search everything you have"}
@@ -238,21 +235,20 @@ function Home({ session }: { session: Session }) {
           </div>
         ) : null}
         {groups === null ? (
-          <ul className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3.5" aria-busy="true">
+          <ul className="grid grid-cols-2 gap-x-3 gap-y-5 sm:grid-cols-3 sm:gap-x-4" aria-busy="true">
             {[0, 1, 2, 3].map((i) => (
-              <li key={i} className="aspect-square animate-pulse rounded-[20px] bg-sunk sm:aspect-auto sm:h-60" />
+              <li key={i} className="aspect-[4/3] animate-pulse rounded-2xl bg-sunk" />
             ))}
           </ul>
         ) : places!.length === 0 ? (
           <FirstPlace onAdd={() => setAdding(true)} />
         ) : (
-          <ul className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3.5">
+          <ul className="grid grid-cols-2 gap-x-3 gap-y-5 sm:grid-cols-3 sm:gap-x-4">
             {groups.map((g, i) => (
               <GroupCard
                 key={g.type}
                 group={g}
                 index={i}
-                feature={i === 0 && groups.length >= 4}
                 soon={g.places.reduce((n, p) => n + (soon.get(p.id) ?? 0), 0)}
               />
             ))}

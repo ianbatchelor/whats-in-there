@@ -4,7 +4,7 @@ import { Wordmark } from "@/components/brand/BrandMark";
 export function SetupNeeded() {
   return (
     <AuthFrame>
-      <h1 className="font-display text-3xl font-extrabold tracking-tight">
+      <h1 className="font-display text-3xl font-bold tracking-tight">
         <Wordmark /> needs its database
       </h1>
       <p className="text-mute">

@@ -2,16 +2,16 @@
 
 /* "Warm storage" design tokens. Semantic names so dark mode only swaps values. */
 @theme {
-  --color-bg: #faf7f0;
-  --color-card: #fffdf8;
-  --color-sunk: #f3efe5;
-  --color-fg: #17242a;
-  --color-mute: #65716d;
-  --color-line: #e7e3da;
+  --color-bg: #f6f5f1;
+  --color-card: #ffffff;
+  --color-sunk: #eeede8;
+  --color-fg: #15211c;
+  --color-mute: #66706b;
+  --color-line: #e5e3dd;
   --color-ice: #edf0e6;
-  --color-go: #183f32;
-  --color-on-go: #fffdf8;
-  --color-leaf: #326b50;
+  --color-go: #1e4a38;
+  --color-on-go: #ffffff;
+  --color-leaf: #2f6b50;
   --color-tape: #f6c65b;
   --color-on-tape: #2a2112;
   --color-warn: #b4472c;
@@ -19,16 +19,24 @@
   --color-check-line: #e9c46a;
   --color-brand: #183f32;
 
+  /* Status: past a printed date, close to one, comfortably ahead. Separate from the brand colours. */
+  --color-late: #a63b1a;
+  --color-late-bg: #fbe6de;
+  --color-soon: #855a0b;
+  --color-soon-bg: #fbefd6;
+  --color-ok: #2c6a4c;
+  --color-ok-bg: #e4f0e8;
+
   --font-display: var(--font-jakarta), "Avenir Next", system-ui, sans-serif;
   --font-sans: var(--font-inter), "Segoe UI", system-ui, sans-serif;
   --font-serif: var(--font-fraunces), Georgia, serif;
   --font-mono: var(--font-inter), system-ui, sans-serif;
 
-  --radius-card: 22px;
-  --radius-btn: 16px;
+  --radius-card: 16px;
+  --radius-btn: 12px;
 
-  --shadow-card: 0 1px 2px rgba(23, 36, 42, 0.04), 0 8px 24px -14px rgba(23, 36, 42, 0.18);
-  --shadow-lift: 0 2px 4px rgba(23, 36, 42, 0.05), 0 18px 36px -18px rgba(23, 36, 42, 0.32);
+  --shadow-card: 0 1px 2px rgba(21, 33, 28, 0.05);
+  --shadow-lift: 0 2px 4px rgba(21, 33, 28, 0.05), 0 14px 28px -18px rgba(21, 33, 28, 0.28);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -47,26 +55,35 @@
     --color-check: #2f2712;
     --color-check-line: #7d6420;
     --color-brand: #0f241c;
+    --color-late: #f09a7c;
+    --color-late-bg: #3a1f16;
+    --color-soon: #e6c170;
+    --color-soon-bg: #33280f;
+    --color-ok: #8cc7a5;
+    --color-ok-bg: #17301f;
     color-scheme: dark;
   }
 }
 
-html,
-body {
-  background: var(--color-bg);
-  color: var(--color-fg);
-  -webkit-font-smoothing: antialiased;
-  -webkit-tap-highlight-color: transparent;
-}
+/* In the base layer so utilities such as focus-visible:outline-none can override them. */
+@layer base {
+  html,
+  body {
+    background: var(--color-bg);
+    color: var(--color-fg);
+    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
+  }
 
-body {
-  font-family: var(--font-sans);
-  min-height: 100dvh;
-}
+  body {
+    font-family: var(--font-sans);
+    min-height: 100dvh;
+  }
 
-:focus-visible {
-  outline: 2px solid var(--color-go);
-  outline-offset: 2px;
+  :focus-visible {
+    outline: 2px solid var(--color-go);
+    outline-offset: 2px;
+  }
 }
 
 /* The signature: a strip of masking tape. */

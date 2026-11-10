@@ -47,7 +47,7 @@ export function PlacePhoto({
       aria-hidden="true"
       loading={eager ? "eager" : "lazy"}
       decoding="async"
-      className={`block h-full w-full object-cover ${className}`}
+      className={`block h-full w-full object-cover saturate-[0.88] ${className}`}
       style={photo.position ? { objectPosition: photo.position } : undefined}
     />
   );
