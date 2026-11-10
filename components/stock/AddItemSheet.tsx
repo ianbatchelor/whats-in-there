@@ -14,7 +14,7 @@ import { Field } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 import { Notice } from "@/components/ui/Notice";
 import { Spinner } from "@/components/ui/Spinner";
-import { IconCamera } from "@/components/ui/icons";
+import { IconCamera, IconStack } from "@/components/ui/icons";
 import { Stepper } from "./Stepper";
 import { placeType } from "@/components/home/placeTypes";
 
@@ -31,6 +31,9 @@ const SIZE_UNITS: StockUnit[] = ["g", "kg", "ml", "l"];
 const CHECK_HINT = "From the photo. Worth a quick check.";
 
 const MAX_SHOTS = 3;
+
+/** Where one label at a time is the usual way in; elsewhere a whole shelf is offered first. */
+const FOOD_PLACES: LocationType[] = ["freezer", "fridge", "pantry", "wine"];
 
 /** One uploaded photo of the pack. The first is the front, and the one kept with the item. */
 type Shot = { preview: string; path: string };
@@ -53,6 +56,7 @@ export function AddItemSheet({
   onAdded,
   places,
   onPickPlace,
+  onMany,
   ref,
 }: {
   open: boolean;
@@ -62,6 +66,8 @@ export function AddItemSheet({
   /** When given, the sheet shows these so the place can be chosen or changed after scanning. */
   places?: SheetPlace[];
   onPickPlace?: (place: SheetPlace) => void;
+  /** When given, offers to add a whole shelf or rail from one photo instead. */
+  onMany?: () => void;
   ref?: Ref<AddItemHandle>;
 }) {
   const isFreezer = place.type === "freezer";
@@ -278,6 +284,8 @@ export function AddItemSheet({
           </fieldset>
         ) : null}
 
+        {photo.state === "none" && onMany && !FOOD_PLACES.includes(place.type) ? <ManyCard onClick={() => { close(); onMany(); }} /> : null}
+
         {photo.state === "none" ? (
           <button
             type="button"
@@ -334,6 +342,8 @@ export function AddItemSheet({
             </div>
           </div>
         )}
+
+        {photo.state === "none" && onMany && FOOD_PLACES.includes(place.type) ? <ManyCard onClick={() => { close(); onMany(); }} quiet /> : null}
 
         <Field
           label="What is it?"
@@ -483,5 +493,27 @@ function PhotoStack({ previews }: { previews: string[] }) {
         </div>
       ) : null}
     </div>
+  );
+}
+
+/** The way into adding a whole shelf, rail or drawer from one photo. */
+function ManyCard({ onClick, quiet = false }: { onClick: () => void; quiet?: boolean }) {
+  if (quiet) {
+    return (
+      <button type="button" onClick={onClick} className="-mt-1 self-start text-sm font-bold text-go">
+        + Lots to add? Photograph a whole shelf
+      </button>
+    );
+  }
+  return (
+    <button type="button" onClick={onClick} className="lift flex items-center gap-3.5 rounded-2xl border border-line bg-sunk/60 p-3.5 text-left">
+      <span className="grid size-12 shrink-0 place-items-center rounded-full bg-go text-on-go" aria-hidden="true">
+        <IconStack className="size-6" />
+      </span>
+      <span className="min-w-0">
+        <span className="block font-display text-[15px] font-bold">Snap a whole shelf or rail</span>
+        <span className="block text-[13px] text-mute">Books, clothes, games: one photo lists everything for you to check, sorted into sections.</span>
+      </span>
+    </button>
   );
 }

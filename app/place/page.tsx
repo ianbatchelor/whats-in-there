@@ -18,7 +18,7 @@ import { Screen, Splash } from "@/components/ui/Screen";
 import { Button } from "@/components/ui/Button";
 import { Notice } from "@/components/ui/Notice";
 import { Toast } from "@/components/ui/Toast";
-import { IconChevronLeft, IconPencil, IconPlus, IconSearch, IconSticker } from "@/components/ui/icons";
+import { IconChevronLeft, IconPencil, IconPlus, IconSearch, IconStack, IconSticker } from "@/components/ui/icons";
 import { PlacePhoto } from "@/components/art/PlacePhoto";
 import { timeAgo } from "@/lib/domain/dates";
 import { placeType } from "@/components/home/placeTypes";
@@ -26,9 +26,14 @@ import { ItemList, ItemListSkeleton, ItemRow } from "@/components/stock/ItemRow"
 import { useUndoToast } from "@/components/stock/useUndoToast";
 import { useQuickTake } from "@/components/stock/useQuickTake";
 import { AddItemSheet } from "@/components/stock/AddItemSheet";
+import { AddManySheet } from "@/components/stock/AddManySheet";
+import { groupByCategory, looksLikeBooks } from "@/lib/domain/manyItems";
 import { TakeOutSheet } from "@/components/stock/TakeOutSheet";
 import { EditPlaceSheet } from "@/components/stock/EditPlaceSheet";
 import { StickerSheet } from "@/components/stickers/StickerSheet";
+
+/** Places where the order is "use first" (by date), not sections. */
+const USE_FIRST_PLACES: LocationType[] = ["freezer", "fridge", "pantry", "wine", "garden"];
 
 type PlaceInfo = { id: string; name: string; type: LocationType; householdId: string; imagePath?: string | null };
 
@@ -46,6 +51,7 @@ function Place() {
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState("");
   const [adding, setAdding] = useState(false);
+  const [many, setMany] = useState(false);
   const [editing, setEditing] = useState(false);
   const [sticker, setSticker] = useState(false);
   const [open, setOpen] = useState<StockItem | null>(null);
@@ -117,6 +123,15 @@ function Place() {
         (!q || [i.productName, i.brand, i.category, i.notes].some((v) => v?.toLowerCase().includes(q))),
     );
   }, [items, filter, category]);
+
+  // Shelves, rails and boxes read best in sections (Fiction, Coats…) in A to Z order; food stays
+  // in use-first order. Sections show only when nothing is being searched or filtered.
+  const sections = useMemo(() => {
+    if (!place || !items || USE_FIRST_PLACES.includes(place.type) || filter.trim() || category) return null;
+    const cats = items.map((i) => i.category?.trim() ?? "").filter(Boolean);
+    if (new Set(cats).size < 2) return null;
+    return groupByCategory(items, (i) => ({ name: i.productName, detail: i.brand ?? "", category: i.category?.trim() || "Other" }), looksLikeBooks(cats));
+  }, [place, items, filter, category]);
 
   const { toast, clear, announce } = useUndoToast(() => {
     if (place) refresh(place.id);
@@ -252,15 +267,33 @@ function Place() {
           <p className="max-w-sm text-sm text-mute">
             Add what&apos;s in {place.name} as you put it in, like &ldquo;{info.thing}&rdquo;. It takes a few seconds per thing.
           </p>
-          <Button onClick={() => setAdding(true)}>
-            <IconPlus /> Add the first thing
-          </Button>
+          <div className="flex flex-wrap justify-center gap-2.5">
+            <Button onClick={() => setAdding(true)}>
+              <IconPlus /> Add the first thing
+            </Button>
+            <Button variant="ghost" onClick={() => setMany(true)}>
+              <IconStack /> Snap a whole shelf
+            </Button>
+          </div>
         </div>
       ) : shown.length === 0 ? (
         <p className="text-mute">
           Nothing matches{filter.trim() ? <> &ldquo;{filter.trim()}&rdquo;</> : null}
           {category ? ` in ${category}` : ""}.
         </p>
+      ) : sections ? (
+        sections.map((sec, n) => (
+          <section key={sec.category} aria-labelledby={`sec-${n}`} className="flex flex-col gap-2.5">
+            <SectionLabel id={`sec-${n}`}>
+              {sec.category} <span className="font-semibold text-mute">· {sec.items.length}</span>
+            </SectionLabel>
+            <ItemList>
+              {sec.items.map((item, i) => (
+                <ItemRow key={item.id} index={i} item={item} addedBy={(item.addedBy && names.get(item.addedBy)) || ""} onOpen={setOpen} onTakeOne={takeOne} taking={taking === item.id} />
+              ))}
+            </ItemList>
+          </section>
+        ))
       ) : (
         <section aria-labelledby="items-h" className="flex flex-col gap-2.5">
           <SectionLabel id="items-h">{filtering ? countThings(shown.length) : ["freezer", "fridge", "pantry"].includes(place.type) ? "Use first" : "In here"}</SectionLabel>
@@ -280,7 +313,20 @@ function Place() {
           refresh(place.id);
           announce(`Added ${item.productName}`, movementId);
         }}
+        onMany={() => setMany(true)}
       />
+      {many ? (
+        <AddManySheet
+          open={many}
+          onClose={() => setMany(false)}
+          place={place}
+          existing={items ?? []}
+          onAdded={(words) => {
+            refresh(place.id);
+            announce(`Added ${words} to ${place.name}`, null);
+          }}
+        />
+      ) : null}
       <TakeOutSheet
         item={open}
         names={names}

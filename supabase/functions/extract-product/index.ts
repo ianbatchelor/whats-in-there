@@ -14,6 +14,11 @@
 // any 30 days on top of the per-minute and per-household-per-day limits; and when a barcode is read,
 // the shared products list supplies the name, brand and weight that earlier scans of that barcode
 // found, so a product reads the same way everywhere. Dates always come from the photo.
+//
+// Many things at once: with `mode: "many"`, the same photos are read as a shelf, rail or drawer of
+// separate things (a bookshelf, a wardrobe) and the reply is a list of them, each with a name, a
+// detail (the author of a book, the brand of clothes), a category to sort by, and how many. One
+// photo of a shelf is one read against the limits, however many things are on it.
 
 import Anthropic from "npm:@anthropic-ai/sdk@1.4.0";
 import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2.118.0";
@@ -24,6 +29,7 @@ const PER_USER_PER_MINUTE = 6;
 const PER_USER_PER_MONTH = 300; // calls, not items: one add can be 2 or 3 calls (front, then front and back)
 const MAX_BYTES = 8 * 1024 * 1024;
 const MAX_PHOTOS = 3;
+const MAX_ITEMS = 150;
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -80,6 +86,55 @@ You may get several photos of the same pack, for example the front and the back.
 - uncertain: list every field you inferred, guessed or read from blurry or partly hidden print, including any date where you had to supply the year or day.
 - If there is no readable product or label, set readable to false, product_name to "" and everything else to null or the defaults.`;
 
+const MANY_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  required: ["readable", "kind", "items"],
+  properties: {
+    readable: { type: "boolean", description: "False if the photos show no separate things you can make out." },
+    kind: { type: "string", enum: ["books", "clothes", "shoes", "games", "music", "films", "food", "tools", "mixed", "other"] },
+    items: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["name", "detail", "category", "quantity", "unsure"],
+        properties: {
+          name: { type: "string", description: "A book's title, or a short description of the thing, e.g. 'Navy wool jumper'." },
+          detail: nullable({ type: "string", description: "A book's author; otherwise a brand or maker if visible. Null if none." }),
+          category: { type: "string", description: "A short shelf-style group to sort by, e.g. 'Crime & thrillers' or 'Jumpers & knitwear'." },
+          quantity: { type: "integer", description: "How many of this exact thing, usually 1." },
+          unsure: { type: "boolean", description: "True if any part was guessed or the print was hard to read." },
+        },
+      },
+    },
+  },
+} as const;
+
+const MANY_SYSTEM = `You list the separate things in photos of a shelf, rail, drawer or cupboard for a UK home inventory app, so a person can add them all at once and then check the list.
+You may get up to three photos of the same place (say the left and right halves of a long shelf). Count each real thing once, even where photos overlap.
+
+Books (spines and covers):
+- name is the title as printed, in title case, without series numbers or "a novel". Include a subtitle only if it is needed to tell books apart.
+- detail is the author as a person would say it ("Hilary Mantel"). Null if it isn't printed and you don't know it for certain.
+- If you can read only part of a title or author, write what you can and set unsure. If a spine is unreadable, leave that book out.
+- category is a bookshop section: Fiction, Crime & thrillers, Sci-fi & fantasy, Children's, Biography & memoir, History, Cookery, Travel, Nature, Art & design, Health & wellbeing, Business, Reference, Poetry, Religion & philosophy, or another short section if none fits. Use what you know about the book; if you don't know it, choose from the title and set unsure.
+
+Clothes, shoes and accessories:
+- name is what a person would call it: colour, then material or pattern if obvious, then the type ("Navy wool jumper", "Black ankle boots", "Striped cotton shirt"). Never invent a brand.
+- detail is the brand only if a label or logo is clearly readable, else null.
+- category is one of: Tops & T-shirts, Shirts & blouses, Jumpers & knitwear, Hoodies & sweatshirts, Coats & jackets, Suits & blazers, Dresses, Skirts, Trousers & jeans, Shorts, Sportswear, Nightwear, Underwear & socks, Shoes, Boots, Bags, Hats & scarves, Belts & ties, Accessories.
+- Folded piles: count what you can see; identical items together are one entry with a quantity.
+
+Anything else (games, DVDs, records, tools, toys, tins, craft supplies):
+- name is the title or a short plain name; detail is the maker, brand, artist or platform if printed; category is a short, natural group for that place ("Board games", "Vinyl", "Power tools").
+
+Always:
+- Write names in full words, in the language printed. No marketing words. Never make up titles, authors or brands.
+- quantity is 1 unless there are several of exactly the same thing.
+- List the things in a natural order: left to right, top shelf first.
+- If you can't make out any separate things, set readable to false and items to [].`;
+
 function reply(status: number, body: Record<string, unknown>) {
   return new Response(JSON.stringify(body), { status, headers: { ...CORS, "Content-Type": "application/json" } });
 }
@@ -133,9 +188,11 @@ Deno.serve(async (req) => {
 
   let householdId = "";
   let imagePaths: string[] = [];
+  let many = false;
   try {
     const body = await req.json();
     householdId = String(body?.householdId ?? "");
+    many = body?.mode === "many";
     const raw = Array.isArray(body?.imagePaths) ? body.imagePaths : body?.imagePath ? [body.imagePath] : [];
     imagePaths = raw.map((p: unknown) => String(p));
   } catch {
@@ -187,18 +244,25 @@ Deno.serve(async (req) => {
   const today = new Date().toISOString().slice(0, 10);
   const started = Date.now();
   try {
-    const anthropic = new Anthropic({ apiKey, maxRetries: 1, timeout: 45_000 });
+    const anthropic = new Anthropic({ apiKey, maxRetries: 1, timeout: many ? 110_000 : 45_000 });
+    const pictures = images.map((img) => ({ type: "image" as const, source: { type: "base64" as const, media_type: img.type, data: img.data } }));
     const response = await anthropic.messages.create({
       model: MODEL,
-      max_tokens: 4000,
-      output_config: { effort: "low", format: { type: "json_schema", schema: SCHEMA } },
-      system: SYSTEM,
+      // A full bookshelf is a long list, and reading small spines needs a little more care.
+      max_tokens: many ? 16000 : 4000,
+      output_config: { effort: many ? "medium" : "low", format: { type: "json_schema", schema: many ? MANY_SCHEMA : SCHEMA } },
+      system: many ? MANY_SYSTEM : SYSTEM,
       messages: [
         {
           role: "user",
           content: [
-            ...images.map((img) => ({ type: "image" as const, source: { type: "base64" as const, media_type: img.type, data: img.data } })),
-            { type: "text", text: `Today is ${today}. Read this label${images.length > 1 ? ` from these ${images.length} photos of the same pack` : ""}.` },
+            ...pictures,
+            {
+              type: "text",
+              text: many
+                ? `List every separate thing you can make out${images.length > 1 ? ` across these ${images.length} photos of the same place` : " in this photo"}.`
+                : `Today is ${today}. Read this label${images.length > 1 ? ` from these ${images.length} photos of the same pack` : ""}.`,
+            },
           ],
         },
       ],
@@ -219,6 +283,12 @@ Deno.serve(async (req) => {
       return reply(502, { error: "failed" });
     }
     const reading = JSON.parse(text.text);
+    if (many) {
+      const items = Array.isArray(reading?.items) ? reading.items.slice(0, MAX_ITEMS) : [];
+      await log({ ...usage, parsed_json: { kind: reading?.kind, count: items.length }, error_code: items.length ? null : "none_found" });
+      if (reading?.readable === false || !items.length) return reply(422, { error: "unreadable" });
+      return reply(200, { list: { kind: reading.kind, items } });
+    }
     if (reading?.readable === false) {
       await log({ ...usage, parsed_json: reading });
       return reply(422, { error: "unreadable" });
