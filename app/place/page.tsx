@@ -18,7 +18,7 @@ import { Screen, Splash } from "@/components/ui/Screen";
 import { Button } from "@/components/ui/Button";
 import { Notice } from "@/components/ui/Notice";
 import { Toast } from "@/components/ui/Toast";
-import { IconChevronLeft, IconPencil, IconPlus, IconSearch } from "@/components/ui/icons";
+import { IconChevronLeft, IconPencil, IconPlus, IconSearch, IconSticker } from "@/components/ui/icons";
 import { PlacePhoto } from "@/components/art/PlacePhoto";
 import { timeAgo } from "@/lib/domain/dates";
 import { placeType } from "@/components/home/placeTypes";
@@ -28,6 +28,7 @@ import { useQuickTake } from "@/components/stock/useQuickTake";
 import { AddItemSheet } from "@/components/stock/AddItemSheet";
 import { TakeOutSheet } from "@/components/stock/TakeOutSheet";
 import { EditPlaceSheet } from "@/components/stock/EditPlaceSheet";
+import { StickerSheet } from "@/components/stickers/StickerSheet";
 
 type PlaceInfo = { id: string; name: string; type: LocationType; householdId: string; imagePath?: string | null };
 
@@ -46,6 +47,7 @@ function Place() {
   const [filter, setFilter] = useState("");
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [sticker, setSticker] = useState(false);
   const [open, setOpen] = useState<StockItem | null>(null);
   const [category, setCategory] = useState<string | null>(null);
   const [last, setLast] = useState<{ actor: string | null; at: string } | null>(null);
@@ -172,13 +174,22 @@ function Place() {
           <Link href="/" aria-label="Back to My Places" className="grid size-11 place-items-center rounded-full bg-[#fffdf8]/92 text-[#17242a] shadow-[var(--shadow-card)] backdrop-blur transition hover:bg-[#fffdf8]">
             <IconChevronLeft className="size-5" />
           </Link>
-          <button
-            onClick={() => setEditing(true)}
-            aria-label={`Edit ${place.name}`}
-            className="grid size-11 place-items-center rounded-full bg-[#fffdf8]/92 text-[#17242a] shadow-[var(--shadow-card)] backdrop-blur transition hover:bg-[#fffdf8]"
-          >
-            <IconPencil className="size-[18px]" />
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setSticker(true)}
+              aria-label={`Sticker and QR label for ${place.name}`}
+              className="grid size-11 place-items-center rounded-full bg-[#fffdf8]/92 text-[#17242a] shadow-[var(--shadow-card)] backdrop-blur transition hover:bg-[#fffdf8]"
+            >
+              <IconSticker className="size-5" />
+            </button>
+            <button
+              onClick={() => setEditing(true)}
+              aria-label={`Edit ${place.name}`}
+              className="grid size-11 place-items-center rounded-full bg-[#fffdf8]/92 text-[#17242a] shadow-[var(--shadow-card)] backdrop-blur transition hover:bg-[#fffdf8]"
+            >
+              <IconPencil className="size-[18px]" />
+            </button>
+          </div>
         </div>
         <div className="absolute inset-x-5 bottom-4 text-[#fffdf8] sm:inset-x-7 sm:bottom-6">
           <h1 className="truncate font-display text-[1.9rem] leading-tight font-bold tracking-[-0.025em] [text-shadow:0_2px_12px_rgba(0,0,0,0.3)] sm:text-[2.3rem]">
@@ -297,6 +308,7 @@ function Place() {
           onRemoved={() => router.replace("/")}
         />
       ) : null}
+      {sticker ? <StickerSheet open={sticker} onClose={() => setSticker(false)} place={place} /> : null}
       <Toast toast={toast} onDone={clear} />
     </AppShell>
   );
