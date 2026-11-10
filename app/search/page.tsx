@@ -14,12 +14,12 @@ import type { StockItem } from "@/lib/domain/stock";
 import { formatQuantity } from "@/lib/domain/quantity";
 import { Notice } from "@/components/ui/Notice";
 import { Toast } from "@/components/ui/Toast";
-import { IconChevronRight, IconSearch, IconX } from "@/components/ui/icons";
+import { IconChevronRight, IconScan, IconSearch, IconX } from "@/components/ui/icons";
 import { KEYS, readLocal, writeLocal } from "@/lib/storage";
 import { useQuickTake } from "@/components/stock/useQuickTake";
 import { placeType } from "@/components/home/placeTypes";
 import { PlacePhoto } from "@/components/art/PlacePhoto";
-import { ItemList, ItemRow } from "@/components/stock/ItemRow";
+import { ItemList, ItemListSkeleton, ItemRow } from "@/components/stock/ItemRow";
 import { TakeOutSheet } from "@/components/stock/TakeOutSheet";
 import { useUndoToast } from "@/components/stock/useUndoToast";
 
@@ -121,6 +121,11 @@ function Search({ session }: { session: Session }) {
             <IconX className="size-4" />
           </button>
         ) : null}
+        {!query ? (
+          <Link href="/add/" aria-label="Scan a label" title="Scan a label" className="-mr-2 grid size-10 shrink-0 place-items-center rounded-lg text-leaf hover:bg-sunk">
+            <IconScan className="size-5" />
+          </Link>
+        ) : null}
         {busy ? (
           <span
             className="size-4 animate-spin rounded-full border-2 border-leaf border-r-transparent"
@@ -201,10 +206,7 @@ function Search({ session }: { session: Session }) {
                 {shown ? countThings(shown.length) : "Things"}
               </SectionLabel>
               {shown === null ? (
-                <div
-                  className="h-16 animate-pulse rounded-[var(--radius-card)] bg-sunk"
-                  aria-busy="true"
-                />
+                <ItemListSkeleton rows={3} />
               ) : shown.length === 0 ? (
                 <p className="text-mute">
                   Nothing called &ldquo;{q}&rdquo; yet. Check the spelling, or
@@ -218,6 +220,7 @@ function Search({ session }: { session: Session }) {
                       index={i}
                       item={item}
                       place={placeById.get(item.locationId)?.name}
+                      addedBy={(item.addedBy && names.get(item.addedBy)) || ""}
                       onOpen={(it) => {
                         remember();
                         setOpen(it);

@@ -24,7 +24,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import { Notice } from "@/components/ui/Notice";
 import { Button } from "@/components/ui/Button";
 import { Toast } from "@/components/ui/Toast";
-import { IconCheck, IconPlus, IconSearch } from "@/components/ui/icons";
+import { IconCheck, IconPlus, IconScan, IconSearch } from "@/components/ui/icons";
 import { PlacePhoto } from "@/components/art/PlacePhoto";
 import { AddPlaceSheet } from "@/components/home/AddPlaceSheet";
 import { AddPlaceTile, GroupCard } from "@/components/home/PlaceCard";
@@ -110,6 +110,7 @@ function Home({ session }: { session: Session }) {
       index={i}
       item={item}
       place={placeById.get(item.locationId)?.name}
+      addedBy={item.addedBy ? who(item.addedBy) : ""}
       onOpen={setOpen}
       onTakeOne={takeOne}
       taking={taking === item.id}
@@ -167,13 +168,15 @@ function Home({ session }: { session: Session }) {
             ))}
           </Link>
         </div>
-        <Link
-          href="/search/"
-          className="flex min-h-12 items-center gap-3 rounded-xl border border-line bg-card px-4 text-[15px] text-mute transition hover:text-fg sm:w-80"
-        >
-          <IconSearch className="size-5" />
-          {total > 0 ? `Search ${countThings(total)}` : "Search everything you have"}
-        </Link>
+        <div className="flex min-h-12 items-center rounded-xl border border-line bg-card text-[15px] text-mute sm:w-80">
+          <Link href="/search/" className="flex min-h-12 min-w-0 flex-1 items-center gap-3 rounded-l-xl pl-4 transition hover:text-fg">
+            <IconSearch className="size-5 shrink-0" />
+            <span className="truncate">{total > 0 ? `Search ${countThings(total)}` : "Search everything you have"}</span>
+          </Link>
+          <Link href="/add/" aria-label="Scan a label" title="Scan a label" className="mr-1 grid size-10 shrink-0 place-items-center rounded-lg text-leaf transition hover:bg-sunk">
+            <IconScan className="size-5" />
+          </Link>
+        </div>
       </header>
 
       {error ? <Notice>{error}</Notice> : null}

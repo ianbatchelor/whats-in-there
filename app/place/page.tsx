@@ -22,7 +22,7 @@ import { IconChevronLeft, IconPencil, IconPlus, IconSearch, IconSticker } from "
 import { PlacePhoto } from "@/components/art/PlacePhoto";
 import { timeAgo } from "@/lib/domain/dates";
 import { placeType } from "@/components/home/placeTypes";
-import { ItemList, ItemRow } from "@/components/stock/ItemRow";
+import { ItemList, ItemListSkeleton, ItemRow } from "@/components/stock/ItemRow";
 import { useUndoToast } from "@/components/stock/useUndoToast";
 import { useQuickTake } from "@/components/stock/useQuickTake";
 import { AddItemSheet } from "@/components/stock/AddItemSheet";
@@ -242,11 +242,7 @@ function Place() {
       ) : null}
 
       {shown === null ? (
-        <div className="flex flex-col gap-2" aria-busy="true">
-          {[0, 1, 2].map((i) => (
-            <div key={i} className="h-16 animate-pulse rounded-[var(--radius-card)] bg-sunk" />
-          ))}
-        </div>
+        <ItemListSkeleton rows={4} />
       ) : items!.length === 0 ? (
         <div className="flex flex-col items-center gap-3 rounded-[24px] bg-sunk/60 px-6 py-10 text-center">
           <span className="block h-28 w-40 overflow-hidden rounded-2xl opacity-90 shadow-[var(--shadow-card)]">
@@ -270,7 +266,7 @@ function Place() {
           <SectionLabel id="items-h">{filtering ? countThings(shown.length) : ["freezer", "fridge", "pantry"].includes(place.type) ? "Use first" : "In here"}</SectionLabel>
           <ItemList>
             {shown.map((item, i) => (
-              <ItemRow key={item.id} index={i} item={item} onOpen={setOpen} onTakeOne={takeOne} taking={taking === item.id} />
+              <ItemRow key={item.id} index={i} item={item} addedBy={(item.addedBy && names.get(item.addedBy)) || ""} onOpen={setOpen} onTakeOne={takeOne} taking={taking === item.id} />
             ))}
           </ItemList>
         </section>
