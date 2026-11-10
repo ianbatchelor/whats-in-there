@@ -12,23 +12,23 @@ import { isConfigured } from "@/lib/config";
 import { useSession } from "@/lib/hooks/useSession";
 import { useHousehold } from "@/lib/hooks/useHousehold";
 import { friendlyError } from "@/lib/supabase/errors";
-import { SECTION_LABELS, countThings, groupPlaces, recentPlaces, sectionOf, soonCounts, usedSections, type PlaceSection } from "@/lib/domain/places";
-import { SOON_DAYS, addDays } from "@/lib/domain/stock";
-import { todayIso, timeAgo } from "@/lib/domain/dates";
+import { SECTION_LABELS, countThings, groupPlaces, sectionOf, usedSections, type PlaceSection } from "@/lib/domain/places";
+import { timeAgo } from "@/lib/domain/dates";
 import { activitySentence } from "@/lib/domain/activity";
 import type { StockItem } from "@/lib/domain/stock";
-import { formatQuantity } from "@/lib/domain/quantity";
-import { loadActivity, loadSoon, loadUseFirst, type Activity } from "@/lib/stock";
+import { loadActivity, loadAttention, loadUseFirst, type Activity } from "@/lib/stock";
+import { itemStatus, needsAttention } from "@/lib/domain/status";
+import { tookOutMessage, useQuickTake } from "@/components/stock/useQuickTake";
 import { Splash } from "@/components/ui/Screen";
 import { Avatar } from "@/components/ui/Avatar";
 import { Notice } from "@/components/ui/Notice";
 import { Button } from "@/components/ui/Button";
 import { Toast } from "@/components/ui/Toast";
-import { IconPlus, IconSearch } from "@/components/ui/icons";
+import { IconCheck, IconPlus, IconSearch } from "@/components/ui/icons";
 import { PlacePhoto } from "@/components/art/PlacePhoto";
 import { AddPlaceSheet } from "@/components/home/AddPlaceSheet";
 import { AddPlaceTile, GroupCard } from "@/components/home/PlaceCard";
-import { ItemList, ItemRow, ItemTile, StatusPill } from "@/components/stock/ItemRow";
+import { ItemList, ItemRow } from "@/components/stock/ItemRow";
 import { TakeOutSheet } from "@/components/stock/TakeOutSheet";
 import { useUndoToast } from "@/components/stock/useUndoToast";
 
@@ -47,21 +47,22 @@ function Home({ session }: { session: Session }) {
   const [adding, setAdding] = useState(false);
   const [useFirst, setUseFirst] = useState<StockItem[]>([]);
   const [activity, setActivity] = useState<Activity[]>([]);
-  const [soon, setSoon] = useState<Map<string, number>>(new Map());
+  const [attention, setAttention] = useState<StockItem[]>([]);
+  const [showAll, setShowAll] = useState(false);
   const [section, setSection] = useState<PlaceSection | "all">("all");
   const [open, setOpen] = useState<StockItem | null>(null);
 
   const loadExtras = useCallback(async () => {
     if (!current) return;
     try {
-      const [first, acts, soonRows] = await Promise.all([
-        loadUseFirst(current.householdId, 4),
+      const [first, acts, due] = await Promise.all([
+        loadUseFirst(current.householdId, 8),
         loadActivity(current.householdId, 40),
-        loadSoon(current.householdId),
+        loadAttention(current.householdId),
       ]);
       setUseFirst(first);
       setActivity(acts);
-      setSoon(soonCounts(soonRows, addDays(todayIso(), SOON_DAYS)));
+      setAttention(due.filter((i) => needsAttention(i)));
     } catch (e) {
       hh.setError(friendlyError(e));
     }
@@ -75,6 +76,7 @@ function Home({ session }: { session: Session }) {
   const { toast, clear, announce } = useUndoToast(() => {
     refresh();
   });
+  const { taking, takeOne } = useQuickTake(announce, refresh);
 
   if (error && !current) {
     return (
@@ -92,41 +94,30 @@ function Home({ session }: { session: Session }) {
   const shownPlaces = places && section !== "all" ? places.filter((p) => sectionOf(p.type) === section) : places;
   const groups = shownPlaces ? groupPlaces(shownPlaces) : null;
   const total = places?.reduce((n, p) => n + p.itemCount, 0) ?? 0;
-  const recent = recentPlaces(activity, 3).filter((r) => r.locationId && placeById.has(r.locationId));
   const who = (id: string | null) => (id === session.user.id ? "You" : (id && names.get(id)) || "Someone");
+  const soon = new Map<string, number>();
+  for (const i of attention) soon.set(i.locationId, (soon.get(i.locationId) ?? 0) + 1);
+  const late = attention.filter((i) => itemStatus(i)?.tone === "late").length;
+  const dueIds = new Set(attention.map((i) => i.id));
+  // "Longest stored" is what's left of the use-first order once dated things have their own card.
+  const oldest = useFirst.filter((i) => !dueIds.has(i.id)).slice(0, 4);
+  const shownAttention = showAll ? attention : attention.slice(0, 4);
+  const firstName = hh.me?.displayName.trim().split(/\s+/)[0];
 
-  const useFirstList =
-    useFirst.length > 0 ? (
-      <ItemList>
-        {useFirst.map((item, i) => (
-          <ItemRow key={item.id} index={i} item={item} place={placeById.get(item.locationId)?.name} onOpen={setOpen} />
-        ))}
-      </ItemList>
-    ) : null;
+  const row = (item: StockItem, i: number) => (
+    <ItemRow
+      key={item.id}
+      index={i}
+      item={item}
+      place={placeById.get(item.locationId)?.name}
+      onOpen={setOpen}
+      onTakeOne={takeOne}
+      taking={taking === item.id}
+    />
+  );
 
   const rail = (
     <>
-      <section className="flex flex-col gap-3" aria-labelledby="rail-first">
-        <SectionLabel id="rail-first">Use first</SectionLabel>
-        {useFirst.length > 0 ? (
-          <ul className="flex flex-col gap-1">
-            {useFirst.map((item) => (
-              <li key={item.id}>
-                <button onClick={() => setOpen(item)} className="-mx-2 flex w-[calc(100%+16px)] items-center gap-3 rounded-xl px-2 py-1.5 text-left hover:bg-sunk">
-                  <ItemTile name={item.productName} category={item.category} imagePath={item.imagePath} size={38} />
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-[14px] font-semibold">{item.productName}</span>
-                    <span className="block truncate text-[12.5px] text-mute">{placeById.get(item.locationId)?.name}</span>
-                  </span>
-                  <StatusPill item={item} />
-                </button>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="text-sm text-mute">Nothing needs using up soon.</p>
-        )}
-      </section>
       <section className="flex flex-col gap-3" aria-labelledby="rail-act">
         <div className="flex items-baseline justify-between">
           <SectionLabel id="rail-act">Activity</SectionLabel>
@@ -161,15 +152,17 @@ function Home({ session }: { session: Session }) {
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className="text-[13.5px] text-mute">
-              {current.name}
-              {places ? ` · ${places.length === 1 ? "1 place" : `${places.length} places`} · ${countThings(total)}` : ""}
+              {current.name} · {new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })}
             </p>
-            <h1 className="font-display text-[1.75rem] leading-tight font-bold tracking-[-0.025em] sm:text-[2rem]">My Places</h1>
+            <h1 className="font-display text-[1.75rem] leading-tight font-bold tracking-[-0.025em] sm:text-[2rem]">
+              {greeting()}
+              {firstName ? `, ${firstName}` : ""}
+            </h1>
           </div>
           <Link href="/household/" className="mt-1 flex items-center sm:hidden" aria-label="Household and members">
             {members.slice(0, 3).map((m, i) => (
               <span key={m.userId} className="-ml-2 rounded-full ring-2 ring-bg first:ml-0">
-                <Avatar name={m.displayName} index={i} size={36} />
+                <Avatar name={m.displayName} index={i} size={34} />
               </span>
             ))}
           </Link>
@@ -185,48 +178,63 @@ function Home({ session }: { session: Session }) {
 
       {error ? <Notice>{error}</Notice> : null}
 
-      {recent.length > 0 ? (
-        <section className="flex flex-col gap-2.5" aria-labelledby="recent-h">
+      {places && places.length > 0 ? (
+        <dl className="hidden grid-cols-4 divide-x divide-line rounded-2xl border border-line bg-card lg:grid">
+          {[
+            { n: total, label: total === 1 ? "thing" : "things", tone: "" },
+            { n: places.length, label: places.length === 1 ? "place" : "places", tone: "" },
+            { n: late, label: "past a date", tone: late > 0 ? "text-late" : "" },
+            { n: attention.length - late, label: "to use soon", tone: attention.length - late > 0 ? "text-soon" : "" },
+          ].map((s) => (
+            <div key={s.label} className="px-5 py-3.5">
+              <dd className={`font-display text-[1.45rem] leading-tight font-bold tabular-nums ${s.tone}`}>{s.n}</dd>
+              <dt className="text-[13px] text-mute">{s.label}</dt>
+            </div>
+          ))}
+        </dl>
+      ) : null}
+
+      {attention.length > 0 ? (
+        <section className="flex flex-col gap-2.5" aria-labelledby="attention-h">
           <div className="flex items-baseline justify-between">
-            <SectionLabel id="recent-h">Recently opened</SectionLabel>
-            <Link href="/activity/" className="text-[13px] font-semibold text-leaf xl:hidden">
-              Activity
-            </Link>
+            <SectionLabel id="attention-h">Needs attention</SectionLabel>
+            <span className="text-[13px] text-mute">
+              {late > 0 ? `${late} past a date` : null}
+              {late > 0 && attention.length > late ? " · " : null}
+              {attention.length > late ? `${attention.length - late} to use soon` : null}
+            </span>
           </div>
-          <ul className="grid grid-cols-3 gap-2.5 sm:max-w-xl">
-            {recent.map((r) => {
-              const p = placeById.get(r.locationId!)!;
-              return (
-                <li key={p.id}>
-                  <Link href={`/place/?id=${p.id}`} className="group block">
-                    <span className="block aspect-[4/3] overflow-hidden rounded-2xl bg-sunk">
-                      <PlacePhoto type={p.type} className="transition duration-500 group-hover:scale-[1.05]" />
-                    </span>
-                    <span className="mt-1.5 block truncate text-[13px] font-semibold">{p.name}</span>
-                    <span className="block truncate text-[12px] text-mute">
-                      {who(r.actor)} · {timeAgo(r.at)}
-                    </span>
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
+          <ItemList>{shownAttention.map(row)}</ItemList>
+          {attention.length > 4 ? (
+            <button onClick={() => setShowAll((v) => !v)} className="min-h-10 self-start text-[14px] font-semibold text-leaf">
+              {showAll ? "Show fewer" : `Show all ${attention.length}`}
+            </button>
+          ) : null}
         </section>
+      ) : total > 0 ? (
+        <p className="flex items-center gap-2.5 rounded-2xl border border-line bg-card px-4 py-3 text-[14.5px] text-mute">
+          <span className="grid size-6 shrink-0 place-items-center rounded-full bg-ok-bg text-ok" aria-hidden="true">
+            <IconCheck className="size-3.5" />
+          </span>
+          Nothing needs using up in the next two weeks.
+        </p>
       ) : null}
 
       <section className="flex flex-col gap-3" aria-labelledby="places-h">
         <h2 id="places-h" className="sr-only">
           Places
         </h2>
+        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+          <SectionLabel>Places</SectionLabel>
         {sections.length > 1 ? (
-          <div className="flex rounded-xl bg-sunk p-[3px] sm:w-fit" role="group" aria-label="Show places">
+          <div className="flex gap-1.5" role="group" aria-label="Show places">
             {(["all", ...sections] as const).map((s) => (
               <button
                 key={s}
                 onClick={() => setSection(s)}
                 aria-pressed={section === s}
-                className={`h-9 flex-1 rounded-[10px] px-4 text-[13.5px] font-semibold transition sm:flex-none ${
-                  section === s ? "bg-card text-fg shadow-[0_1px_3px_rgba(0,0,0,0.08)]" : "text-mute hover:text-fg"
+                className={`h-8 rounded-full border px-3.5 text-[13px] font-semibold transition ${
+                  section === s ? "border-fg bg-fg text-bg" : "border-line bg-card text-mute hover:text-fg"
                 }`}
               >
                 {s === "all" ? "All" : SECTION_LABELS[s]}
@@ -234,8 +242,9 @@ function Home({ session }: { session: Session }) {
             ))}
           </div>
         ) : null}
+        </div>
         {groups === null ? (
-          <ul className="grid grid-cols-2 gap-x-3 gap-y-5 sm:grid-cols-3 sm:gap-x-4" aria-busy="true">
+          <ul className="grid grid-cols-2 gap-x-3 gap-y-5 sm:grid-cols-3 sm:gap-x-4 lg:grid-cols-4" aria-busy="true">
             {[0, 1, 2, 3].map((i) => (
               <li key={i} className="aspect-[4/3] animate-pulse rounded-2xl bg-sunk" />
             ))}
@@ -243,7 +252,7 @@ function Home({ session }: { session: Session }) {
         ) : places!.length === 0 ? (
           <FirstPlace onAdd={() => setAdding(true)} />
         ) : (
-          <ul className="grid grid-cols-2 gap-x-3 gap-y-5 sm:grid-cols-3 sm:gap-x-4">
+          <ul className="grid grid-cols-2 gap-x-3 gap-y-5 sm:grid-cols-3 sm:gap-x-4 lg:grid-cols-4">
             {groups.map((g, i) => (
               <GroupCard
                 key={g.type}
@@ -257,10 +266,10 @@ function Home({ session }: { session: Session }) {
         )}
       </section>
 
-      {useFirstList ? (
-        <section aria-labelledby="first-h" className="flex flex-col gap-2.5 xl:hidden">
-          <SectionLabel id="first-h">Use first</SectionLabel>
-          {useFirstList}
+      {oldest.length > 0 ? (
+        <section aria-labelledby="first-h" className="flex flex-col gap-2.5">
+          <SectionLabel id="first-h">Longest stored</SectionLabel>
+          <ItemList>{oldest.map(row)}</ItemList>
         </section>
       ) : null}
 
@@ -272,13 +281,17 @@ function Home({ session }: { session: Session }) {
         onClose={() => setOpen(null)}
         onTaken={(before, after, amount, movementId) => {
           refresh();
-          const left = after.quantity > 0 ? `, ${formatQuantity(after.quantity, after.unit)} left` : ", all gone";
-          announce(`Took out ${formatQuantity(amount, before.unit)} of ${before.productName}${left}`, movementId);
+          announce(tookOutMessage(before, after, amount), movementId);
         }}
       />
       <Toast toast={toast} onDone={clear} />
     </AppShell>
   );
+}
+
+function greeting(now: Date = new Date()): string {
+  const h = now.getHours();
+  return h < 5 ? "Good evening" : h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
 }
 
 function FirstPlace({ onAdd }: { onAdd: () => void }) {

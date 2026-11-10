@@ -24,6 +24,7 @@ import { timeAgo } from "@/lib/domain/dates";
 import { placeType } from "@/components/home/placeTypes";
 import { ItemList, ItemRow } from "@/components/stock/ItemRow";
 import { useUndoToast } from "@/components/stock/useUndoToast";
+import { useQuickTake } from "@/components/stock/useQuickTake";
 import { AddItemSheet } from "@/components/stock/AddItemSheet";
 import { TakeOutSheet } from "@/components/stock/TakeOutSheet";
 import { EditPlaceSheet } from "@/components/stock/EditPlaceSheet";
@@ -128,6 +129,10 @@ function Place() {
   }, [items, filter, category]);
 
   const { toast, clear, announce } = useUndoToast(() => {
+    if (place) refresh(place.id);
+  });
+
+  const { taking, takeOne } = useQuickTake(announce, () => {
     if (place) refresh(place.id);
   });
 
@@ -266,7 +271,7 @@ function Place() {
           <SectionLabel id="items-h">{filtering ? countThings(shown.length) : ["freezer", "fridge", "pantry"].includes(place.type) ? "Use first" : "In here"}</SectionLabel>
           <ItemList>
             {shown.map((item, i) => (
-              <ItemRow key={item.id} index={i} item={item} onOpen={setOpen} />
+              <ItemRow key={item.id} index={i} item={item} onOpen={setOpen} onTakeOne={takeOne} taking={taking === item.id} />
             ))}
           </ItemList>
         </section>

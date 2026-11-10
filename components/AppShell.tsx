@@ -3,12 +3,12 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { BrandMark, Wordmark } from "@/components/brand/BrandMark";
-import { IconActivity, IconHome, IconPeople, IconPlusCircle, IconSearch } from "@/components/ui/icons";
+import { IconActivity, IconHome, IconPeople, IconScan, IconSearch } from "@/components/ui/icons";
 
-const NAV = [
+const NAV: { href: string; label: string; Icon: (p: { className?: string }) => React.ReactNode; primary?: boolean; match: (p: string) => boolean }[] = [
   { href: "/", label: "Home", Icon: IconHome, match: (p: string) => p === "/" || p.startsWith("/place") },
   { href: "/search/", label: "Search", Icon: IconSearch, match: (p: string) => p.startsWith("/search") },
-  { href: "/add/", label: "Add", Icon: IconPlusCircle, match: (p: string) => p.startsWith("/add") },
+  { href: "/add/", label: "Add", Icon: IconScan, primary: true, match: (p: string) => p.startsWith("/add") },
   { href: "/activity/", label: "Activity", Icon: IconActivity, match: (p: string) => p.startsWith("/activity") },
   { href: "/household/", label: "Household", Icon: IconPeople, match: (p: string) => p.startsWith("/household") },
 ];
@@ -27,7 +27,7 @@ export function AppShell({ children, wide = false, rail }: { children: React.Rea
           <Wordmark className="text-[15.5px]" />
         </Link>
         <nav aria-label="Main" className="flex flex-col gap-1">
-          {NAV.map(({ href, label, Icon, match }) => {
+          {NAV.filter((n) => !n.primary).map(({ href, label, Icon, match }) => {
             const active = match(path);
             return (
               <Link
@@ -43,6 +43,14 @@ export function AppShell({ children, wide = false, rail }: { children: React.Rea
               </Link>
             );
           })}
+          <Link
+            href="/add/"
+            aria-current={path.startsWith("/add") ? "page" : undefined}
+            className="mt-3 flex min-h-11 items-center justify-center gap-2.5 rounded-xl bg-go text-[14.5px] font-semibold text-on-go transition hover:opacity-90"
+          >
+            <IconScan className="size-5" />
+            Add or scan
+          </Link>
         </nav>
       </aside>
 
@@ -63,18 +71,26 @@ export function AppShell({ children, wide = false, rail }: { children: React.Rea
         className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-card/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md lg:hidden"
       >
         <ul className="mx-auto grid max-w-lg grid-cols-5">
-          {NAV.map(({ href, label, Icon, match }) => {
+          {NAV.map(({ href, label, Icon, match, primary }) => {
             const active = match(path);
             return (
               <li key={href}>
-                <Link
-                  href={href}
-                  aria-current={active ? "page" : undefined}
-                  className={`flex min-h-[60px] flex-col items-center justify-center gap-1 text-[11px] font-semibold ${active ? "text-go" : "text-mute"}`}
-                >
-                  <Icon className={`size-[22px] ${active ? "stroke-[2.2]" : ""}`} />
-                  {label}
-                </Link>
+                {primary ? (
+                  <Link href={href} aria-current={active ? "page" : undefined} aria-label="Add or scan" className="flex min-h-[60px] items-start justify-center">
+                    <span className="-mt-4 grid size-[54px] place-items-center rounded-[18px] bg-go text-on-go shadow-[0_10px_20px_-8px_rgba(30,74,56,0.65)] ring-4 ring-bg transition active:scale-95">
+                      <Icon className="size-6" />
+                    </span>
+                  </Link>
+                ) : (
+                  <Link
+                    href={href}
+                    aria-current={active ? "page" : undefined}
+                    className={`flex min-h-[60px] flex-col items-center justify-center gap-1 text-[11px] font-semibold ${active ? "text-fg" : "text-mute"}`}
+                  >
+                    <Icon className={`size-[22px] ${active ? "stroke-[2.2]" : ""}`} />
+                    {label}
+                  </Link>
+                )}
               </li>
             );
           })}

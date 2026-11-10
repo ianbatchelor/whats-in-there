@@ -14,12 +14,23 @@ import type { StockItem } from "@/lib/domain/stock";
 import { formatQuantity } from "@/lib/domain/quantity";
 import { Notice } from "@/components/ui/Notice";
 import { Toast } from "@/components/ui/Toast";
-import { IconChevronRight, IconSearch } from "@/components/ui/icons";
+import { IconChevronRight, IconSearch, IconX } from "@/components/ui/icons";
+import { KEYS, readLocal, writeLocal } from "@/lib/storage";
+import { useQuickTake } from "@/components/stock/useQuickTake";
 import { placeType } from "@/components/home/placeTypes";
 import { PlacePhoto } from "@/components/art/PlacePhoto";
 import { ItemList, ItemRow } from "@/components/stock/ItemRow";
 import { TakeOutSheet } from "@/components/stock/TakeOutSheet";
 import { useUndoToast } from "@/components/stock/useUndoToast";
+
+function readSearches(): string[] {
+  try {
+    const raw = JSON.parse(readLocal(KEYS.searches) ?? "[]");
+    return Array.isArray(raw) ? raw.filter((r): r is string => typeof r === "string").slice(0, 6) : [];
+  } catch {
+    return [];
+  }
+}
 
 export default function SearchPage() {
   return <AuthGate>{(session) => <Search session={session} />}</AuthGate>;
@@ -77,11 +88,24 @@ function Search({ session }: { session: Session }) {
   });
 
   const shown = q.length >= 2 ? results : null;
+  const { taking, takeOne } = useQuickTake(announce, refresh);
+  const [recent, setRecent] = useState<string[]>([]);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setRecent(readSearches());
+  }, []);
+  /** A search is worth remembering once it led somewhere. */
+  const remember = () => {
+    if (q.length < 2) return;
+    const next = [q, ...recent.filter((r) => r.toLowerCase() !== q.toLowerCase())].slice(0, 6);
+    setRecent(next);
+    writeLocal(KEYS.searches, JSON.stringify(next));
+  };
 
   return (
     <AppShell>
       <PageHeader title="Search" sub="Everything you have, in every place." />
-      <label className="sticky top-[max(8px,env(safe-area-inset-top))] z-20 flex min-h-14 items-center gap-3 rounded-2xl border border-line bg-card px-4 shadow-[var(--shadow-lift)] focus-within:border-leaf">
+      <label className="sticky top-[max(8px,env(safe-area-inset-top))] z-20 flex min-h-13 items-center gap-3 rounded-xl border border-line bg-card px-4 shadow-[var(--shadow-lift)] focus-within:border-leaf">
         <IconSearch className="size-5 shrink-0 text-mute" />
         <input
           type="search"
@@ -90,8 +114,13 @@ function Search({ session }: { session: Session }) {
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Try passport, curry or Christmas lights"
           aria-label="Search everything"
-          className="min-w-0 flex-1 bg-transparent text-[17px] placeholder:text-mute focus:outline-none focus-visible:outline-none"
+          className="min-w-0 flex-1 bg-transparent text-[17px] placeholder:text-mute focus:outline-none focus-visible:outline-none [&::-webkit-search-cancel-button]:hidden"
         />
+        {query && !busy ? (
+          <button type="button" onClick={() => setQuery("")} aria-label="Clear search" className="-mr-2 grid size-9 shrink-0 place-items-center rounded-full text-mute hover:bg-sunk hover:text-fg">
+            <IconX className="size-4" />
+          </button>
+        ) : null}
         {busy ? (
           <span
             className="size-4 animate-spin rounded-full border-2 border-leaf border-r-transparent"
@@ -104,9 +133,37 @@ function Search({ session }: { session: Session }) {
       {error ? <Notice>{error}</Notice> : null}
 
       {q.length < 2 ? (
-        <p className="text-mute">
-          Type at least two letters. Results show which place each thing is in.
-        </p>
+        <div className="flex flex-col gap-6">
+          {recent.length > 0 ? (
+            <section className="flex flex-col gap-2.5" aria-labelledby="recent-h">
+              <SectionLabel id="recent-h">Recent searches</SectionLabel>
+              <div className="flex flex-wrap gap-1.5">
+                {recent.map((r) => (
+                  <button key={r} onClick={() => setQuery(r)} className="min-h-9 rounded-full border border-line bg-card px-3.5 text-[14px] font-medium hover:bg-sunk">
+                    {r}
+                  </button>
+                ))}
+              </div>
+            </section>
+          ) : (
+            <p className="text-mute">Type a name, a brand or a place. Each result shows where the thing is.</p>
+          )}
+          {places && places.length > 0 ? (
+            <section className="flex flex-col gap-2.5" aria-labelledby="browse-h">
+              <SectionLabel id="browse-h">Or look in a place</SectionLabel>
+              <div className="flex flex-wrap gap-1.5">
+                {places.map((p) => (
+                  <Link key={p.id} href={`/place/?id=${p.id}`} className="flex min-h-9 items-center gap-2 rounded-full border border-line bg-card py-1 pr-3.5 pl-1 text-[14px] font-medium hover:bg-sunk">
+                    <span className="size-7 overflow-hidden rounded-full">
+                      <PlacePhoto type={p.type} />
+                    </span>
+                    {p.name}
+                  </Link>
+                ))}
+              </div>
+            </section>
+          ) : null}
+        </div>
       ) : (
         <div className="flex flex-col gap-6" aria-live="polite">
           {matchingPlaces.length > 0 ? (
@@ -117,6 +174,7 @@ function Search({ session }: { session: Session }) {
                   <li key={p.id}>
                     <Link
                       href={`/place/?id=${p.id}`}
+                      onClick={remember}
                       className="lift flex items-center gap-3 overflow-hidden rounded-2xl border border-line bg-card pr-3 shadow-[var(--shadow-card)]"
                     >
                       <span className="h-14 w-20 shrink-0 overflow-hidden">
@@ -160,7 +218,12 @@ function Search({ session }: { session: Session }) {
                       index={i}
                       item={item}
                       place={placeById.get(item.locationId)?.name}
-                      onOpen={setOpen}
+                      onOpen={(it) => {
+                        remember();
+                        setOpen(it);
+                      }}
+                      onTakeOne={takeOne}
+                      taking={taking === item.id}
                     />
                   ))}
                 </ItemList>

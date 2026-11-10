@@ -18,6 +18,7 @@ import {
   IconLeaf,
   IconMeat,
   IconMilk,
+  IconMinus,
   IconSnow,
   IconSprout,
   IconTin,
@@ -35,7 +36,7 @@ export function itemContext(item: StockItem, place?: string): string {
   if (place) parts.push(place);
   if (item.brand) parts.push(item.brand);
   if (item.weightValue && item.weightUnit) parts.push(formatQuantity(item.weightValue, item.weightUnit));
-  if (parts.length > (place ? 1 : 0)) return parts.join(" · ");
+  if (parts.length > 0) return parts.join(" · ");
   if (item.notes) parts.push(item.notes);
   else if (item.frozenAt) parts.push(`Frozen ${formatDay(item.frozenAt, { year: false })}`);
   else parts.push(`Added ${formatDay(item.addedAt, { year: false })}`);
@@ -105,30 +106,64 @@ export function ItemTile({ name, category, imagePath, size = 44 }: { name: strin
   );
 }
 
-export function ItemRow({ item, place, onOpen, index = 0 }: { item: StockItem; place?: string; onOpen: (item: StockItem) => void; index?: number }) {
+/**
+ * One thing in a list. The row opens the details; the small minus button, when given, takes one
+ * out straight away. On wide screens the status and amount line up in columns.
+ */
+export function ItemRow({
+  item,
+  place,
+  onOpen,
+  onTakeOne,
+  taking = false,
+  index = 0,
+}: {
+  item: StockItem;
+  place?: string;
+  onOpen: (item: StockItem) => void;
+  onTakeOne?: (item: StockItem) => void;
+  taking?: boolean;
+  index?: number;
+}) {
   const qty = roundQty(item.quantity);
   const status = itemStatus(item);
+  const quick = onTakeOne && isCounted(item.unit) && qty >= 1;
+  const unitWord = formatQuantity(1, item.unit).replace(/^[\d.]+ /, "");
   return (
-    <li className="rise" style={{ animationDelay: `${Math.min(index, 8) * 30}ms` }}>
+    <li className="rise flex items-center" style={{ animationDelay: `${Math.min(index, 8) * 30}ms` }}>
       <button
         onClick={() => onOpen(item)}
-        className="flex w-full items-center gap-3 px-3.5 py-2.5 text-left transition hover:bg-sunk/70 active:bg-sunk"
-        aria-label={`${item.productName}, ${formatQuantity(item.quantity, item.unit)}${place ? `, in ${place}` : ""}${status ? `. ${status.detail}` : ""}. Take out or see details`}
+        className="flex min-w-0 flex-1 items-center gap-3 py-2.5 pr-2 pl-3.5 text-left transition hover:bg-sunk/70 active:bg-sunk"
+        aria-label={`${item.productName}, ${formatQuantity(item.quantity, item.unit)}${place ? `, in ${place}` : ""}${status ? `. ${status.detail}` : ""}. See details`}
       >
         <ItemTile name={item.productName} category={item.category} imagePath={item.imagePath} />
         <span className="min-w-0 flex-1">
           <span className="block truncate text-[15px] font-semibold">{item.productName}</span>
           <span className="mt-0.5 flex items-center gap-2">
-            <StatusPill item={item} />
+            <StatusPill item={item} className="lg:hidden" />
             <span className="min-w-0 truncate text-[13px] text-mute">{itemContext(item, place)}</span>
           </span>
         </span>
-        <span className="min-w-9 shrink-0 text-right leading-tight">
+        <span className="hidden w-36 shrink-0 justify-end lg:flex">
+          <StatusPill item={item} />
+        </span>
+        <span className="min-w-9 shrink-0 text-right leading-tight lg:w-20">
           <span className="block text-[15px] font-semibold tabular-nums">{isCounted(item.unit) ? qty : formatQuantity(qty, item.unit)}</span>
           {isCounted(item.unit) ? <span className="block text-[11px] text-mute">{formatQuantity(qty, item.unit).replace(/^[\d.]+ /, "")}</span> : null}
         </span>
-        <IconChevronRight className="size-4 shrink-0 text-mute/50" />
+        {quick ? null : <IconChevronRight className="mr-1.5 size-4 shrink-0 text-mute/50" />}
       </button>
+      {quick ? (
+        <button
+          onClick={() => onTakeOne(item)}
+          disabled={taking}
+          aria-label={`Take out 1 ${unitWord} of ${item.productName}`}
+          title="Take one out"
+          className="mr-2.5 grid size-10 shrink-0 place-items-center rounded-xl border border-line bg-card text-fg transition hover:bg-sunk active:scale-95 disabled:opacity-40"
+        >
+          <IconMinus className="size-4" />
+        </button>
+      ) : null}
     </li>
   );
 }
