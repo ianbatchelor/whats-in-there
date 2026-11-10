@@ -1,4 +1,8 @@
+"use client";
+
+import { useState } from "react";
 import type { LocationType } from "@/lib/household";
+import { useItemPhoto } from "@/lib/itemPhotos";
 import { PlaceArt } from "./PlaceArt";
 
 /**
@@ -26,15 +30,34 @@ export function hasPhoto(type: LocationType): boolean {
 
 export function PlacePhoto({
   type,
+  imagePath,
   variant = "card",
   className = "",
   eager = false,
 }: {
   type: LocationType;
+  /** The household's own photo of this place. Our photo for the kind of place shows until it loads, or if there is none. */
+  imagePath?: string | null;
   variant?: "card" | "wide";
   className?: string;
   eager?: boolean;
 }) {
+  const own = useItemPhoto(imagePath, variant === "wide");
+  const [broken, setBroken] = useState<string | null>(null);
+  if (own && broken !== own) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={own}
+        alt=""
+        aria-hidden="true"
+        loading={eager ? "eager" : "lazy"}
+        decoding="async"
+        onError={() => setBroken(own)}
+        className={`block h-full w-full object-cover ${className}`}
+      />
+    );
+  }
   const photo = PHOTOS[type];
   if (!photo) return <PlaceArt type={type} className={className} />;
   const src = variant === "wide" ? (photo.wide ?? photo.card) : photo.card;

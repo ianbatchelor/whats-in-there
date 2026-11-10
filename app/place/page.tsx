@@ -7,7 +7,7 @@ import { AuthGate } from "@/components/AuthGate";
 import { supabase } from "@/lib/supabase/client";
 import { friendlyError } from "@/lib/supabase/errors";
 import { useQueryParam } from "@/lib/hooks/useQueryParam";
-import { loadMembers, type LocationType } from "@/lib/household";
+import { loadMembers, loadPlace, type LocationType } from "@/lib/household";
 import type { StockItem } from "@/lib/domain/stock";
 import { formatQuantity } from "@/lib/domain/quantity";
 import { loadItems, loadPlaceLastActivity } from "@/lib/stock";
@@ -29,7 +29,7 @@ import { AddItemSheet } from "@/components/stock/AddItemSheet";
 import { TakeOutSheet } from "@/components/stock/TakeOutSheet";
 import { EditPlaceSheet } from "@/components/stock/EditPlaceSheet";
 
-type PlaceInfo = { id: string; name: string; type: LocationType; householdId: string };
+type PlaceInfo = { id: string; name: string; type: LocationType; householdId: string; imagePath?: string | null };
 
 export default function PlacePage() {
   return <AuthGate>{() => <Place />}</AuthGate>;
@@ -60,18 +60,6 @@ function Place() {
     }
   }, []);
 
-  const loadPlace = useCallback(async (locationId: string) => {
-    const { data, error } = await supabase()
-      .from("storage_locations")
-      .select("id, name, type, household_id")
-      .eq("id", locationId)
-      .is("archived_at", null)
-      .maybeSingle();
-    if (error) throw error;
-    if (!data) return null;
-    return { id: data.id as string, name: data.name as string, type: data.type as LocationType, householdId: data.household_id as string };
-  }, []);
-
   useEffect(() => {
     if (id === undefined) return;
     if (!id) {
@@ -94,7 +82,7 @@ function Place() {
     return () => {
       active = false;
     };
-  }, [id, router, loadPlace, refresh]);
+  }, [id, router, refresh]);
 
   // Someone else in the household adds or takes something out: refresh this list.
   useEffect(() => {
@@ -111,7 +99,7 @@ function Place() {
     return () => {
       supabase().removeChannel(channel);
     };
-  }, [place?.id, refresh, loadPlace]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [place?.id, refresh]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const categories = useMemo(() => {
     const set = new Set((items ?? []).map((i) => i.category?.trim()).filter((c): c is string => !!c));
@@ -177,7 +165,7 @@ function Place() {
     <AppShell wide>
       <div className="reveal relative -mx-4 -mt-[max(16px,env(safe-area-inset-top))] overflow-hidden sm:mx-0 sm:mt-0 sm:rounded-[24px]">
         <div className="h-56 sm:h-64 lg:h-72">
-          <PlacePhoto type={place.type} variant="wide" eager className="reveal-img" />
+          <PlacePhoto type={place.type} imagePath={place.imagePath} variant="wide" eager className="reveal-img" />
         </div>
         <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/0 to-black/70" aria-hidden="true" />
         <div className="absolute inset-x-0 top-0 flex items-center justify-between px-4 pt-[max(12px,env(safe-area-inset-top))] sm:p-4">
@@ -251,7 +239,7 @@ function Place() {
       ) : items!.length === 0 ? (
         <div className="flex flex-col items-center gap-3 rounded-[24px] bg-sunk/60 px-6 py-10 text-center">
           <span className="block h-28 w-40 overflow-hidden rounded-2xl opacity-90 shadow-[var(--shadow-card)]">
-            <PlacePhoto type={place.type} />
+            <PlacePhoto type={place.type} imagePath={place.imagePath} />
           </span>
           <h2 className="mt-2 font-display text-xl font-bold">Nothing recorded here yet</h2>
           <p className="max-w-sm text-sm text-mute">

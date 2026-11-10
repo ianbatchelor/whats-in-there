@@ -155,7 +155,7 @@ function Search({ session }: { session: Session }) {
                 {places.map((p) => (
                   <Link key={p.id} href={`/place/?id=${p.id}`} className="flex min-h-9 items-center gap-2 rounded-full border border-line bg-card py-1 pr-3.5 pl-1 text-[14px] font-medium hover:bg-sunk">
                     <span className="size-7 overflow-hidden rounded-full">
-                      <PlacePhoto type={p.type} />
+                      <PlacePhoto type={p.type} imagePath={p.imagePath} />
                     </span>
                     {p.name}
                   </Link>
@@ -178,7 +178,7 @@ function Search({ session }: { session: Session }) {
                       className="lift flex items-center gap-3 overflow-hidden rounded-2xl border border-line bg-card pr-3 shadow-[var(--shadow-card)]"
                     >
                       <span className="h-14 w-20 shrink-0 overflow-hidden">
-                        <PlacePhoto type={p.type} />
+                        <PlacePhoto type={p.type} imagePath={p.imagePath} />
                       </span>
                       <span className="min-w-0 flex-1">
                         <span className="block truncate font-display font-bold">

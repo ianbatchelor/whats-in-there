@@ -49,6 +49,29 @@ export async function uploadLabelPhoto(householdId: string, photo: Blob, withThu
   return path;
 }
 
+/** Tiles show a place's photo much larger than an item's, so its small copy is bigger. */
+const PLACE_THUMB_EDGE = 720;
+
+/**
+ * Uploads a household's own cover photo for a place, with a tile-sized copy beside it, and returns
+ * the storage path to save on the place.
+ */
+export async function uploadPlacePhoto(householdId: string, file: Blob): Promise<string> {
+  const photo = await shrinkPhoto(file);
+  const ext = photo.type === "image/webp" ? "webp" : "jpg";
+  const path = `${householdId}/places/${crypto.randomUUID()}.${ext}`;
+  const bucket = supabase().storage.from(BUCKET);
+  const { error } = await bucket.upload(path, photo, { contentType: photo.type, upsert: false });
+  if (error) throw error;
+  try {
+    const small = await shrinkPhoto(photo, PLACE_THUMB_EDGE);
+    await bucket.upload(thumbPath(path), small, { contentType: small.type, upsert: false });
+  } catch {
+    /* tiles fall back to the full photo */
+  }
+  return path;
+}
+
 /** Removes photos that won't be kept (and their small copies), e.g. when the person cancels or retakes. Never throws. */
 export async function discardLabelPhoto(...paths: string[]): Promise<void> {
   if (!paths.length) return;
