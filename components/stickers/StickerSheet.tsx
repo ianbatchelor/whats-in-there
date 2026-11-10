@@ -11,6 +11,8 @@ import { Button, buttonBase, buttonStyles } from "@/components/ui/Button";
 import { Notice } from "@/components/ui/Notice";
 import { IconCheck, IconCopy, IconPrinter } from "@/components/ui/icons";
 import { QrCode } from "./QrCode";
+import { WriteSticker } from "./WriteSticker";
+import { stickerWriter, type WriterKind } from "@/lib/stickerWriter";
 
 /**
  * A place's sticker link: the QR code to print, the address to write to an NFC sticker, and
@@ -32,6 +34,15 @@ export function StickerSheet({
   const [confirm, setConfirm] = useState(false);
   const [busy, setBusy] = useState(false);
   const [replaced, setReplaced] = useState(false);
+  const [writer, setWriter] = useState<WriterKind>(null);
+
+  useEffect(() => {
+    let active = true;
+    stickerWriter().then((k) => active && setWriter(k));
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -48,6 +59,7 @@ export function StickerSheet({
   }, [place.id, place.householdId]);
 
   const link = code ? stickerLink(publicOrigin(), code) : null;
+  const canWrite = writer !== null;
 
   async function copy() {
     if (!link) return;
@@ -103,13 +115,15 @@ export function StickerSheet({
           </div>
         </div>
 
-        <Link href={`/stickers/?id=${place.id}`} className={`${buttonBase} ${buttonStyles.go}`}>
+        {writer && link ? <WriteSticker kind={writer} link={link} placeName={place.name} /> : null}
+
+        <Link href={`/stickers/?id=${place.id}`} className={`${buttonBase} ${canWrite ? buttonStyles.ghost : buttonStyles.go}`}>
           <IconPrinter /> Print QR label
         </Link>
 
         <section aria-labelledby="nfc-h" className="flex flex-col gap-2.5 rounded-[var(--radius-card)] bg-sunk/70 p-4">
           <h3 id="nfc-h" className="font-display text-[15px] font-bold">
-            Writing an NFC sticker
+            {canWrite ? "Writing from another phone" : "Writing an NFC sticker"}
           </h3>
           <ol className="flex list-decimal flex-col gap-1.5 pl-5 text-[14px] text-fg/85 marker:font-semibold marker:text-mute">
             <li>Copy the link above.</li>
