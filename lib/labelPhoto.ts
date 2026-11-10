@@ -2,6 +2,7 @@ import { supabase } from "@/lib/supabase/client";
 import { todayIso } from "@/lib/domain/dates";
 import { readLabel, type LabelReading } from "@/lib/domain/extraction";
 import { thumbPath } from "@/lib/itemPhotos";
+import { readList, type ListItem, type ListKind } from "@/lib/domain/manyItems";
 
 const LONG_EDGE = 1600;
 const THUMB_EDGE = 240;
@@ -82,6 +83,44 @@ export async function discardLabelPhoto(...paths: string[]): Promise<void> {
   }
 }
 
+/** A whole shelf needs more detail than one label: small spines must stay readable. */
+export const SHELF_EDGE = 2400;
+
+/** Uploads a photo that is only for reading (never kept with an item) and returns its path. */
+export async function uploadReadingPhoto(householdId: string, photo: Blob): Promise<string> {
+  return uploadLabelPhoto(householdId, photo, false);
+}
+
+async function functionError(error: unknown): Promise<string> {
+  let code = "failed";
+  const ctx = (error as { context?: unknown }).context;
+  if (ctx instanceof Response) {
+    // 404 means the function hasn't been deployed yet.
+    if (ctx.status === 404) code = "not_configured";
+    else {
+      try {
+        code = String((await ctx.json())?.error ?? "failed");
+      } catch {
+        /* not JSON: the function crashed */
+      }
+    }
+  }
+  return code;
+}
+
+export type ListResult = { ok: true; kind: ListKind; items: ListItem[] } | { ok: false; code: string };
+
+/** Asks the reader for every separate thing in photos of one shelf, rail or drawer. */
+export async function readListPhoto(householdId: string, imagePaths: string[]): Promise<ListResult> {
+  const { data, error } = await supabase().functions.invoke("extract-product", { body: { householdId, imagePaths, mode: "many" } });
+  if (error) return { ok: false, code: await functionError(error) };
+  const body = data as { list?: unknown; reading?: unknown } | null;
+  // An older deployment ignores the mode and reads one label instead.
+  if (!body?.list && body?.reading) return { ok: false, code: "needs_update" };
+  const list = readList(body?.list);
+  return list ? { ok: true, ...list } : { ok: false, code: "unreadable" };
+}
+
 export type ReadResult = { ok: true; reading: LabelReading } | { ok: false; code: string };
 
 /**
@@ -93,22 +132,7 @@ export async function readLabelPhoto(householdId: string, imagePaths: string[]):
     // imagePath keeps an older deployment of the function working (it reads the first photo only).
     body: { householdId, imagePaths, imagePath: imagePaths[0] },
   });
-  if (error) {
-    let code = "failed";
-    const ctx = (error as { context?: unknown }).context;
-    if (ctx instanceof Response) {
-      // 404 means the function hasn't been deployed yet.
-      if (ctx.status === 404) code = "not_configured";
-      else {
-        try {
-          code = String((await ctx.json())?.error ?? "failed");
-        } catch {
-          /* not JSON: the function crashed */
-        }
-      }
-    }
-    return { ok: false, code };
-  }
+  if (error) return { ok: false, code: await functionError(error) };
   const reading = readLabel((data as { reading?: unknown } | null)?.reading, todayIso());
   return reading ? { ok: true, reading } : { ok: false, code: "unreadable" };
 }

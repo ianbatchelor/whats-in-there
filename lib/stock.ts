@@ -69,6 +69,7 @@ export type NewItem = {
   quantity: number;
   unit: StockUnit;
   brand?: string;
+  category?: string;
   weightValue?: number | null;
   weightUnit?: StockUnit | null;
   useByDate?: string | null;
@@ -98,6 +99,7 @@ export async function addItem(input: NewItem): Promise<{ item: StockItem; moveme
     p_quantity: input.quantity,
     p_unit: input.unit,
     p_brand: input.brand || null,
+    p_category: input.category || null,
     p_weight_value: input.weightValue ?? null,
     p_weight_unit: input.weightUnit ?? null,
     p_use_by_date: input.useByDate || null,
@@ -110,6 +112,34 @@ export async function addItem(input: NewItem): Promise<{ item: StockItem; moveme
   if (error) throw error;
   const item = toItem(data as Row);
   return { item, movementId: await latestMovementId(item.id, "add") };
+}
+
+/**
+ * Adds a checked list of things in one go, a few at a time, reporting progress. Each one is its own
+ * add_stock call, so each is in the history like any other add. Returns the names that failed.
+ */
+export async function addMany(items: NewItem[], onProgress?: (done: number) => void): Promise<{ added: number; failed: NewItem[] }> {
+  const failed: NewItem[] = [];
+  let done = 0;
+  const queue = [...items];
+  const worker = async () => {
+    for (let next = queue.shift(); next; next = queue.shift()) {
+      const item = next;
+      const { error } = await supabase().rpc("add_stock", {
+        p_location: item.locationId,
+        p_product_name: item.productName,
+        p_quantity: item.quantity,
+        p_unit: item.unit,
+        p_brand: item.brand || null,
+        p_category: item.category || null,
+        p_source: "photo",
+      });
+      if (error) failed.push(item);
+      onProgress?.(++done);
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(4, items.length) }, worker));
+  return { added: items.length - failed.length, failed };
 }
 
 export async function takeOut(item: StockItem, amount: number): Promise<{ item: StockItem; movementId: string | null }> {

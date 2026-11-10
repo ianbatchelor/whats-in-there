@@ -134,6 +134,20 @@
   animation: reveal-img 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) both;
 }
 
+/* A soft band of light moving down a photo while it is being read. */
+@keyframes scan-sweep {
+  from {
+    transform: translateY(-100%);
+  }
+  to {
+    transform: translateY(300%);
+  }
+}
+.scan-sweep {
+  background: linear-gradient(to bottom, transparent, rgba(246, 198, 91, 0.28) 70%, rgba(246, 198, 91, 0.6));
+  animation: scan-sweep 2.2s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+
 /* Cards that lift a little under the finger or pointer. */
 .lift {
   box-shadow: var(--shadow-card);
