@@ -1,15 +1,15 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { writeFailure, writeStickerLink } from "@/lib/webNfc";
+import { failureMessage, writeFailure, writeStickerLink, type WriterKind } from "@/lib/stickerWriter";
 import { Button } from "@/components/ui/Button";
 import { Notice } from "@/components/ui/Notice";
 import { IconCheck, IconSticker } from "@/components/ui/icons";
 
 type State = { kind: "idle" } | { kind: "waiting" } | { kind: "done" } | { kind: "error"; message: string };
 
-/** Writes a place's link to an NFC sticker from this phone (Chrome on Android). */
-export function WriteSticker({ link, placeName }: { link: string; placeName: string }) {
+/** Writes a place's link to an NFC sticker from this phone (the apps, or Chrome on Android). */
+export function WriteSticker({ kind, link, placeName }: { kind: Exclude<WriterKind, null>; link: string; placeName: string }) {
   const [state, setState] = useState<State>({ kind: "idle" });
   const abort = useRef<AbortController | null>(null);
 
@@ -21,18 +21,12 @@ export function WriteSticker({ link, placeName }: { link: string; placeName: str
     abort.current = ctl;
     setState({ kind: "waiting" });
     try {
-      await writeStickerLink(link, ctl.signal);
+      await writeStickerLink(kind, link, placeName, ctl.signal);
       setState({ kind: "done" });
     } catch (e) {
       const f = writeFailure(e);
       if (f === "cancelled") return setState({ kind: "idle" });
-      setState({
-        kind: "error",
-        message:
-          f === "blocked"
-            ? "Your phone didn't allow NFC. Check NFC is switched on in Settings, and allow it for this site when asked."
-            : "That didn't write. Hold the sticker still against the back of your phone until it says it's done, then try again.",
-      });
+      setState({ kind: "error", message: failureMessage(f) });
     } finally {
       if (abort.current === ctl) abort.current = null;
     }
@@ -45,7 +39,7 @@ export function WriteSticker({ link, placeName }: { link: string; placeName: str
           <span className="absolute inset-0 animate-ping rounded-full bg-go/15" aria-hidden="true" />
           <IconSticker className="size-8" />
         </span>
-        <p className="font-display text-[16px] font-bold">Hold a sticker to the back of your phone</p>
+        <p className="font-display text-[16px] font-bold">Hold a sticker to your phone</p>
         <p className="text-[14px] text-mute">Keep it still for a second. Writing it links the sticker to {placeName}.</p>
         <Button variant="ghost" onClick={() => abort.current?.abort()}>
           Cancel

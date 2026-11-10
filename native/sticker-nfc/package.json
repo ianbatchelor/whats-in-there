@@ -1,0 +1,17 @@
+{
+  "name": "sticker-nfc",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Writes a place's sticker link to an NFC sticker from the iPhone and Android apps.",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "files": ["index.js", "index.d.ts", "android/src/main/", "android/build.gradle", "ios/Sources", "Package.swift"],
+  "license": "UNLICENSED",
+  "capacitor": {
+    "ios": { "src": "ios" },
+    "android": { "src": "android" }
+  },
+  "peerDependencies": {
+    "@capacitor/core": ">=8.0.0"
+  }
+}

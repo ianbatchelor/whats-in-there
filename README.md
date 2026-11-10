@@ -20,6 +20,7 @@ One Next.js + TypeScript codebase is served on the web (Vercel) and wrapped by C
 - Bottom tabs on phones (sidebar on desktop): Home, Search (every place at once, showing where each thing is), Add, Activity (who added or took out what) and Household
 - A "Use first" list across the household
 - Everyone in the household sees changes live
+- Stickers: each place has a link (`/l/<code>`) to print as a QR label or write to an NFC sticker from the app, see [docs/nfc-stickers.md](docs/nfc-stickers.md)
 - Database for later milestones: sticker codes, private photos, all behind RLS and proven by tests
 
 ## Run it locally

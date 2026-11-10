@@ -12,7 +12,7 @@ import { Notice } from "@/components/ui/Notice";
 import { IconCheck, IconCopy, IconPrinter } from "@/components/ui/icons";
 import { QrCode } from "./QrCode";
 import { WriteSticker } from "./WriteSticker";
-import { canWriteStickersHere } from "@/lib/webNfc";
+import { stickerWriter, type WriterKind } from "@/lib/stickerWriter";
 
 /**
  * A place's sticker link: the QR code to print, the address to write to an NFC sticker, and
@@ -34,6 +34,15 @@ export function StickerSheet({
   const [confirm, setConfirm] = useState(false);
   const [busy, setBusy] = useState(false);
   const [replaced, setReplaced] = useState(false);
+  const [writer, setWriter] = useState<WriterKind>(null);
+
+  useEffect(() => {
+    let active = true;
+    stickerWriter().then((k) => active && setWriter(k));
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -50,7 +59,7 @@ export function StickerSheet({
   }, [place.id, place.householdId]);
 
   const link = code ? stickerLink(publicOrigin(), code) : null;
-  const canWrite = canWriteStickersHere();
+  const canWrite = writer !== null;
 
   async function copy() {
     if (!link) return;
@@ -106,7 +115,7 @@ export function StickerSheet({
           </div>
         </div>
 
-        {canWrite && link ? <WriteSticker link={link} placeName={place.name} /> : null}
+        {writer && link ? <WriteSticker kind={writer} link={link} placeName={place.name} /> : null}
 
         <Link href={`/stickers/?id=${place.id}`} className={`${buttonBase} ${canWrite ? buttonStyles.ghost : buttonStyles.go}`}>
           <IconPrinter /> Print QR label
