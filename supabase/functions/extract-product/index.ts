@@ -16,6 +16,13 @@
 // products list supplies the name, brand and weight once two different people have read the same
 // name for it, so a product reads the same way everywhere. Dates always come from the photo.
 //
+// Public barcode lists: when the shared list doesn't know a barcode yet, the function asks free public
+// lists what it is: Open Library for books (ISBNs start 978 or 979) and Open Food Facts for groceries
+// and household products. Only the barcode digits are sent. A book's title and author always come
+// from Open Library, because the back of a book rarely says what the book is called; for other
+// products the public name only fills in what the photo didn't show clearly. Each lookup gives up
+// after a few seconds, and the reading stands on its own if a list is slow or doesn't know the code.
+//
 // Many things at once: with `mode: "many"`, the same photos are read as a shelf, rail or drawer of
 // separate things (a bookshelf, a wardrobe) and the reply is a list of them, each with a name, a
 // detail (the author of a book, the brand of clothes), a category to sort by, and how many. One
@@ -31,6 +38,9 @@ const PER_USER_PER_MONTH = 300; // calls, not items: one add can be 2 or 3 calls
 const MAX_BYTES = 8 * 1024 * 1024;
 const MAX_PHOTOS = 3;
 const MAX_ITEMS = 150;
+const LOOKUP_TIMEOUT_MS = 3500;
+// Open Food Facts asks every app to say who it is.
+const LOOKUP_AGENT = "SeeWhatsInHere/1.0 (seewhatsinhere@findthecool.com)";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -74,7 +84,7 @@ const SCHEMA = {
   },
 } as const;
 
-const SYSTEM = `You read photos of food and household product labels for a UK home inventory app.
+const SYSTEM = `You read photos of food and household product labels, and of books, for a UK home inventory app.
 Return only what is printed or clearly visible. Never guess a date that isn't printed, and never decide whether food is safe.
 You may get several photos of the same pack, for example the front and the back. Combine them into one reading: the name usually comes from the front, while dates and weights are often on the back, the side or the lid.
 
@@ -83,7 +93,8 @@ You may get several photos of the same pack, for example the front and the back.
 - quantity and unit: how many are being put away. A single pack is quantity 1, unit "pack". Loose countable things are "item". Use "portion" only for home-made or portioned food. If unsure, quantity 1, unit "pack".
 - weight_value and weight_unit: the net weight or volume printed (e.g. 750 g, 1.5 l), else null.
 - Dates are en-GB: 03/04 means 3 April. "Use by" goes in use_by_date. "Best before", "BB", "BBE" and "Best before end" go in best_before_date. If no year is printed, use the next date on or after today's date minus 30 days. If only a month and year are printed, use the last day of that month. Use YYYY-MM-DD.
-- barcode: if a barcode is visible, the 8 to 14 digits printed under it, digits only. Null if there is no barcode or you can't read every digit clearly.
+- barcode: if a barcode is visible, the 8 to 14 digits printed under it, digits only. On a book this is the ISBN, usually 13 digits starting 978 or 979. Null if there is no barcode or you can't read every digit clearly.
+- For a book, product_name is the title and brand is the author, and the unit is "item". If you can only see the back cover, write the title if it is printed there, otherwise leave product_name empty and list it in uncertain, but still read the barcode and set readable to true.
 - uncertain: list every field you inferred, guessed or read from blurry or partly hidden print, including any date where you had to supply the year or day.
 - If there is no readable product or label, set readable to false, product_name to "" and everything else to null or the defaults.`;
 
@@ -297,14 +308,17 @@ Deno.serve(async (req) => {
       if (reading?.readable === false || !items.length) return reply(422, { error: "unreadable" });
       return reply(200, { list: { kind: reading.kind, items } });
     }
-    if (reading?.readable === false) {
+    const barcode = validBarcode(reading?.barcode);
+    if (reading?.readable === false && !barcode) {
       await log({ ...usage, parsed_json: reading });
       return reply(422, { error: "unreadable" });
     }
-    const barcode = validBarcode(reading?.barcode);
     reading.barcode = barcode;
     const fromCache = barcode ? await useProductList(admin, user.id, barcode, reading) : false;
-    await log({ ...usage, parsed_json: reading, barcode, from_cache: fromCache });
+    const fromPublic = barcode && !fromCache ? await usePublicList(barcode, reading) : null;
+    if (fromPublic) reading.readable = true;
+    await log({ ...usage, parsed_json: { ...reading, looked_up: fromPublic }, barcode, from_cache: fromCache });
+    if (reading.readable === false || !String(reading.product_name ?? "").trim()) return reply(422, { error: "unreadable" });
     return reply(200, { reading });
   } catch (err) {
     const code =
@@ -356,5 +370,94 @@ async function useProductList(admin: SupabaseClient, userId: string, barcode: st
     return true;
   } catch {
     return false;
+  }
+}
+
+// ---- Public barcode lists ----
+
+type Found = { name: string; brand: string | null; weight_value: number | null; weight_unit: string | null };
+
+function isIsbn(barcode: string): boolean {
+  return /^97[89]\d{10}$/.test(barcode);
+}
+
+function clean(v: unknown, max: number): string {
+  return typeof v === "string" ? v.replace(/\s+/g, " ").trim().slice(0, max) : "";
+}
+
+async function getJson(url: string, fetcher: typeof fetch): Promise<unknown> {
+  const res = await fetcher(url, {
+    headers: { "User-Agent": LOOKUP_AGENT, Accept: "application/json" },
+    signal: AbortSignal.timeout(LOOKUP_TIMEOUT_MS),
+  });
+  return res.ok ? await res.json() : null;
+}
+
+/** A book's title and authors from Open Library's search, or null if it doesn't know the ISBN. */
+async function lookUpBook(isbn: string, fetcher: typeof fetch): Promise<Found | null> {
+  const data = (await getJson(
+    `https://openlibrary.org/search.json?isbn=${isbn}&fields=title,subtitle,author_name&limit=1`,
+    fetcher,
+  )) as { docs?: { title?: unknown; author_name?: unknown }[] } | null;
+  const doc = data?.docs?.[0];
+  const name = clean(doc?.title, 120);
+  if (!name) return null;
+  const authors = Array.isArray(doc?.author_name) ? doc.author_name.map((a) => clean(a, 60)).filter(Boolean) : [];
+  const brand = authors.length > 2 ? `${authors[0]} and others` : authors.join(" and ");
+  return { name, brand: brand.slice(0, 80) || null, weight_value: null, weight_unit: null };
+}
+
+/** A product's name, brand and net weight from Open Food Facts, or null if it doesn't know the code. */
+async function lookUpProduct(barcode: string, fetcher: typeof fetch): Promise<Found | null> {
+  const data = (await getJson(
+    `https://world.openfoodfacts.org/api/v2/product/${barcode}.json?fields=product_name_en,product_name,brands,product_quantity,product_quantity_unit`,
+    fetcher,
+  )) as { status?: unknown; product?: Record<string, unknown> } | null;
+  const p = data?.status === 1 ? data.product : null;
+  const name = clean(p?.product_name_en, 120) || clean(p?.product_name, 120);
+  if (!p || !name) return null;
+  const brand = clean(String(p.brands ?? "").split(",")[0], 80) || null;
+  const value = Number(p.product_quantity);
+  const unit = String(p.product_quantity_unit ?? "").toLowerCase();
+  const weightOk = Number.isFinite(value) && value > 0 && value <= 100_000 && ["g", "kg", "ml", "l"].includes(unit);
+  return { name, brand, weight_value: weightOk ? value : null, weight_unit: weightOk ? unit : null };
+}
+
+/**
+ * Fills a reading in from the public barcode lists when the shared list didn't know the barcode.
+ * Books take their title and author from Open Library. Other products take Open Food Facts' name and
+ * brand only where the photo left them empty or uncertain, and its weight only if the photo had none.
+ * Dates always stay as the photo had them. Returns which list answered, or null. Never throws.
+ */
+async function usePublicList(barcode: string, reading: Reading, fetcher: typeof fetch = fetch): Promise<string | null> {
+  try {
+    const book = isIsbn(barcode);
+    const found = book ? await lookUpBook(barcode, fetcher) : await lookUpProduct(barcode, fetcher);
+    if (!found) return null;
+    let uncertain = Array.isArray(reading.uncertain) ? (reading.uncertain as string[]) : [];
+    const doubtful = (field: string, value: unknown) => !clean(value, 200) || uncertain.includes(field);
+    if (book || doubtful("product_name", reading.product_name)) {
+      reading.product_name = found.name;
+      uncertain = uncertain.filter((f) => f !== "product_name");
+    }
+    if (found.brand && (book || doubtful("brand", reading.brand))) {
+      reading.brand = found.brand;
+      uncertain = uncertain.filter((f) => f !== "brand");
+    }
+    if (found.weight_value != null && (reading.weight_value == null || uncertain.includes("weight"))) {
+      reading.weight_value = found.weight_value;
+      reading.weight_unit = found.weight_unit;
+      uncertain = uncertain.filter((f) => f !== "weight");
+    }
+    if (book) {
+      reading.quantity = 1;
+      reading.unit = "item";
+      reading.weight_value = null;
+      reading.weight_unit = null;
+    }
+    reading.uncertain = uncertain;
+    return book ? "open_library" : "open_food_facts";
+  } catch {
+    return null;
   }
 }
