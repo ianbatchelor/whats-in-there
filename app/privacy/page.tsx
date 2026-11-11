@@ -53,11 +53,17 @@ export default function PrivacyPage() {
         who uses the app, so the same product reads the same way next time. Only product details go in that list: never your
         photos, your dates, your notes, your places or anything about your household.
       </p>
+      <p>
+        If that list doesn&apos;t know a barcode yet, the app looks the barcode up in two free public lists: <b>Open Library</b> for
+        books and <b>Open Food Facts</b> for food and household products. Only the barcode&apos;s digits are sent, with nothing about
+        you.
+      </p>
 
       <h2>Companies that help run the app</h2>
       <ul>
         <li><b>Supabase</b> stores your account, households and photos, in Europe.</li>
         <li><b>Anthropic</b> reads photos you choose to scan, as above.</li>
+        <li><b>Open Library</b> and <b>Open Food Facts</b> are asked what a scanned barcode is, as above.</li>
         <li><b>Resend</b> sends the sign-in code emails.</li>
         <li><b>Vercel</b> hosts the website.</li>
         <li><b>Cloudflare</b> may check that sign-ins come from a person and not a bot.</li>
