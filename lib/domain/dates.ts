@@ -1,5 +1,5 @@
 /**
- * Dates are stored as ISO calendar dates (YYYY-MM-DD) and always shown as "03 Nov 2026",
+ * Dates are stored as ISO calendar dates (YYYY-MM-DD) and always shown as "3 Nov 2026",
  * never 03/11, so UK and US readers cannot misread them.
  */
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"] as const;
@@ -19,8 +19,14 @@ export function formatDay(value: string | null | undefined, opts: { year?: boole
   if (!value) return "";
   const p = parseIsoDate(value.slice(0, 10));
   if (!p) return "";
-  const day = String(p.d).padStart(2, "0");
-  return opts.year === false ? `${day} ${MONTHS[p.m - 1]}` : `${day} ${MONTHS[p.m - 1]} ${p.y}`;
+  return opts.year === false ? `${p.d} ${MONTHS[p.m - 1]}` : `${p.d} ${MONTHS[p.m - 1]} ${p.y}`;
+}
+
+/** "Nov 2026": for dates far enough ahead that the day doesn't matter. */
+export function formatMonth(value: string | null | undefined): string {
+  if (!value) return "";
+  const p = parseIsoDate(value.slice(0, 10));
+  return p ? `${MONTHS[p.m - 1]} ${p.y}` : "";
 }
 
 /** Today's date in the user's local time zone, as YYYY-MM-DD. */

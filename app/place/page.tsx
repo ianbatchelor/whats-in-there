@@ -12,7 +12,7 @@ import type { StockItem } from "@/lib/domain/stock";
 import { formatQuantity } from "@/lib/domain/quantity";
 import { loadItems, loadPlaceLastActivity } from "@/lib/stock";
 import { countThings } from "@/lib/domain/places";
-import { needsAttention } from "@/lib/domain/status";
+import { itemStatus, needsAttention } from "@/lib/domain/status";
 import { AppShell, SectionLabel } from "@/components/AppShell";
 import { Screen, Splash } from "@/components/ui/Screen";
 import { Button } from "@/components/ui/Button";
@@ -31,6 +31,7 @@ import { groupByCategory, looksLikeBooks } from "@/lib/domain/manyItems";
 import { TakeOutSheet } from "@/components/stock/TakeOutSheet";
 import { EditPlaceSheet } from "@/components/stock/EditPlaceSheet";
 import { StickerSheet } from "@/components/stickers/StickerSheet";
+import { useCollapsingHeader } from "@/components/common/useCollapsingHeader";
 
 /** Places where the order is "use first" (by date), not sections. */
 const USE_FIRST_PLACES: LocationType[] = ["freezer", "fridge", "pantry", "wine", "garden"];
@@ -57,6 +58,7 @@ function Place() {
   const [open, setOpen] = useState<StockItem | null>(null);
   const [category, setCategory] = useState<string | null>(null);
   const [last, setLast] = useState<{ actor: string | null; at: string } | null>(null);
+  const { header: heroHeader, bar: heroBar, big: heroBig, small: heroSmall, shade: heroShade } = useCollapsingHeader(place !== null);
 
   const refresh = useCallback(async (locationId: string) => {
     try {
@@ -167,11 +169,15 @@ function Place() {
   const info = placeType(place.type);
   const count = items?.length ?? 0;
   const filtering = filter.trim() !== "" || category !== null;
-  const attention = (items ?? []).filter((i) => needsAttention(i)).length;
+  const due = (items ?? []).filter((i) => needsAttention(i));
+  const lateHere = due.filter((i) => itemStatus(i)?.tone === "late").length;
+  const soonHere = due.length - lateHere;
   const summary = [
-    info.label,
+    // "Kitchen fridge · Fridge" says it twice, and "Something else" says nothing, so the kind is left out then.
+    place.type === "other" || place.name.toLowerCase().includes(info.label.toLowerCase()) ? null : info.label,
     items ? countThings(count) : null,
-    attention > 0 ? `${attention} to use soon` : null,
+    lateHere > 0 ? `${lateHere} past ${lateHere === 1 ? "its date" : "a date"}` : null,
+    soonHere > 0 ? `${soonHere} to use soon` : null,
     last ? `updated ${timeAgo(last.at)}` : null,
   ]
     .filter(Boolean)
@@ -180,16 +186,24 @@ function Place() {
 
   return (
     <AppShell wide>
-      <div className="reveal relative z-20 -mx-4 -mt-[max(16px,env(safe-area-inset-top))] overflow-hidden max-sm:sticky max-sm:top-0 max-sm:shadow-[0_10px_24px_-18px_rgba(0,0,0,0.5)] sm:mx-0 sm:mt-0 sm:rounded-[24px]">
+      <div
+        ref={heroHeader}
+        className="reveal relative z-20 -mx-4 -mt-[max(16px,env(safe-area-inset-top))] overflow-hidden max-sm:sticky max-sm:top-0 max-sm:shadow-[0_10px_24px_-18px_rgba(0,0,0,0.5)] sm:mx-0 sm:mt-0 sm:rounded-[24px]"
+      >
         <div className="h-56 sm:h-64 lg:h-72">
           <PlacePhoto type={place.type} imagePath={place.imagePath} variant="wide" eager className="reveal-img" />
         </div>
         <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/0 to-black/70" aria-hidden="true" />
-        <div className="absolute inset-x-0 top-0 flex items-center justify-between px-4 pt-[max(12px,env(safe-area-inset-top))] sm:p-4">
+        {/* Darkens the photo as the header shrinks, so the small title stays readable. */}
+        <div ref={heroShade} className="pointer-events-none absolute inset-0 bg-black/45 opacity-0" aria-hidden="true" />
+        <div ref={heroBar} className="absolute inset-x-0 top-0 z-10 flex items-center justify-between gap-3 px-4 pt-[max(12px,env(safe-area-inset-top))] will-change-transform sm:p-4">
           <Link href="/" aria-label="Back to My Places" className="grid size-11 place-items-center rounded-full bg-[#fffdf8]/92 text-[#17242a] shadow-[var(--shadow-card)] backdrop-blur transition hover:bg-[#fffdf8]">
             <IconChevronLeft className="size-5" />
           </Link>
-          <div className="flex gap-2">
+          <span ref={heroSmall} aria-hidden="true" className="min-w-0 flex-1 truncate font-display text-[17px] font-bold text-[#fffdf8] opacity-0 sm:hidden">
+            {place.name}
+          </span>
+          <div className="flex shrink-0 gap-2">
             <button
               onClick={() => setSticker(true)}
               aria-label={`Sticker and QR label for ${place.name}`}
@@ -206,7 +220,7 @@ function Place() {
             </button>
           </div>
         </div>
-        <div className="absolute inset-x-5 bottom-4 text-[#fffdf8] sm:inset-x-7 sm:bottom-6">
+        <div ref={heroBig} className="absolute inset-x-5 bottom-4 text-[#fffdf8] sm:inset-x-7 sm:bottom-6">
           <h1 className="truncate font-display text-[1.9rem] leading-tight font-bold tracking-[-0.025em] [text-shadow:0_2px_12px_rgba(0,0,0,0.3)] sm:text-[2.3rem]">
             {place.name}
           </h1>
@@ -217,7 +231,8 @@ function Place() {
       {error ? <Notice>{error}</Notice> : null}
 
       {items && items.length > 0 ? (
-        <div className="flex flex-col gap-3">
+        // On phones the search and Add row stays just under the shrunken header, so Add is always in reach.
+        <div className="flex flex-col gap-3 max-sm:sticky max-sm:top-[calc(max(12px,env(safe-area-inset-top))+56px)] max-sm:z-10 max-sm:-mx-4 max-sm:bg-bg/95 max-sm:px-4 max-sm:py-2 max-sm:backdrop-blur">
           <div className="flex gap-2">
             <label className="flex min-h-12 min-w-0 flex-1 items-center gap-3 rounded-xl border border-line bg-card px-4 focus-within:border-leaf">
               <IconSearch className="size-5 shrink-0 text-mute" />
@@ -225,7 +240,7 @@ function Place() {
                 type="search"
                 value={filter}
                 onChange={(e) => setFilter(e.target.value)}
-                placeholder={`Search ${place.name}`}
+                placeholder="Search in here"
                 aria-label={`Search ${place.name}`}
                 className="min-w-0 flex-1 bg-transparent text-base placeholder:text-mute focus:outline-none focus-visible:outline-none"
               />

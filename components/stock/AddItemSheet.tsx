@@ -303,7 +303,7 @@ export function AddItemSheet({
               <IconCamera className="size-6" />
             </span>
             <span className="min-w-0">
-              <span className="block font-display text-[15px] font-bold">Snap the label</span>
+              <span className="block font-display text-[15px] font-bold">Scan a label</span>
               <span className="block text-[13px] text-mute">Start with the front. We&apos;ll fill in the name, size and dates for you to check.</span>
             </span>
           </button>
@@ -508,7 +508,7 @@ function ManyCard({ onClick, quiet = false }: { onClick: () => void; quiet?: boo
   if (quiet) {
     return (
       <button type="button" onClick={onClick} className="-mt-1 self-start text-sm font-bold text-go">
-        + Lots to add? Photograph a whole shelf
+        + Lots to add? Snap a whole shelf
       </button>
     );
   }

@@ -112,7 +112,7 @@ function Search({ session }: { session: Session }) {
           autoFocus
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Try passport, curry or Christmas lights"
+          placeholder="Try passport or curry"
           aria-label="Search everything"
           className="min-w-0 flex-1 bg-transparent text-[17px] placeholder:text-mute focus:outline-none focus-visible:outline-none [&::-webkit-search-cancel-button]:hidden"
         />
@@ -220,6 +220,7 @@ function Search({ session }: { session: Session }) {
                       index={i}
                       item={item}
                       place={placeById.get(item.locationId)?.name}
+                      highlight={q}
                       addedBy={(item.addedBy && names.get(item.addedBy)) || ""}
                       onOpen={(it) => {
                         remember();

@@ -6,7 +6,9 @@ type Row = { action: "add" | "remove" | "adjust" | "move" | "undo"; delta: numbe
 export function activitySentence(r: Row): string {
   const n = roundQty(Math.abs(r.delta));
   // Plain items read better without the unit: "added 4 × Chicken breasts", "took out Leg of lamb".
-  const what = r.unit === "item" ? (n === 1 ? r.itemName : `${n} × ${r.itemName}`) : `${formatQuantity(n, r.unit)} of ${r.itemName}`;
+  // A lone "l" is easy to misread in a sentence ("1 l of milk"), so litres are spelled out here.
+  const amount = r.unit === "l" ? `${formatQuantity(n, r.unit).slice(0, -2)} ${n === 1 ? "litre" : "litres"}` : formatQuantity(n, r.unit);
+  const what = r.unit === "item" ? (n === 1 ? r.itemName : `${n} × ${r.itemName}`) : `${amount} of ${r.itemName}`;
   switch (r.action) {
     case "add":
       return `added ${what}`;

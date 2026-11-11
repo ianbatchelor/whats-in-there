@@ -3,12 +3,12 @@ import { formatDay, monthsBetween, parseIsoDate, storageAge, todayIso } from "@/
 
 describe("formatDay", () => {
   it("writes the month as a word so day and month can't be swapped", () => {
-    expect(formatDay("2026-11-03")).toBe("03 Nov 2026");
+    expect(formatDay("2026-11-03")).toBe("3 Nov 2026");
     expect(formatDay("2026-03-11")).toBe("11 Mar 2026");
-    expect(formatDay("2026-11-03", { year: false })).toBe("03 Nov");
+    expect(formatDay("2026-11-03", { year: false })).toBe("3 Nov");
   });
   it("accepts timestamps and ignores the time", () => {
-    expect(formatDay("2026-11-03T23:59:00Z")).toBe("03 Nov 2026");
+    expect(formatDay("2026-11-03T23:59:00Z")).toBe("3 Nov 2026");
   });
   it("leaves missing or impossible dates blank rather than guessing", () => {
     expect(formatDay(null)).toBe("");

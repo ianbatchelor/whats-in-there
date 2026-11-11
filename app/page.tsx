@@ -95,9 +95,15 @@ function Home({ session }: { session: Session }) {
   const groups = shownPlaces ? groupPlaces(shownPlaces) : null;
   const total = places?.reduce((n, p) => n + p.itemCount, 0) ?? 0;
   const who = (id: string | null) => (id === session.user.id ? "You" : (id && names.get(id)) || "Someone");
-  const soon = new Map<string, number>();
-  for (const i of attention) soon.set(i.locationId, (soon.get(i.locationId) ?? 0) + 1);
-  const late = attention.filter((i) => itemStatus(i)?.tone === "late").length;
+  // Per place: how many are past a printed date, and how many are only close to one.
+  const lateIn = new Map<string, number>();
+  const soonIn = new Map<string, number>();
+  for (const i of attention) {
+    const m = itemStatus(i)?.tone === "late" ? lateIn : soonIn;
+    m.set(i.locationId, (m.get(i.locationId) ?? 0) + 1);
+  }
+  const late = [...lateIn.values()].reduce((a, b) => a + b, 0);
+  const sumOver = (m: Map<string, number>, ids: { id: string }[]) => ids.reduce((n, p) => n + (m.get(p.id) ?? 0), 0);
   const dueIds = new Set(attention.map((i) => i.id));
   // "Longest stored" is what's left of the use-first order once dated things have their own card.
   const oldest = useFirst.filter((i) => !dueIds.has(i.id)).slice(0, 4);
@@ -153,7 +159,7 @@ function Home({ session }: { session: Session }) {
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className="text-[13.5px] text-mute">
-              {current.name} · {new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })}
+              {current.name} · {new Date().toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })}
             </p>
             <h1 className="font-display text-[1.75rem] leading-tight font-bold tracking-[-0.025em] sm:text-[2rem]">
               {greeting()}
@@ -261,7 +267,8 @@ function Home({ session }: { session: Session }) {
                 key={g.type}
                 group={g}
                 index={i}
-                soon={g.places.reduce((n, p) => n + (soon.get(p.id) ?? 0), 0)}
+                late={sumOver(lateIn, g.places)}
+                soon={sumOver(soonIn, g.places)}
               />
             ))}
             <AddPlaceTile onClick={() => setAdding(true)} />
