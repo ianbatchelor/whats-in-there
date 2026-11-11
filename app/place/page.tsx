@@ -180,7 +180,7 @@ function Place() {
 
   return (
     <AppShell wide>
-      <div className="reveal relative -mx-4 -mt-[max(16px,env(safe-area-inset-top))] overflow-hidden sm:mx-0 sm:mt-0 sm:rounded-[24px]">
+      <div className="reveal relative z-20 -mx-4 -mt-[max(16px,env(safe-area-inset-top))] overflow-hidden max-sm:sticky max-sm:top-0 max-sm:shadow-[0_10px_24px_-18px_rgba(0,0,0,0.5)] sm:mx-0 sm:mt-0 sm:rounded-[24px]">
         <div className="h-56 sm:h-64 lg:h-72">
           <PlacePhoto type={place.type} imagePath={place.imagePath} variant="wide" eager className="reveal-img" />
         </div>
