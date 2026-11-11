@@ -241,6 +241,7 @@ function Search({ session }: { session: Session }) {
         item={open}
         placeName={open ? placeById.get(open.locationId)?.name : undefined}
         keep={open ? keptIn(open) : false}
+        householdId={current?.householdId}
         names={names}
         onClose={() => setOpen(null)}
         onTaken={(before, after, amount, movementId) => {

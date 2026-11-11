@@ -13,7 +13,9 @@ import { Notice } from "@/components/ui/Notice";
 import { Stepper } from "./Stepper";
 import { ItemTile, StatusPill } from "./ItemRow";
 import { itemStatus } from "@/lib/domain/status";
-import { IconHandOver, IconMove, IconPencil } from "@/components/ui/icons";
+import { IconBasket, IconCheck, IconHandOver, IconMove, IconPencil } from "@/components/ui/icons";
+import { addToList } from "@/lib/shopping";
+import { fromStock } from "@/lib/domain/shopping";
 import { EditItemForm } from "./EditItemForm";
 import { MovePicker } from "./MovePicker";
 import { LendForm } from "./LendForm";
@@ -22,6 +24,7 @@ export function TakeOutSheet({
   item,
   placeName,
   keep = false,
+  householdId,
   names,
   onClose,
   onTaken,
@@ -31,6 +34,8 @@ export function TakeOutSheet({
   placeName?: string;
   /** It's in a place for keeping things (a shelf, a wardrobe), not using them up. */
   keep?: boolean;
+  /** Lets things be put on the household's shopping list. */
+  householdId?: string;
   names: Map<string, string>;
   onClose: () => void;
   onTaken: (before: StockItem, after: StockItem, amount: number, movementId: string | null) => void;
@@ -40,7 +45,17 @@ export function TakeOutSheet({
   return (
     <Sheet side open={item !== null} onClose={onClose} title={item?.productName ?? ""}>
       {item ? (
-        <Body key={`${item.id}:${item.version}`} item={item} placeName={placeName} keep={keep} names={names} onClose={onClose} onTaken={onTaken} onChanged={onChanged} />
+        <Body
+          key={`${item.id}:${item.version}`}
+          item={item}
+          placeName={placeName}
+          keep={keep}
+          householdId={householdId}
+          names={names}
+          onClose={onClose}
+          onTaken={onTaken}
+          onChanged={onChanged}
+        />
       ) : null}
     </Sheet>
   );
@@ -50,6 +65,7 @@ function Body({
   item,
   placeName,
   keep,
+  householdId,
   names,
   onClose,
   onTaken,
@@ -58,6 +74,7 @@ function Body({
   item: StockItem;
   placeName?: string;
   keep: boolean;
+  householdId?: string;
   names: Map<string, string>;
   onClose: () => void;
   onTaken: (before: StockItem, after: StockItem, amount: number, movementId: string | null) => void;
@@ -72,6 +89,9 @@ function Body({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [history, setHistory] = useState<Movement[] | null>(null);
+  const canList = !keep && !!householdId;
+  const [listed, setListed] = useState(false);
+  const [rebuy, setRebuy] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -93,6 +113,8 @@ function Body({
     setBusy(true);
     try {
       const { item: after, movementId } = await takeOut(item, chosen);
+      // Used the last of it: on the list for next time, if asked. The take-out stands either way.
+      if (canList && rebuy && !listed && roundQty(chosen) === qty) await addToList(householdId!, fromStock(item)).catch(() => {});
       onTaken(item, after, chosen, movementId);
       onClose();
     } catch (err) {
@@ -102,6 +124,19 @@ function Body({
   }
 
   const addedBy = item.addedBy ? names.get(item.addedBy) : undefined;
+
+  async function addToShopping() {
+    setError(null);
+    setBusy(true);
+    try {
+      await addToList(householdId!, fromStock(item));
+      setListed(true);
+    } catch (err) {
+      setError(friendlyError(err));
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function giveBack() {
     setError(null);
@@ -181,13 +216,19 @@ function Body({
             </div>
           ) : null}
 
-          <div className="flex gap-2">
+          <div className={canList ? "grid grid-cols-2 gap-2" : "flex gap-2"}>
             <Button variant="ghost" className="min-h-11 flex-1 px-3" onClick={() => setMode("edit")}>
               <IconPencil className="size-[18px]" /> Edit
             </Button>
             <Button variant="ghost" className="min-h-11 flex-1 px-3" onClick={() => setMode("move")}>
               <IconMove className="size-[18px]" /> Move to…
             </Button>
+            {canList ? (
+              <Button variant="ghost" className="col-span-2 min-h-11 px-3" onClick={addToShopping} disabled={busy || listed} aria-live="polite">
+                {listed ? <IconCheck className="size-[18px]" /> : <IconBasket className="size-[18px]" />}{" "}
+                {listed ? "On the shopping list" : "Add to shopping list"}
+              </Button>
+            ) : null}
             {keep && !item.lentTo ? (
               <Button variant="ghost" className="min-h-11 flex-1 px-3" onClick={() => setMode("lend")}>
                 <IconHandOver className="size-[18px]" /> Lend…
@@ -226,9 +267,17 @@ function Body({
                 </Button>
               ) : null}
             </div>
+            {all && canList && !listed ? (
+              <label className="flex min-h-11 cursor-pointer items-center gap-3 text-[15px]">
+                <input type="checkbox" checked={rebuy} onChange={(e) => setRebuy(e.target.checked)} className="size-5 accent-[var(--color-go)]" />
+                Add it to the shopping list
+              </label>
+            ) : null}
             {all ? (
               <p className="text-xs text-mute">
-                {keep ? "Given away, sold or gone? It moves to history. You can undo straight after." : "It will move to history as used up. You can undo straight after."}
+                {keep
+                  ? "Given away, sold or gone? It moves to history. You can undo straight after."
+                  : "It will move to history as used up. You can undo straight after."}
               </p>
             ) : null}
           </div>
