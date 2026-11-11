@@ -14,7 +14,7 @@ export function NativeLinks() {
   const router = useRouter();
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
-    const sub = App.addListener("appUrlOpen", ({ url }) => {
+    const open = (url: string) => {
       try {
         const u = new URL(url);
         // /l/<code> has no page of its own in the bundled app, so go to the /l/?c=<code> form.
@@ -23,7 +23,14 @@ export function NativeLinks() {
       } catch {
         /* not a URL we understand */
       }
-    });
+    };
+    const sub = App.addListener("appUrlOpen", ({ url }) => open(url));
+    // Tapping a sticker while the app is closed starts it with that link.
+    App.getLaunchUrl()
+      .then((launch) => {
+        if (launch?.url && /^https?:/.test(launch.url)) open(launch.url);
+      })
+      .catch(() => {});
     return () => {
       sub.then((h) => h.remove());
     };

@@ -25,6 +25,12 @@ You need a paid Apple Developer account (£79 / $99 a year). Free Apple IDs can'
 7. Pick your iPhone at the top of the Xcode window and press the ▶ Run button.
 8. In the app: open a place, tap the round sticker button, tap **Write to a sticker**, and hold the top of the iPhone to a sticker.
 
-## Not done yet
+## Stickers open the app (iPhone)
 
-Tapping a written sticker opens the website in Safari, not the app. Opening the app directly needs universal links: an `apple-app-site-association` file on seewhatsinhere.com with the Apple Team ID, and the Associated Domains capability (`applinks:seewhatsinhere.com`). Android needs the matching `assetlinks.json`.
+Tapping a sticker, scanning a QR label or opening an invitation goes straight into the iPhone app when it's installed, through universal links:
+
+- `public/.well-known/apple-app-site-association` lists `GS73N238CQ.com.seewhatsinhere.app` (Apple Team ID + bundle id) for `/l/*` and `/invite/*`. `vercel.json` serves it as JSON.
+- `ios/App/App/App.entitlements` has `applinks:seewhatsinhere.com`. Automatic signing adds the Associated Domains capability to the App ID.
+- `components/NativeLinks.tsx` routes the link, whether the app was open (`appUrlOpen`) or started by it (`getLaunchUrl`).
+
+iOS fetches the association file when the app is installed, so reinstall from Xcode after it goes live. Android app links (`assetlinks.json` with the signing key's SHA-256) are not set up yet.
