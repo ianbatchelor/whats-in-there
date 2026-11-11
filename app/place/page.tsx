@@ -206,7 +206,7 @@ function Place() {
           <Link href="/" aria-label="Back to My Places" className="grid size-11 place-items-center rounded-full bg-[#fffdf8]/92 text-[#17242a] shadow-[var(--shadow-card)] backdrop-blur transition hover:bg-[#fffdf8]">
             <IconChevronLeft className="size-5" />
           </Link>
-          <span ref={heroSmall} aria-hidden="true" className="min-w-0 flex-1 truncate font-display text-[17px] font-bold text-[#fffdf8] opacity-0 sm:hidden">
+          <span ref={heroSmall} aria-hidden="true" className="min-w-0 flex-1 truncate font-serif text-[18px] font-semibold text-[#fffdf8] opacity-0 sm:hidden">
             {place.name}
           </span>
           <div className="flex shrink-0 gap-2">
@@ -227,7 +227,7 @@ function Place() {
           </div>
         </div>
         <div ref={heroBig} className="absolute inset-x-5 bottom-4 text-[#fffdf8] sm:inset-x-7 sm:bottom-6">
-          <h1 className="truncate font-display text-[1.9rem] leading-tight font-bold tracking-[-0.025em] [text-shadow:0_2px_12px_rgba(0,0,0,0.3)] sm:text-[2.3rem]">
+          <h1 className="truncate pb-0.5 font-serif text-[2.1rem] leading-tight font-semibold tracking-[-0.015em] [text-shadow:0_2px_12px_rgba(0,0,0,0.3)] sm:text-[2.6rem]">
             {place.name}
           </h1>
           <p className="truncate text-[14px] text-[#fffdf8]/90">{summary}</p>
