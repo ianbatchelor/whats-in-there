@@ -21,6 +21,7 @@ describe("friendlyError", () => {
   it("translates database codes", () => {
     expect(friendlyError({ message: "invitation_expired" })).toMatch(/expired/);
     expect(friendlyError({ message: "insufficient_quantity" })).toMatch(/isn't that much left/);
+    expect(friendlyError({ message: "captcha protection: request disallowed (captcha verification process failed)" })).toMatch(/robot/);
   });
   it("never leaks raw errors", () => {
     expect(friendlyError(new Error('relation "x" does not exist'))).toBe("Something went wrong. Please try again.");

@@ -11,9 +11,10 @@
 // every value again before showing it, and nothing is saved until the person confirms.
 //
 // Cost controls: a small, cheap model reads the labels; each person gets PER_USER_PER_MONTH reads in
-// any 30 days on top of the per-minute and per-household-per-day limits; and when a barcode is read,
-// the shared products list supplies the name, brand and weight that earlier scans of that barcode
-// found, so a product reads the same way everywhere. Dates always come from the photo.
+// any 30 days on top of the per-minute and per-household-per-day limits, checked and counted in one
+// step so they hold even when many scans arrive at once; and when a barcode is read, the shared
+// products list supplies the name, brand and weight once two different people have read the same
+// name for it, so a product reads the same way everywhere. Dates always come from the photo.
 //
 // Many things at once: with `mode: "many"`, the same photos are read as a shelf, rail or drawer of
 // separate things (a bookshelf, a wardrobe) and the reply is a list of them, each with a name, a
@@ -207,27 +208,34 @@ Deno.serve(async (req) => {
   const { data: member } = await asUser.rpc("is_member", { hid: householdId });
   if (member !== true) return reply(403, { error: "not_member" });
 
-  // Usage limits, counted from the attempts log (written only by this function).
+  // Usage limits. reserve_scan checks them and records this scan in one step, under a lock, so scans
+  // sent at the same moment can't slip past. Every exit below fills in the reserved row.
   const admin = createClient(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
-  const since = (ms: number) => new Date(Date.now() - ms).toISOString();
-  const [day, minute, month] = await Promise.all([
-    admin.from("ai_extraction_attempts").select("id", { count: "exact", head: true }).eq("household_id", householdId).gte("created_at", since(86_400_000)),
-    admin.from("ai_extraction_attempts").select("id", { count: "exact", head: true }).eq("actor_user_id", user.id).gte("created_at", since(60_000)),
-    admin.from("ai_extraction_attempts").select("id", { count: "exact", head: true }).eq("actor_user_id", user.id).gte("created_at", since(30 * 86_400_000)),
-  ]);
-  if (day.error || minute.error || month.error) return reply(500, { error: "failed" });
-  if ((minute.count ?? 0) >= PER_USER_PER_MINUTE) return reply(429, { error: "too_many_now" });
-  if ((month.count ?? 0) >= PER_USER_PER_MONTH) return reply(429, { error: "too_many_this_month" });
-  if ((day.count ?? 0) >= PER_HOUSEHOLD_PER_DAY) return reply(429, { error: "too_many_today" });
+  const { data: reserved, error: reserveError } = await admin.rpc("reserve_scan", {
+    p_household: householdId,
+    p_user: user.id,
+    p_image_path: imagePath,
+    p_model: MODEL,
+    p_per_user_minute: PER_USER_PER_MINUTE,
+    p_per_user_month: PER_USER_PER_MONTH,
+    p_per_household_day: PER_HOUSEHOLD_PER_DAY,
+  });
+  const slot = Array.isArray(reserved) ? reserved[0] : reserved;
+  if (reserveError || !slot) return reply(500, { error: "failed" });
+  if (slot.refused) return reply(429, { error: slot.refused });
+  const attemptId: string = slot.attempt_id;
 
   const log = (fields: Record<string, unknown>) =>
-    admin.from("ai_extraction_attempts").insert({ household_id: householdId, actor_user_id: user.id, image_path: imagePath, model: MODEL, ...fields });
+    admin.from("ai_extraction_attempts").update({ error_code: null, ...fields }).eq("id", attemptId);
 
   // Read the photos as the caller, so the bucket's household policy applies as well.
   const images: { type: "image/webp" | "image/jpeg" | "image/png"; data: string }[] = [];
   for (const path of imagePaths) {
     const { data: file, error: fileError } = await asUser.storage.from("item-photos").download(path);
-    if (fileError || !file) return reply(400, { error: "bad_request" });
+    if (fileError || !file) {
+      await log({ error_code: "no_photo" });
+      return reply(400, { error: "bad_request" });
+    }
     if (file.size > MAX_BYTES) {
       await log({ error_code: "image_too_large" });
       return reply(413, { error: "image_too_large" });
@@ -295,7 +303,7 @@ Deno.serve(async (req) => {
     }
     const barcode = validBarcode(reading?.barcode);
     reading.barcode = barcode;
-    const fromCache = barcode ? await useProductList(admin, barcode, reading) : false;
+    const fromCache = barcode ? await useProductList(admin, user.id, barcode, reading) : false;
     await log({ ...usage, parsed_json: reading, barcode, from_cache: fromCache });
     return reply(200, { reading });
   } catch (err) {
@@ -317,38 +325,35 @@ Deno.serve(async (req) => {
 type Reading = Record<string, unknown> & { uncertain?: unknown };
 
 /**
- * Shares what a barcode is across households. If the barcode is already known, its name, brand and
- * weight replace the reading's (an earlier clear reading of the same product) and those fields are
- * no longer marked uncertain. If it is new, it is added, but only from a reading that was sure of the
- * name. Dates are never shared. Returns true when the known details were used. Never throws: the
- * reading stands on its own if the list can't be reached.
+ * Shares what a barcode is across households. A barcode's name, brand and weight are shared only once
+ * two different people have scanned it and read the same name (share_product_reading in the database
+ * decides). When it is shared, those details replace the reading's and are no longer marked
+ * uncertain. Dates are never shared. Returns true when the shared details were used. Never throws:
+ * the reading stands on its own if the list can't be reached.
  */
-async function useProductList(admin: SupabaseClient, barcode: string, reading: Reading): Promise<boolean> {
+async function useProductList(admin: SupabaseClient, userId: string, barcode: string, reading: Reading): Promise<boolean> {
   try {
     const uncertain = Array.isArray(reading.uncertain) ? (reading.uncertain as string[]) : [];
-    const { data: known } = await admin.from("products").select("*").eq("barcode", barcode).maybeSingle();
-    if (known) {
-      reading.product_name = known.product_name;
-      reading.brand = known.brand;
-      if (known.weight_value != null && known.weight_unit) {
-        reading.weight_value = Number(known.weight_value);
-        reading.weight_unit = known.weight_unit;
-      }
-      reading.uncertain = uncertain.filter((f) => f !== "product_name" && f !== "brand" && (f !== "weight" || known.weight_value == null));
-      await admin.from("products").update({ times_seen: known.times_seen + 1, updated_at: new Date().toISOString() }).eq("barcode", barcode);
-      return true;
-    }
-    const name = typeof reading.product_name === "string" ? reading.product_name.trim().slice(0, 120) : "";
-    if (!name || uncertain.includes("product_name")) return false;
-    const weightOk = !uncertain.includes("weight") && typeof reading.weight_value === "number" && reading.weight_value > 0 && reading.weight_value <= 100_000 && ["g", "kg", "ml", "l"].includes(String(reading.weight_unit));
-    await admin.from("products").insert({
-      barcode,
-      product_name: name,
-      brand: typeof reading.brand === "string" && reading.brand.trim() && !uncertain.includes("brand") ? reading.brand.trim().slice(0, 80) : null,
-      weight_value: weightOk ? reading.weight_value : null,
-      weight_unit: weightOk ? reading.weight_unit : null,
+    const name = typeof reading.product_name === "string" && !uncertain.includes("product_name") ? reading.product_name.trim() : "";
+    const brand = typeof reading.brand === "string" && !uncertain.includes("brand") ? reading.brand.trim() : "";
+    const weightOk = !uncertain.includes("weight") && typeof reading.weight_value === "number" && ["g", "kg", "ml", "l"].includes(String(reading.weight_unit));
+    const { data: known, error } = await admin.rpc("share_product_reading", {
+      p_barcode: barcode,
+      p_user: userId,
+      p_name: name || null,
+      p_brand: brand || null,
+      p_weight_value: weightOk ? reading.weight_value : null,
+      p_weight_unit: weightOk ? reading.weight_unit : null,
     });
-    return false;
+    if (error || !known || typeof known !== "object") return false;
+    reading.product_name = known.product_name;
+    reading.brand = known.brand;
+    if (known.weight_value != null && known.weight_unit) {
+      reading.weight_value = Number(known.weight_value);
+      reading.weight_unit = known.weight_unit;
+    }
+    reading.uncertain = uncertain.filter((f) => f !== "product_name" && f !== "brand" && (f !== "weight" || known.weight_value == null));
+    return true;
   } catch {
     return false;
   }

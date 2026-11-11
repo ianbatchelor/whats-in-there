@@ -25,6 +25,7 @@ export function friendlyError(error: unknown): string {
   if (code) return messages[code]!;
   if (/token has expired|invalid.*otp|otp.*invalid/i.test(raw)) return "That code didn't work. Check it, or send a new one.";
   if (/invalid input value for enum/i.test(raw)) return "This kind of place needs a quick database update first. Pick another kind for now.";
+  if (/captcha/i.test(raw)) return "We couldn't check you're not a robot. Reload the page and try again.";
   if (/rate limit|too many/i.test(raw)) return "Too many attempts. Wait a minute and try again.";
   if (/failed to fetch|network/i.test(raw)) return "Can't reach the server. Check your connection and try again.";
   return "Something went wrong. Please try again.";

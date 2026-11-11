@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
 import { friendlyError } from "@/lib/supabase/errors";
@@ -13,6 +13,7 @@ import { Field } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 import { Notice } from "@/components/ui/Notice";
 import { SetupNeeded } from "@/components/SetupNeeded";
+import { HumanCheck, turnstileSiteKey, type HumanCheckHandle } from "@/components/HumanCheck";
 
 /** Only allow same-app paths as a return address. */
 function safeNext(): string {
@@ -28,6 +29,8 @@ export default function SignInPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
+  const [captcha, setCaptcha] = useState<string | null>(null);
+  const humanCheck = useRef<HumanCheckHandle>(null);
 
   useEffect(() => {
     if (session) router.replace(safeNext());
@@ -45,9 +48,17 @@ export default function SignInPage() {
       setError("Enter a valid email address.");
       return;
     }
+    if (turnstileSiteKey && !captcha) {
+      setError("Just a moment while we check you're not a robot, then try again.");
+      return;
+    }
     setBusy(true);
-    const { error } = await supabase().auth.signInWithOtp({ email: address, options: { shouldCreateUser: true } });
+    const { error } = await supabase().auth.signInWithOtp({
+      email: address,
+      options: { shouldCreateUser: true, ...(captcha ? { captchaToken: captcha } : {}) },
+    });
     setBusy(false);
+    humanCheck.current?.reset(); // each check works once; get a fresh one for "Send a new code"
     if (error) return setError(friendlyError(error));
     setEmail(address);
     setStep("code");
@@ -125,6 +136,12 @@ export default function SignInPage() {
           </form>
         )}
       </section>
+
+      <HumanCheck
+        ref={humanCheck}
+        onToken={setCaptcha}
+        onError={() => setError("We couldn't check you're not a robot. Check your connection and reload the page.")}
+      />
 
       <p className="text-center text-xs text-mute lg:hidden">Your household&apos;s list is private to the people you invite.</p>
     </AuthFrame>
