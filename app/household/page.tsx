@@ -19,7 +19,7 @@ import { Button } from "@/components/ui/Button";
 import { Notice } from "@/components/ui/Notice";
 import { Field } from "@/components/ui/Field";
 import { Sheet } from "@/components/ui/Sheet";
-import { IconCheck, IconCopy } from "@/components/ui/icons";
+import { IconCheck, IconCopy, IconMore } from "@/components/ui/icons";
 import { DeleteAccountSheet } from "@/components/account/DeleteAccountSheet";
 import { LegalLinks } from "@/components/common/LegalLinks";
 
@@ -38,6 +38,8 @@ function Household({ session }: { session: Session }) {
   const [link, setLink] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
+  /** The person whose options are open, and whether we're asking "are you sure?" about removing them. */
+  const [managing, setManaging] = useState<{ member: Member; confirm: boolean } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [renaming, setRenaming] = useState(false);
   const [newName, setNewName] = useState("");
@@ -129,6 +131,7 @@ function Household({ session }: { session: Session }) {
     run(`remove-${m.userId}`, async () => {
       const { error } = await supabase().rpc("remove_member", { p_household: current!.householdId, p_user: m.userId });
       if (error) throw error;
+      setManaging(null);
       await load();
     });
 
@@ -136,6 +139,7 @@ function Household({ session }: { session: Session }) {
     run(`owner-${m.userId}`, async () => {
       const { error } = await supabase().rpc("set_member_role", { p_household: current!.householdId, p_user: m.userId, p_role: "owner" });
       if (error) throw error;
+      setManaging(null);
       await load();
     });
 
@@ -188,16 +192,13 @@ function Household({ session }: { session: Session }) {
                 </p>
               </div>
               {isOwner && m.userId !== session.user.id ? (
-                <div className="flex flex-col items-end">
-                  {m.role === "member" ? (
-                    <Button variant="quiet" className="min-h-0! px-0! py-0.5! text-sm" busy={busy === `owner-${m.userId}`} onClick={() => makeOwner(m)}>
-                      Make owner
-                    </Button>
-                  ) : null}
-                  <Button variant="danger" className="min-h-0! px-0! py-0.5! text-sm" busy={busy === `remove-${m.userId}`} onClick={() => removeMember(m)}>
-                    Remove
-                  </Button>
-                </div>
+                <button
+                  onClick={() => setManaging({ member: m, confirm: false })}
+                  aria-label={`Options for ${m.displayName}`}
+                  className="grid size-11 shrink-0 place-items-center rounded-full text-mute transition hover:bg-sunk hover:text-fg"
+                >
+                  <IconMore className="size-5" />
+                </button>
               ) : null}
             </li>
           ))}
@@ -291,6 +292,48 @@ function Household({ session }: { session: Session }) {
           {members.length === 1 ? "Delete household" : "Leave household"}
         </Button>
         <Button variant="quiet" onClick={() => setConfirmLeave(false)}>Keep it</Button>
+      </Sheet>
+      <Sheet open={managing !== null} onClose={() => setManaging(null)} title={managing?.member.displayName ?? ""}>
+        {managing ? (
+          managing.confirm ? (
+            <div className="flex flex-col gap-4">
+              <p>
+                Remove <b>{managing.member.displayName}</b> from {current.name}? They&apos;ll stop seeing its places straight away. Things they added stay
+                here, and you can invite them back any time.
+              </p>
+              {error ? <Notice>{error}</Notice> : null}
+              <div className="flex gap-2">
+                <Button
+                  variant="danger"
+                  className="flex-1 border border-warn/40"
+                  busy={busy === `remove-${managing.member.userId}`}
+                  onClick={() => removeMember(managing.member)}
+                >
+                  Remove {managing.member.displayName}
+                </Button>
+                <Button variant="ghost" onClick={() => setManaging({ ...managing, confirm: false })}>
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2">
+              <p className="text-sm text-mute">
+                {managing.member.role === "owner" ? "Owner" : "Member"} · joined {formatDay(managing.member.joinedAt)}
+              </p>
+              {managing.member.role === "member" ? (
+                <Button variant="ghost" className="justify-start" busy={busy === `owner-${managing.member.userId}`} onClick={() => makeOwner(managing.member)}>
+                  Make an owner
+                  <span className="ml-auto text-sm font-normal text-mute">Can invite and remove people</span>
+                </Button>
+              ) : null}
+              <Button variant="ghost" className="justify-start text-warn" onClick={() => setManaging({ ...managing, confirm: true })}>
+                Remove from household…
+              </Button>
+              {error ? <Notice>{error}</Notice> : null}
+            </div>
+          )
+        ) : null}
       </Sheet>
     </AppShell>
   );

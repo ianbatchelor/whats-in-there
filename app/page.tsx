@@ -24,10 +24,10 @@ import { Avatar } from "@/components/ui/Avatar";
 import { Notice } from "@/components/ui/Notice";
 import { Button } from "@/components/ui/Button";
 import { Toast } from "@/components/ui/Toast";
-import { IconCheck, IconPlus, IconScan, IconSearch } from "@/components/ui/icons";
-import { PlacePhoto } from "@/components/art/PlacePhoto";
+import { IconCheck, IconScan, IconSearch } from "@/components/ui/icons";
 import { AddPlaceSheet } from "@/components/home/AddPlaceSheet";
 import { AddPlaceTile, GroupCard } from "@/components/home/PlaceCard";
+import { FirstThingsTip, StarterPlaces } from "@/components/home/StarterPlaces";
 import { ItemList, ItemRow } from "@/components/stock/ItemRow";
 import { TakeOutSheet } from "@/components/stock/TakeOutSheet";
 import { useUndoToast } from "@/components/stock/useUndoToast";
@@ -234,6 +234,8 @@ function Home({ session }: { session: Session }) {
             </button>
           ) : null}
         </section>
+      ) : places && places.length > 0 && total === 0 ? (
+        <FirstThingsTip />
       ) : total > 0 ? (
         <p className="flex items-center gap-2.5 rounded-2xl border border-line bg-card px-4 py-3 text-[14.5px] text-mute">
           <span className="grid size-6 shrink-0 place-items-center rounded-full bg-ok-bg text-ok" aria-hidden="true">
@@ -273,7 +275,7 @@ function Home({ session }: { session: Session }) {
             ))}
           </ul>
         ) : places!.length === 0 ? (
-          <FirstPlace onAdd={() => setAdding(true)} />
+          <StarterPlaces householdId={current.householdId} onAdded={refresh} onOwn={() => setAdding(true)} />
         ) : (
           <ul className="grid grid-cols-2 gap-x-3 gap-y-5 sm:grid-cols-3 sm:gap-x-4 lg:grid-cols-4">
             {groups.map((g, i) => (
@@ -330,22 +332,3 @@ function greeting(now: Date = new Date()): string {
   return h < 5 ? "Good evening" : h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
 }
 
-function FirstPlace({ onAdd }: { onAdd: () => void }) {
-  return (
-    <div className="relative overflow-hidden rounded-[24px] bg-brand text-[#fffdf8]">
-      <div className="absolute inset-0 opacity-60">
-        <PlacePhoto type="attic" variant="wide" eager />
-      </div>
-      <div className="absolute inset-0 bg-gradient-to-t from-[#0f1c17] via-[#0f1c17]/70 to-[#0f1c17]/10" aria-hidden="true" />
-      <div className="relative flex min-h-80 flex-col items-start justify-end gap-3 p-6 sm:min-h-96 sm:p-9">
-        <h3 className="font-serif text-[2rem] leading-tight font-semibold">Add your first place</h3>
-        <p className="max-w-md text-[#fffdf8]/80">
-          A freezer, the attic, a wardrobe, a raised bed. Anywhere you put things. Give each its own name, like Garage Freezer or Blue Box.
-        </p>
-        <Button variant="gold" onClick={onAdd}>
-          <IconPlus /> Add a place
-        </Button>
-      </div>
-    </div>
-  );
-}
