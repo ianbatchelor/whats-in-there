@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { KEYS, readLocal, writeLocal } from "@/lib/storage";
 import { Sheet } from "@/components/ui/Sheet";
@@ -13,6 +13,18 @@ import { Button } from "@/components/ui/Button";
  */
 export function useAiConsent() {
   const [pending, setPending] = useState<(() => void) | null>(null);
+  // Shown a frame after it's asked for. "Scan a label" opens the add sheet and asks in the same tap, and
+  // this question sits inside that sheet: opening it first would leave it hidden under the sheet,
+  // with the whole screen blocked.
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    if (!pending) return;
+    const frame = requestAnimationFrame(() => setVisible(true));
+    return () => {
+      cancelAnimationFrame(frame);
+      setVisible(false);
+    };
+  }, [pending]);
 
   const withConsent = useCallback((go: () => void) => {
     if (readLocal(KEYS.aiConsent) === "yes") go();
@@ -27,7 +39,7 @@ export function useAiConsent() {
   };
 
   const sheet = (
-    <Sheet open={pending !== null} onClose={() => setPending(null)} title="Read photos with AI?">
+    <Sheet open={pending !== null && visible} onClose={() => setPending(null)} title="Read photos with AI?">
       <div className="flex flex-col gap-2 text-mute">
         <p>
           To fill things in for you, your photo is sent to <b className="text-fg">Claude, an AI made by Anthropic</b>, which reads the
