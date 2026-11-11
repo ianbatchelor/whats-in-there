@@ -186,3 +186,13 @@
     -webkit-print-color-adjust: exact;
   }
 }
+
+/* iPhone date fields have a fixed built-in width that pushed forms sideways; let them fit their column. */
+input[type="date"] {
+  -webkit-appearance: none;
+  appearance: none;
+  min-width: 0;
+}
+input[type="date"]::-webkit-date-and-time-value {
+  text-align: left;
+}
