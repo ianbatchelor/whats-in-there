@@ -441,6 +441,7 @@ function Place() {
       <TakeOutSheet
         item={open}
         keep={keep}
+        householdId={place.householdId}
         names={names}
         onClose={() => setOpen(null)}
         onTaken={(before, after, amount, movementId) => {

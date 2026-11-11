@@ -35,7 +35,9 @@ import { Avatar } from "@/components/ui/Avatar";
 import { Notice } from "@/components/ui/Notice";
 import { Button } from "@/components/ui/Button";
 import { Toast } from "@/components/ui/Toast";
-import { IconCheck, IconScan, IconSearch } from "@/components/ui/icons";
+import { IconBasket, IconCheck, IconChevronRight, IconScan, IconSearch } from "@/components/ui/icons";
+import { loadToBuy } from "@/lib/shopping";
+import { listPreview } from "@/lib/domain/shopping";
 import { AddPlaceSheet } from "@/components/home/AddPlaceSheet";
 import { AddPlaceTile, GroupCard } from "@/components/home/PlaceCard";
 import { FirstThingsTip, StarterPlaces } from "@/components/home/StarterPlaces";
@@ -60,6 +62,7 @@ function Home({ session }: { session: Session }) {
   const [activity, setActivity] = useState<Activity[]>([]);
   const [attention, setAttention] = useState<StockItem[]>([]);
   const [lent, setLent] = useState<StockItem[]>([]);
+  const [toBuy, setToBuy] = useState<string[] | null>(null);
   const [showAll, setShowAll] = useState(false);
   const [section, setSection] = useState<PlaceSection | "all">("all");
   const [open, setOpen] = useState<StockItem | null>(null);
@@ -67,12 +70,14 @@ function Home({ session }: { session: Session }) {
   const loadExtras = useCallback(async () => {
     if (!current) return;
     try {
-      const [first, acts, due, out] = await Promise.all([
+      const [first, acts, due, out, list] = await Promise.all([
         loadUseFirst(current.householdId, 60),
         loadActivity(current.householdId, 40),
         loadAttention(current.householdId),
         loadLent(current.householdId).catch(() => []),
+        loadToBuy(current.householdId).catch(() => null),
       ]);
+      setToBuy(list);
       setUseFirst(first);
       setLent(out);
       setActivity(acts);
@@ -164,7 +169,14 @@ function Home({ session }: { session: Session }) {
           <ul className="flex flex-col gap-3">
             {activity.slice(0, 6).map((a) => (
               <li key={a.id} className="flex items-start gap-3">
-                <Avatar name={a.actor ? (names.get(a.actor) ?? "?") : "?"} index={Math.max(0, members.findIndex((m) => m.userId === a.actor))} size={30} />
+                <Avatar
+                  name={a.actor ? (names.get(a.actor) ?? "?") : "?"}
+                  index={Math.max(
+                    0,
+                    members.findIndex((m) => m.userId === a.actor),
+                  )}
+                  size={30}
+                />
                 <span className="min-w-0 text-[13.5px] leading-snug">
                   <span className="font-semibold">{who(a.actor)}</span> {activitySentence(a, a.toLocationId ? placeById.get(a.toLocationId)?.name : undefined)}
                   <span className="block text-[12px] text-mute">
@@ -207,7 +219,12 @@ function Home({ session }: { session: Session }) {
             <IconSearch className="size-5 shrink-0" />
             <span className="truncate">{total > 0 ? `Search ${countThings(total)}` : "Search everything you have"}</span>
           </Link>
-          <Link href="/add/" aria-label="Scan a label" title="Scan a label" className="mr-1 grid size-10 shrink-0 place-items-center rounded-lg text-leaf transition hover:bg-sunk">
+          <Link
+            href="/add/"
+            aria-label="Scan a label"
+            title="Scan a label"
+            className="mr-1 grid size-10 shrink-0 place-items-center rounded-lg text-leaf transition hover:bg-sunk"
+          >
             <IconScan className="size-5" />
           </Link>
         </div>
@@ -259,28 +276,52 @@ function Home({ session }: { session: Session }) {
         </p>
       ) : null}
 
+      {places && places.length > 0 && toBuy ? (
+        <Link
+          href="/list/"
+          className="lift flex items-center gap-3.5 rounded-2xl border border-line bg-card py-3 pr-3 pl-3.5 shadow-[var(--shadow-card)]"
+          aria-label={toBuy.length > 0 ? `Shopping list, ${toBuy.length} to buy` : "Shopping list, nothing to buy"}
+        >
+          <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-ok-bg text-ok" aria-hidden="true">
+            <IconBasket className="size-6" />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block font-display font-bold">Shopping list</span>
+            <span className="block truncate text-[14px] text-mute">
+              {toBuy.length > 0 ? listPreview(toBuy) : "Nothing to buy. Add things as they run out."}
+            </span>
+          </span>
+          {toBuy.length > 0 ? (
+            <span className="grid h-7 min-w-7 place-items-center rounded-full bg-go px-2 text-[13px] font-bold text-on-go tabular-nums" aria-hidden="true">
+              {toBuy.length}
+            </span>
+          ) : null}
+          <IconChevronRight className="size-4 shrink-0 text-mute/60" />
+        </Link>
+      ) : null}
+
       <section className="flex flex-col gap-3" aria-labelledby="places-h">
         <h2 id="places-h" className="sr-only">
           Places
         </h2>
         <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
           <SectionLabel>Places</SectionLabel>
-        {sections.length > 1 ? (
-          <div className="flex gap-1.5" role="group" aria-label="Show places">
-            {(["all", ...sections] as const).map((s) => (
-              <button
-                key={s}
-                onClick={() => setSection(s)}
-                aria-pressed={section === s}
-                className={`h-8 rounded-full border px-3.5 text-[13px] font-semibold transition ${
-                  section === s ? "border-fg bg-fg text-bg" : "border-line bg-card text-mute hover:text-fg"
-                }`}
-              >
-                {s === "all" ? "All" : SECTION_LABELS[s]}
-              </button>
-            ))}
-          </div>
-        ) : null}
+          {sections.length > 1 ? (
+            <div className="flex gap-1.5" role="group" aria-label="Show places">
+              {(["all", ...sections] as const).map((s) => (
+                <button
+                  key={s}
+                  onClick={() => setSection(s)}
+                  aria-pressed={section === s}
+                  className={`h-8 rounded-full border px-3.5 text-[13px] font-semibold transition ${
+                    section === s ? "border-fg bg-fg text-bg" : "border-line bg-card text-mute hover:text-fg"
+                  }`}
+                >
+                  {s === "all" ? "All" : SECTION_LABELS[s]}
+                </button>
+              ))}
+            </div>
+          ) : null}
         </div>
         {groups === null ? (
           <ul className="grid grid-cols-2 gap-x-3 gap-y-5 sm:grid-cols-3 sm:gap-x-4 lg:grid-cols-4" aria-busy="true">
@@ -293,13 +334,7 @@ function Home({ session }: { session: Session }) {
         ) : (
           <ul className="grid grid-cols-2 gap-x-3 gap-y-5 sm:grid-cols-3 sm:gap-x-4 lg:grid-cols-4">
             {groups.map((g, i) => (
-              <GroupCard
-                key={g.type}
-                group={g}
-                index={i}
-                late={sumOver(lateIn, g.places)}
-                soon={sumOver(soonIn, g.places)}
-              />
+              <GroupCard key={g.type} group={g} index={i} late={sumOver(lateIn, g.places)} soon={sumOver(soonIn, g.places)} />
             ))}
             <AddPlaceTile onClick={() => setAdding(true)} />
           </ul>
@@ -325,6 +360,7 @@ function Home({ session }: { session: Session }) {
         item={open}
         placeName={open ? placeById.get(open.locationId)?.name : undefined}
         keep={open ? keptIn(open) : false}
+        householdId={current.householdId}
         names={names}
         onClose={() => setOpen(null)}
         onTaken={(before, after, amount, movementId) => {
@@ -345,4 +381,3 @@ function greeting(now: Date = new Date()): string {
   const h = now.getHours();
   return h < 5 ? "Good evening" : h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
 }
-

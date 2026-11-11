@@ -81,3 +81,5 @@ export const IconHandOver = ({ className }: P) =>
   svg(<path d="M3 15.5h3.5l4 1.5h4a1.5 1.5 0 0 0 0-3H11M6.5 20.5H3v-8h3.5zM14.5 14l4.2-2.1a1.6 1.6 0 0 1 1.8 2.6L15 19.5l-5 .5-3.5-1.2M12 3.5h6v5h-6z" />, className);
 export const IconMore = ({ className }: P) =>
   svg(<><circle cx="5.5" cy="12" r="1.3" fill="currentColor" /><circle cx="12" cy="12" r="1.3" fill="currentColor" /><circle cx="18.5" cy="12" r="1.3" fill="currentColor" /></>, className);
+export const IconBasket = ({ className }: P) =>
+  svg(<><path d="M3.5 9.5h17l-1.6 8.6a2 2 0 0 1-2 1.6H7.1a2 2 0 0 1-2-1.6z" /><path d="m8 9.5 3-5.5M16 9.5l-3-5.5M9.5 13v3.5M14.5 13v3.5" /></>, className);

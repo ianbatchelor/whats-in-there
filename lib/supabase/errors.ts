@@ -14,6 +14,8 @@ const messages: Record<string, string> = {
   invitation_used: "This invitation has already been used. Ask for a new one.",
   reauth_needed: "For your safety, confirm it's you again, then try once more.",
   delete_failed: "We couldn't finish deleting your account. Please try again.",
+  no_place: "Choose a place for it to go first.",
+  already_on_list: "That's already on the shopping list.",
   last_owner: "You're the only owner. Make someone else an owner before you leave.",
 };
 
