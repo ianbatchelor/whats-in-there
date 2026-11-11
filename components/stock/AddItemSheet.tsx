@@ -272,7 +272,7 @@ export function AddItemSheet({
         {places && onPickPlace && places.length > 1 ? (
           <fieldset className="min-w-0">
             <legend className="mb-1.5 text-sm font-bold">Where is it going?</legend>
-            <div className="-mx-5 flex gap-1.5 overflow-x-auto px-5 pb-1" role="radiogroup" aria-label="Place">
+            <div className="flex gap-1.5 overflow-x-auto overscroll-x-contain pb-1" role="radiogroup" aria-label="Place">
               {places.map((p) => (
                 <button
                   type="button"
