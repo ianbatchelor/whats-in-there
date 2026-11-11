@@ -16,6 +16,7 @@ import { itemStatus } from "@/lib/domain/status";
 import { IconBasket, IconCheck, IconHandOver, IconMove, IconPencil } from "@/components/ui/icons";
 import { addToList } from "@/lib/shopping";
 import { fromStock } from "@/lib/domain/shopping";
+import { askBackMessage, isLongLent, lentFor } from "@/lib/domain/lending";
 import { EditItemForm } from "./EditItemForm";
 import { MovePicker } from "./MovePicker";
 import { LendForm } from "./LendForm";
@@ -138,6 +139,22 @@ function Body({
     }
   }
 
+  const [asked, setAsked] = useState<string | null>(null);
+  async function askBack() {
+    const text = askBackMessage(item.productName, item.lentTo ?? "");
+    try {
+      if (navigator.share) {
+        await navigator.share({ text });
+        return;
+      }
+      await navigator.clipboard.writeText(text);
+      setAsked("Message copied. Paste it into a text to them.");
+    } catch (err) {
+      // Closing the share sheet isn't a failure.
+      if ((err as { name?: string })?.name !== "AbortError") setAsked(`Couldn't open sharing. Send them: "${text}"`);
+    }
+  }
+
   async function giveBack() {
     setError(null);
     setBusy(true);
@@ -204,15 +221,36 @@ function Body({
       ) : (
         <>
           {item.lentTo ? (
-            <div className="flex items-center gap-3 rounded-[var(--radius-card)] border border-soon/30 bg-soon-bg p-3.5">
-              <IconHandOver className="size-5 shrink-0 text-soon" />
-              <p className="min-w-0 flex-1 text-sm">
-                <b>With {item.lentTo}</b>
-                {item.lentOn ? <span className="text-mute"> since {formatDay(item.lentOn, { year: false })}</span> : null}
-              </p>
-              <Button variant="ghost" className="min-h-10 shrink-0 px-3.5" busy={busy} onClick={giveBack}>
-                It&apos;s back
-              </Button>
+            <div
+              className={`flex flex-col gap-3 rounded-[var(--radius-card)] border p-3.5 ${isLongLent(item) ? "border-late/30 bg-late-bg" : "border-soon/30 bg-soon-bg"}`}
+            >
+              <div className="flex items-center gap-3">
+                <IconHandOver className={`size-5 shrink-0 ${isLongLent(item) ? "text-late" : "text-soon"}`} />
+                <p className="min-w-0 flex-1 text-sm">
+                  <b>With {item.lentTo}</b>
+                  {item.lentOn ? (
+                    <span className="text-mute">
+                      {" "}
+                      {isLongLent(item)
+                        ? `for ${lentFor(item.lentOn)}, since ${formatDay(item.lentOn, { year: false })}`
+                        : `since ${formatDay(item.lentOn, { year: false })}`}
+                    </span>
+                  ) : null}
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <Button variant="ghost" className="min-h-10 flex-1 px-3" onClick={askBack}>
+                  Ask for it back
+                </Button>
+                <Button variant="ghost" className="min-h-10 flex-1 px-3" busy={busy} onClick={giveBack}>
+                  It&apos;s back
+                </Button>
+              </div>
+              {asked ? (
+                <p className="text-[13px] text-mute" aria-live="polite">
+                  {asked}
+                </p>
+              ) : null}
             </div>
           ) : null}
 

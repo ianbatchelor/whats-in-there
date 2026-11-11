@@ -27,7 +27,8 @@ import {
 import { timeAgo } from "@/lib/domain/dates";
 import { activitySentence } from "@/lib/domain/activity";
 import type { StockItem } from "@/lib/domain/stock";
-import { loadActivity, loadAttention, loadLent, loadUseFirst, type Activity } from "@/lib/stock";
+import { lendItem, loadActivity, loadAttention, loadLent, loadUseFirst, type Activity } from "@/lib/stock";
+import { isLongLent } from "@/lib/domain/lending";
 import { itemStatus, needsAttention } from "@/lib/domain/status";
 import { tookOutMessage, useQuickTake } from "@/components/stock/useQuickTake";
 import { Splash } from "@/components/ui/Screen";
@@ -63,6 +64,7 @@ function Home({ session }: { session: Session }) {
   const [attention, setAttention] = useState<StockItem[]>([]);
   const [lent, setLent] = useState<StockItem[]>([]);
   const [toBuy, setToBuy] = useState<string[] | null>(null);
+  const [returningId, setReturningId] = useState<string | null>(null);
   const [showAll, setShowAll] = useState(false);
   const [section, setSection] = useState<PlaceSection | "all">("all");
   const [open, setOpen] = useState<StockItem | null>(null);
@@ -141,6 +143,21 @@ function Home({ session }: { session: Session }) {
   const shownAttention = showAll ? attention : attention.slice(0, 4);
   const firstName = hh.me?.displayName.trim().split(/\s+/)[0];
 
+  // Lent things that have been away a month or more come up near the top, so they get asked for back.
+  const longLent = lent.filter((i) => isLongLent(i)).length;
+  async function giveBack(item: StockItem) {
+    setReturningId(item.id);
+    try {
+      await lendItem(item, null);
+      announce(`${item.productName} is back from ${item.lentTo}`, null);
+      refresh();
+    } catch (e) {
+      hh.setError(friendlyError(e));
+    } finally {
+      setReturningId(null);
+    }
+  }
+
   const row = (item: StockItem, i: number) => (
     <ItemRow
       key={item.id}
@@ -154,6 +171,32 @@ function Home({ session }: { session: Session }) {
       onTakeOne={takeOne}
       taking={taking === item.id}
     />
+  );
+
+  const lentSection = (
+    <section aria-labelledby="lent-h" className="flex flex-col gap-2.5">
+      <div className="flex items-baseline justify-between">
+        <SectionLabel id="lent-h">Lent out</SectionLabel>
+        {longLent > 0 ? (
+          <span className="text-[13px] font-semibold text-late">{longLent === 1 ? "1 away over a month" : `${longLent} away over a month`}</span>
+        ) : null}
+      </div>
+      <ItemList>
+        {lent.map((item, i) => (
+          <ItemRow
+            key={item.id}
+            index={i}
+            item={item}
+            // The place is in the details; here the room goes to who has it and for how long.
+            placeType={placeById.get(item.locationId)?.type}
+            keep
+            onOpen={setOpen}
+            onReturn={giveBack}
+            taking={returningId === item.id}
+          />
+        ))}
+      </ItemList>
+    </section>
   );
 
   const rail = (
@@ -276,6 +319,8 @@ function Home({ session }: { session: Session }) {
         </p>
       ) : null}
 
+      {longLent > 0 ? lentSection : null}
+
       {places && places.length > 0 && toBuy ? (
         <Link
           href="/list/"
@@ -348,12 +393,7 @@ function Home({ session }: { session: Session }) {
         </section>
       ) : null}
 
-      {lent.length > 0 ? (
-        <section aria-labelledby="lent-h" className="flex flex-col gap-2.5">
-          <SectionLabel id="lent-h">Lent out</SectionLabel>
-          <ItemList>{lent.map(row)}</ItemList>
-        </section>
-      ) : null}
+      {lent.length > 0 && longLent === 0 ? lentSection : null}
 
       <AddPlaceSheet open={adding} onClose={() => setAdding(false)} householdId={current.householdId} onAdded={refresh} />
       <TakeOutSheet
