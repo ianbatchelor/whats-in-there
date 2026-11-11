@@ -17,6 +17,7 @@ import { Spinner } from "@/components/ui/Spinner";
 import { IconCamera, IconStack } from "@/components/ui/icons";
 import { Stepper } from "./Stepper";
 import { placeType } from "@/components/home/placeTypes";
+import { useAiConsent } from "@/components/stock/AiConsent";
 
 const UNITS: { value: StockUnit; label: string }[] = [
   { value: "item", label: "Items" },
@@ -87,6 +88,7 @@ export function AddItemSheet({
   const [nameError, setNameError] = useState<string | undefined>();
   const [photo, setPhoto] = useState<Photo>({ state: "none" });
   const camera = useRef<HTMLInputElement>(null);
+  const { withConsent, sheet: consentSheet } = useAiConsent();
   const attempt = useRef(0);
   const keptPaths = useRef<string[]>([]);
   const previews = useRef<string[]>([]);
@@ -101,6 +103,8 @@ export function AddItemSheet({
     };
   }, []);
 
+  // takePhoto only touches refs and the stable withConsent, so the first one stays correct.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useImperativeHandle(ref, () => ({ scan: () => takePhoto(false) }), []);
 
   const check = new Set(photo.state === "read" ? photo.check : []);
@@ -119,8 +123,10 @@ export function AddItemSheet({
   }
 
   function takePhoto(more: boolean) {
-    adding.current = more;
-    camera.current?.click();
+    withConsent(() => {
+      adding.current = more;
+      camera.current?.click();
+    });
   }
 
   function reset() {
@@ -261,6 +267,7 @@ export function AddItemSheet({
     <Sheet open={open} onClose={close} title={places && onPickPlace ? "Add something" : `Add to ${place.name}`}>
       <form onSubmit={save} className="flex max-h-[75dvh] flex-col gap-4 overflow-y-auto" noValidate>
         <input ref={camera} type="file" accept="image/*" capture="environment" className="sr-only" tabIndex={-1} aria-hidden="true" onChange={onPhoto} />
+        {consentSheet}
 
         {places && onPickPlace && places.length > 1 ? (
           <fieldset className="min-w-0">

@@ -20,6 +20,8 @@ import { Notice } from "@/components/ui/Notice";
 import { Field } from "@/components/ui/Field";
 import { Sheet } from "@/components/ui/Sheet";
 import { IconCheck, IconCopy } from "@/components/ui/icons";
+import { DeleteAccountSheet } from "@/components/account/DeleteAccountSheet";
+import { LegalLinks } from "@/components/common/LegalLinks";
 
 type Invite = { id: string; expires_at: string; created_at: string };
 
@@ -40,6 +42,7 @@ function Household({ session }: { session: Session }) {
   const [renaming, setRenaming] = useState(false);
   const [newName, setNewName] = useState("");
   const [confirmLeave, setConfirmLeave] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const isOwner = current?.role === "owner";
 
@@ -257,6 +260,19 @@ function Household({ session }: { session: Session }) {
           Leave this household
         </Button>
       </div>
+
+      <section aria-labelledby="account-h" className="flex flex-col gap-2.5">
+        <SectionLabel id="account-h">Your account</SectionLabel>
+        <div className="flex flex-col gap-1 rounded-[var(--radius-card)] border border-line bg-card px-3.5 py-3 shadow-[var(--shadow-card)]">
+          <p className="truncate text-sm text-mute">Signed in as {session.user.email}</p>
+          <Button variant="danger" className="min-h-10 self-start px-0! text-[13.5px] font-semibold" onClick={() => setDeleting(true)}>
+            Delete my account
+          </Button>
+        </div>
+        <LegalLinks className="justify-center pt-2" />
+      </section>
+
+      <DeleteAccountSheet open={deleting} onClose={() => setDeleting(false)} session={session} />
 
       <Sheet open={renaming} onClose={() => setRenaming(false)} title="Rename household">
         <form onSubmit={rename} className="flex flex-col gap-4">

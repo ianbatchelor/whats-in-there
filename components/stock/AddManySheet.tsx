@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/Button";
 import { Notice } from "@/components/ui/Notice";
 import { Spinner } from "@/components/ui/Spinner";
 import { IconCamera, IconCheck, IconPlus } from "@/components/ui/icons";
+import { useAiConsent } from "@/components/stock/AiConsent";
 
 type SheetPlace = {
   id: string;
@@ -62,6 +63,7 @@ export function AddManySheet({
   const [photos, setPhotos] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const camera = useRef<HTMLInputElement>(null);
+  const { withConsent, sheet: consentSheet } = useAiConsent();
   const library = useRef<HTMLInputElement>(null);
   const attempt = useRef(0);
   const previews = useRef<string[]>([]);
@@ -182,6 +184,7 @@ export function AddManySheet({
     <Sheet open={open} onClose={close} title={`Add lots to ${place.name}`}>
       <input ref={camera} type="file" accept="image/*" capture="environment" className="sr-only" tabIndex={-1} aria-hidden="true" onChange={onPhoto} />
       <input ref={library} type="file" accept="image/*" className="sr-only" tabIndex={-1} aria-hidden="true" onChange={onPhoto} />
+      {consentSheet}
 
       {stage.state === "start" ? (
         <div className="flex flex-col gap-4">
@@ -196,10 +199,10 @@ export function AddManySheet({
           </div>
           {error ? <Notice>{error}</Notice> : null}
           <div className="grid grid-cols-2 gap-2.5">
-            <Button onClick={() => camera.current?.click()}>
+            <Button onClick={() => withConsent(() => camera.current?.click())}>
               <IconCamera /> Take a photo
             </Button>
-            <Button variant="ghost" onClick={() => library.current?.click()}>
+            <Button variant="ghost" onClick={() => withConsent(() => library.current?.click())}>
               Choose a photo
             </Button>
           </div>
@@ -255,10 +258,10 @@ export function AddManySheet({
           </div>
 
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm font-bold">
-            <button type="button" className="text-go disabled:opacity-50" disabled={reading || saving} onClick={() => camera.current?.click()}>
+            <button type="button" className="text-go disabled:opacity-50" disabled={reading || saving} onClick={() => withConsent(() => camera.current?.click())}>
               + Another photo
             </button>
-            <button type="button" className="text-mute disabled:opacity-50" disabled={reading || saving} onClick={() => library.current?.click()}>
+            <button type="button" className="text-mute disabled:opacity-50" disabled={reading || saving} onClick={() => withConsent(() => library.current?.click())}>
               or choose a photo
             </button>
             <button

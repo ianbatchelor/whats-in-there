@@ -22,6 +22,12 @@
 	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+	<key>NSCameraUsageDescription</key>
+	<string>Take photos of labels, shelves and places, so the app can fill in what you're adding.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Choose a photo of a label, shelf or place you've already taken.</string>
 	<key>NFCReaderUsageDescription</key>
 	<string>Write a place's link to an NFC sticker, so tapping the sticker opens that place.</string>
 	<key>LSRequiresIPhoneOS</key>
@@ -51,13 +57,11 @@
 	<string>Main</string>
 	<key>UIRequiredDeviceCapabilities</key>
 	<array>
-		<string>armv7</string>
+		<string>arm64</string>
 	</array>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationLandscapeLeft</string>
-		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 	<key>UISupportedInterfaceOrientations~ipad</key>
 	<array>

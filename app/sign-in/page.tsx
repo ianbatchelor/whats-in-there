@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabase/client";
 import { friendlyError } from "@/lib/supabase/errors";
 import { isConfigured } from "@/lib/config";
 import { safeReturnPath } from "@/lib/domain/returnPath";
+import { KEYS, readLocal, writeLocal } from "@/lib/storage";
 import { useSession } from "@/lib/hooks/useSession";
 import { AuthFrame } from "@/components/AuthFrame";
 import { Splash } from "@/components/ui/Screen";
@@ -23,9 +24,10 @@ function safeNext(): string {
 export default function SignInPage() {
   const router = useRouter();
   const { session, loading } = useSession();
-  const [step, setStep] = useState<"email" | "code">("email");
+  const [step, setStep] = useState<"email" | "code" | "password">("email");
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
+  const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
@@ -35,6 +37,15 @@ export default function SignInPage() {
   useEffect(() => {
     if (session) router.replace(safeNext());
   }, [session, router]);
+
+  // Straight after "Delete my account".
+  useEffect(() => {
+    if (readLocal(KEYS.accountDeleted)) {
+      writeLocal(KEYS.accountDeleted, null);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setInfo("Your account has been deleted. Thanks for trying See What's in Here.");
+    }
+  }, []);
 
   if (!isConfigured) return <SetupNeeded />;
   if (loading || session) return <Splash />;
@@ -77,20 +88,53 @@ export default function SignInPage() {
     // onAuthStateChange redirects
   }
 
+  // Accounts with a password (such as the demo account for Apple's reviewers) can sign in without an email code.
+  async function signInWithPassword(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    const address = email.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(address) || !password) return setError("Enter your email and password.");
+    if (turnstileSiteKey && !captcha) {
+      setError("Just a moment while we check you're not a robot, then try again.");
+      return;
+    }
+    setBusy(true);
+    const { error } = await supabase().auth.signInWithPassword({
+      email: address,
+      password,
+      ...(captcha ? { options: { captchaToken: captcha } } : {}),
+    });
+    setBusy(false);
+    humanCheck.current?.reset();
+    if (error) return setError(/invalid login credentials/i.test(error.message) ? "That email and password don't match." : friendlyError(error));
+    // onAuthStateChange redirects
+  }
+
+  const switchTo = (next: "email" | "password") => {
+    setStep(next);
+    setError(null);
+    setPassword("");
+  };
+
   return (
     <AuthFrame>
       <section className="rise flex flex-col gap-6">
         <div className="flex flex-col gap-2">
           <h1 className="font-display text-[2.2rem] leading-[1.02] font-bold tracking-[-0.03em] text-balance">
-            {step === "email" ? "Sign in or get started" : "Check your email"}
+            {step === "email" ? "Sign in or get started" : step === "password" ? "Sign in with a password" : "Check your email"}
           </h1>
           <p className="text-mute">
-            {step === "email" ? "New here? The same steps create your account." : `We sent a sign-in code to ${email.trim()}.`}
+            {step === "email"
+              ? "New here? The same steps create your account."
+              : step === "password"
+                ? "For accounts that have a password. Everyone else signs in with an email code."
+                : `We sent a sign-in code to ${email.trim()}.`}
           </p>
         </div>
 
         {step === "email" ? (
           <form onSubmit={sendCode} className="flex flex-col gap-4" noValidate>
+            {info ? <Notice tone="success">{info}</Notice> : null}
             <Field
               label="Email"
               type="email"
@@ -105,6 +149,36 @@ export default function SignInPage() {
             {error ? <Notice>{error}</Notice> : null}
             <Button type="submit" busy={busy} className="w-full">
               Send my code
+            </Button>
+            <Button type="button" variant="quiet" className="self-center text-sm" onClick={() => switchTo("password")}>
+              Sign in with a password
+            </Button>
+          </form>
+        ) : step === "password" ? (
+          <form onSubmit={signInWithPassword} className="flex flex-col gap-4" noValidate>
+            <Field
+              label="Email"
+              type="email"
+              inputMode="email"
+              autoComplete="username"
+              autoCapitalize="none"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+            <Field
+              label="Password"
+              type="password"
+              autoComplete="current-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+            {error ? <Notice>{error}</Notice> : null}
+            <Button type="submit" busy={busy} className="w-full">
+              Sign in
+            </Button>
+            <Button type="button" variant="quiet" className="self-center text-sm" onClick={() => switchTo("email")}>
+              Use an email code instead
             </Button>
           </form>
         ) : (
