@@ -18,4 +18,4 @@ export function publicOrigin(): string {
 }
 
 /** Where people write for help, shown on the Help, Privacy and Terms pages. */
-export const SUPPORT_EMAIL = "hello@seewhatsinhere.com";
+export const SUPPORT_EMAIL = "seewhatsinhere@findthecool.com"; // an ImprovMX alias on findthecool.com
