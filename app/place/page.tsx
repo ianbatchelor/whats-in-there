@@ -351,6 +351,10 @@ function Place() {
           const left = after.quantity > 0 ? `, ${formatQuantity(after.quantity, after.unit)} left` : ", all gone";
           announce(`Took out ${formatQuantity(amount, before.unit)} of ${before.productName}${left}`, movementId);
         }}
+        onChanged={(message, movementId) => {
+          refresh(place.id);
+          announce(message, movementId);
+        }}
       />
       {editing ? (
         <EditPlaceSheet

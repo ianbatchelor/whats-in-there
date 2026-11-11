@@ -13,6 +13,9 @@ import { Notice } from "@/components/ui/Notice";
 import { Stepper } from "./Stepper";
 import { ItemTile, StatusPill } from "./ItemRow";
 import { itemStatus } from "@/lib/domain/status";
+import { IconMove, IconPencil } from "@/components/ui/icons";
+import { EditItemForm } from "./EditItemForm";
+import { MovePicker } from "./MovePicker";
 
 export function TakeOutSheet({
   item,
@@ -20,16 +23,21 @@ export function TakeOutSheet({
   names,
   onClose,
   onTaken,
+  onChanged,
 }: {
   item: StockItem | null;
   placeName?: string;
   names: Map<string, string>;
   onClose: () => void;
   onTaken: (before: StockItem, after: StockItem, amount: number, movementId: string | null) => void;
+  /** After an edit or a move: what to tell the person, and the movement to undo (moves only). */
+  onChanged: (message: string, movementId: string | null) => void;
 }) {
   return (
     <Sheet side open={item !== null} onClose={onClose} title={item?.productName ?? ""}>
-      {item ? <Body key={`${item.id}:${item.version}`} item={item} placeName={placeName} names={names} onClose={onClose} onTaken={onTaken} /> : null}
+      {item ? (
+        <Body key={`${item.id}:${item.version}`} item={item} placeName={placeName} names={names} onClose={onClose} onTaken={onTaken} onChanged={onChanged} />
+      ) : null}
     </Sheet>
   );
 }
@@ -40,13 +48,16 @@ function Body({
   names,
   onClose,
   onTaken,
+  onChanged,
 }: {
   item: StockItem;
   placeName?: string;
   names: Map<string, string>;
   onClose: () => void;
   onTaken: (before: StockItem, after: StockItem, amount: number, movementId: string | null) => void;
+  onChanged: (message: string, movementId: string | null) => void;
 }) {
+  const [mode, setMode] = useState<"view" | "edit" | "move">("view");
   const counted = isCounted(item.unit);
   const qty = roundQty(item.quantity);
   const step = counted && !Number.isInteger(qty) ? 0.5 : 1;
@@ -104,53 +115,84 @@ function Body({
         </div>
       </div>
 
-      <div className="flex flex-col gap-3 rounded-[var(--radius-card)] border border-line bg-card p-4">
-        <p className="text-sm font-bold">How much are you taking?</p>
-        {counted ? (
-          qty > step ? (
-            <Stepper value={count} min={step} max={qty} step={step} onChange={setCount} label="Amount to take out" />
-          ) : null
-        ) : (
-          <Field
-            label={`Amount in ${item.unit === "l" ? "litres" : item.unit}`}
-            inputMode="decimal"
-            placeholder={String(qty)}
-            value={typed}
-            onChange={(e) => setTyped(e.target.value)}
-          />
-        )}
-        <div className="flex gap-2">
-          <Button className="flex-1" busy={busy} onClick={() => submit(amount)} disabled={!amount}>
-            {all ? "Take out all" : `Take out ${formatQuantity(amount || 0, item.unit)}`}
-          </Button>
-          {!all ? (
-            <Button variant="ghost" onClick={() => submit(qty)} disabled={busy}>
-              All
+      {mode === "edit" ? (
+        <EditItemForm
+          item={item}
+          onCancel={() => setMode("view")}
+          onSaved={(after) => {
+            onChanged(`Saved changes to ${after.productName}`, null);
+            onClose();
+          }}
+        />
+      ) : mode === "move" ? (
+        <MovePicker
+          item={item}
+          onCancel={() => setMode("view")}
+          onMoved={(after, to, movementId) => {
+            onChanged(`Moved ${after.productName} to ${to}`, movementId);
+            onClose();
+          }}
+        />
+      ) : (
+        <>
+          <div className="flex gap-2">
+            <Button variant="ghost" className="min-h-11 flex-1 px-3" onClick={() => setMode("edit")}>
+              <IconPencil className="size-[18px]" /> Edit
             </Button>
-          ) : null}
-        </div>
-        {all ? <p className="text-xs text-mute">It will move to history as used up. You can undo straight after.</p> : null}
-      </div>
+            <Button variant="ghost" className="min-h-11 flex-1 px-3" onClick={() => setMode("move")}>
+              <IconMove className="size-[18px]" /> Move to…
+            </Button>
+          </div>
 
-      {error ? <Notice>{error}</Notice> : null}
+          <div className="flex flex-col gap-3 rounded-[var(--radius-card)] border border-line bg-card p-4">
+            <p className="text-sm font-bold">How much are you taking?</p>
+            {counted ? (
+              qty > step ? (
+                <Stepper value={count} min={step} max={qty} step={step} onChange={setCount} label="Amount to take out" />
+              ) : null
+            ) : (
+              <Field
+                label={`Amount in ${item.unit === "l" ? "litres" : item.unit}`}
+                inputMode="decimal"
+                placeholder={String(qty)}
+                value={typed}
+                onChange={(e) => setTyped(e.target.value)}
+              />
+            )}
+            <div className="flex gap-2">
+              <Button className="flex-1" busy={busy} onClick={() => submit(amount)} disabled={!amount}>
+                {all ? "Take out all" : `Take out ${formatQuantity(amount || 0, item.unit)}`}
+              </Button>
+              {!all ? (
+                <Button variant="ghost" onClick={() => submit(qty)} disabled={busy}>
+                  All
+                </Button>
+              ) : null}
+            </div>
+            {all ? <p className="text-xs text-mute">It will move to history as used up. You can undo straight after.</p> : null}
+          </div>
 
-      <section aria-labelledby="hist-h" className="flex flex-col gap-2">
-        <h3 id="hist-h" className="text-[13px] font-semibold text-mute">
-          History
-        </h3>
-        {history === null ? (
-          <div className="h-10 animate-pulse rounded-xl bg-card" />
-        ) : (
-          <ol className="flex flex-col gap-1.5 text-sm">
-            {history.map((m) => (
-              <li key={m.id} className="flex justify-between gap-3">
-                <span>{describe(m, item, names)}</span>
-                <span className="shrink-0 font-mono text-[12px] text-mute">{formatDay(m.at.slice(0, 10), { year: false })}</span>
-              </li>
-            ))}
-          </ol>
-        )}
-      </section>
+          {error ? <Notice>{error}</Notice> : null}
+
+          <section aria-labelledby="hist-h" className="flex flex-col gap-2">
+            <h3 id="hist-h" className="text-[13px] font-semibold text-mute">
+              History
+            </h3>
+            {history === null ? (
+              <div className="h-10 animate-pulse rounded-xl bg-card" />
+            ) : (
+              <ol className="flex flex-col gap-1.5 text-sm">
+                {history.map((m) => (
+                  <li key={m.id} className="flex justify-between gap-3">
+                    <span>{describe(m, item, names)}</span>
+                    <span className="shrink-0 font-mono text-[12px] text-mute">{formatDay(m.at.slice(0, 10), { year: false })}</span>
+                  </li>
+                ))}
+              </ol>
+            )}
+          </section>
+        </>
+      )}
     </div>
   );
 }
@@ -165,7 +207,9 @@ function describe(m: Movement, item: StockItem, names: Map<string, string>): str
       return `${who} took out ${amount}`;
     case "undo":
       return `${who} undid a change`;
+    case "move":
+      return m.toLocationId === item.locationId ? `${who} moved it here` : `${who} moved it`;
     default:
-      return `${who} changed it to ${formatQuantity(m.after, item.unit)}`;
+      return m.edited && m.delta === 0 ? `${who} edited the details` : `${who} changed it to ${formatQuantity(m.after, item.unit)}`;
   }
 }

@@ -253,6 +253,10 @@ function Search({ session }: { session: Session }) {
             movementId,
           );
         }}
+        onChanged={(message, movementId) => {
+          refresh();
+          announce(message, movementId);
+        }}
       />
       <Toast toast={toast} onDone={clear} />
     </AppShell>

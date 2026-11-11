@@ -3,6 +3,7 @@ import type { StockItem } from "@/lib/domain/stock";
 import { SOON_DAYS, addDays, likePattern, sortUseFirst } from "@/lib/domain/stock";
 import { todayIso } from "@/lib/domain/dates";
 import type { StockUnit } from "@/lib/domain/quantity";
+import { loadPlaces, type LocationType } from "@/lib/household";
 
 const COLUMNS =
   "id, location_id, product_name, brand, category, quantity, unit, weight_value, weight_unit, use_by_date, best_before_date, frozen_at, added_at, added_by, notes, image_path, version";
@@ -80,7 +81,7 @@ export type NewItem = {
   imagePath?: string | null;
 };
 
-async function latestMovementId(itemId: string, action: "add" | "remove"): Promise<string | null> {
+async function latestMovementId(itemId: string, action: "add" | "remove" | "move"): Promise<string | null> {
   const { data } = await supabase()
     .from("stock_movements")
     .select("id")
@@ -149,22 +150,111 @@ export async function takeOut(item: StockItem, amount: number): Promise<{ item: 
   return { item: updated, movementId: await latestMovementId(item.id, "remove") };
 }
 
+/** The details that can be changed after something is added. */
+export type ItemEdit = {
+  productName: string;
+  quantity: number;
+  unit: StockUnit;
+  brand: string | null;
+  category: string | null;
+  weightValue: number | null;
+  weightUnit: StockUnit | null;
+  useByDate: string | null;
+  bestBeforeDate: string | null;
+  frozenAt: string | null;
+  notes: string | null;
+};
+
+export async function updateItem(item: StockItem, edit: ItemEdit): Promise<StockItem> {
+  const { data, error } = await supabase().rpc("update_stock_item", {
+    p_item: item.id,
+    p_expected_version: item.version,
+    p_product_name: edit.productName,
+    p_quantity: edit.quantity,
+    p_unit: edit.unit,
+    p_category: edit.category || null,
+    p_brand: edit.brand || null,
+    p_weight_value: edit.weightValue,
+    p_weight_unit: edit.weightValue ? edit.weightUnit : null,
+    p_use_by_date: edit.useByDate || null,
+    p_best_before_date: edit.bestBeforeDate || null,
+    p_frozen_at: edit.frozenAt || null,
+    p_notes: edit.notes || null,
+  });
+  if (error) throw error;
+  return toItem(data as Row);
+}
+
+/** Moves the whole thing to another place in the household. The move can be undone with its movement id. */
+export async function moveItem(item: StockItem, locationId: string): Promise<{ item: StockItem; movementId: string | null }> {
+  const { data, error } = await supabase().rpc("move_stock", { p_item: item.id, p_location: locationId, p_expected_version: item.version });
+  if (error) throw error;
+  const moved = toItem(data as Row);
+  return { item: moved, movementId: await latestMovementId(item.id, "move") };
+}
+
+/** The household's places, for choosing where to move something. Found from the place it's in now. */
+export async function loadPlacesBeside(locationId: string): Promise<{ id: string; name: string; type: LocationType; imagePath: string | null }[]> {
+  const here = await supabase().from("storage_locations").select("household_id").eq("id", locationId).maybeSingle();
+  if (here.error) throw here.error;
+  if (!here.data) return [];
+  const places = await loadPlaces(here.data.household_id as string);
+  return places.map((p) => ({ id: p.id, name: p.name, type: p.type, imagePath: p.imagePath ?? null }));
+}
+
 export async function undo(movementId: string): Promise<void> {
   const { error } = await supabase().rpc("undo_movement", { p_movement: movementId });
   if (error) throw error;
 }
 
-export type Movement = { id: string; action: "add" | "remove" | "adjust" | "move" | "undo"; delta: number; after: number; actor: string | null; at: string };
+export type Movement = {
+  id: string;
+  action: "add" | "remove" | "adjust" | "move" | "undo";
+  delta: number;
+  after: number;
+  actor: string | null;
+  at: string;
+  /** An edit of the details, rather than a change of amount. */
+  edited: boolean;
+  /** For moves: where it went. */
+  toLocationId: string | null;
+};
+
+/**
+ * Columns added with moving things. The app can be live before that database update is run, so
+ * history loads without them until then.
+ */
+let moveColumns = true;
+const MOVE_COLS = ", notes, to_location_id";
+
+async function selectMovements(run: (extra: string) => PromiseLike<{ data: unknown; error: { code?: string } | null }>): Promise<Row[]> {
+  let res = await run(moveColumns ? MOVE_COLS : "");
+  if (res.error?.code === "42703") {
+    moveColumns = false;
+    res = await run("");
+  }
+  if (res.error) throw res.error;
+  return (res.data ?? []) as Row[];
+}
+
+function movementFields(r: Row) {
+  return {
+    edited: r.action === "adjust" && r.notes === "edited",
+    toLocationId: (r.to_location_id as string | null | undefined) ?? null,
+  };
+}
 
 export async function loadHistory(itemId: string): Promise<Movement[]> {
-  const { data, error } = await supabase()
-    .from("stock_movements")
-    .select("id, action, quantity_delta, quantity_after, actor_user_id, created_at")
-    .eq("stock_item_id", itemId)
-    .order("created_at", { ascending: false })
-    .limit(20);
-  if (error) throw error;
+  const data = await selectMovements((extra) =>
+    supabase()
+      .from("stock_movements")
+      .select(("id, action, quantity_delta, quantity_after, actor_user_id, created_at" + extra) as string)
+      .eq("stock_item_id", itemId)
+      .order("created_at", { ascending: false })
+      .limit(20),
+  );
   return (data ?? []).map((r) => ({
+    ...movementFields(r),
     id: r.id as string,
     action: r.action as Movement["action"],
     delta: Number(r.quantity_delta),
@@ -178,17 +268,19 @@ export type Activity = Movement & { itemId: string; itemName: string; unit: Stoc
 
 /** What the household added and took out recently, newest first. */
 export async function loadActivity(householdId: string, limit = 60): Promise<Activity[]> {
-  const { data, error } = await supabase()
-    .from("stock_movements")
-    .select("id, action, quantity_delta, quantity_after, actor_user_id, created_at, stock_item_id, item:stock_items(product_name, unit, location_id)")
-    .eq("household_id", householdId)
-    .order("created_at", { ascending: false })
-    .limit(limit);
-  if (error) throw error;
+  const data = await selectMovements((extra) =>
+    supabase()
+      .from("stock_movements")
+      .select(("id, action, quantity_delta, quantity_after, actor_user_id, created_at, stock_item_id, item:stock_items(product_name, unit, location_id)" + extra) as string)
+      .eq("household_id", householdId)
+      .order("created_at", { ascending: false })
+      .limit(limit),
+  );
   return (data ?? []).map((r) => {
     const raw = (r as Row).item as Row | Row[] | null;
     const item = Array.isArray(raw) ? raw[0] : raw;
     return {
+      ...movementFields(r),
       id: r.id as string,
       action: r.action as Movement["action"],
       delta: Number(r.quantity_delta),

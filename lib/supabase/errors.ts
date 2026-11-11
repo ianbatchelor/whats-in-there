@@ -4,6 +4,7 @@ const messages: Record<string, string> = {
   not_found: "That couldn't be found. It may have been removed by someone else in your household.",
   not_owner: "Only the household owner can do that.",
   invalid_amount: "Enter an amount greater than zero.",
+  invalid_name: "Say what it is, for example Chicken curry.",
   insufficient_quantity: "There isn't that much left.",
   version_conflict: "Someone else just changed this. We've refreshed it, so check and try again.",
   already_undone: "That's already been undone.",
@@ -26,6 +27,7 @@ export function friendlyError(error: unknown): string {
   const code = Object.keys(messages).find((k) => raw === k || raw.startsWith(`${k}`));
   if (code) return messages[code]!;
   if (/token has expired|invalid.*otp|otp.*invalid/i.test(raw)) return "That code didn't work. Check it, or send a new one.";
+  if (/could not find the function|function .* does not exist/i.test(raw)) return "This needs a quick database update first. It'll work once that's done.";
   if (/invalid input value for enum/i.test(raw)) return "This kind of place needs a quick database update first. Pick another kind for now.";
   if (/captcha/i.test(raw)) return "We couldn't check you're not a robot. Reload the page and try again.";
   if (/rate limit|too many/i.test(raw)) return "Too many attempts. Wait a minute and try again.";

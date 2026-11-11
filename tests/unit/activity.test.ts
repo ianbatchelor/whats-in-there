@@ -9,6 +9,8 @@ describe("activitySentence", () => {
     expect(activitySentence({ action: "remove", delta: -1, itemName: "Leg of lamb", unit: "item", at: "" })).toBe("took out Leg of lamb");
     expect(activitySentence({ action: "remove", delta: -1, itemName: "Milk", unit: "l", at: "" })).toBe("took out 1 litre of Milk");
     expect(activitySentence({ action: "add", delta: 2.5, itemName: "Milk", unit: "l", at: "" })).toBe("added 2.5 litres of Milk");
+    expect(activitySentence({ action: "move", delta: 0, itemName: "Camping tent", unit: "item", at: "" }, "Garage")).toBe("moved Camping tent to Garage");
+    expect(activitySentence({ action: "adjust", delta: 0, itemName: "Camping tent", unit: "item", at: "", edited: true })).toBe("edited Camping tent");
     expect(activitySentence({ action: "undo", delta: 1, itemName: "Peas", unit: "pack", at: "" })).toBe("undid a change to Peas");
   });
 });

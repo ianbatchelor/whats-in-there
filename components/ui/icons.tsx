@@ -67,3 +67,4 @@ export const IconSticker = ({ className }: P) =>
   svg(<><circle cx="12" cy="12" r="8.5" /><path d="M10 9a4.5 4.5 0 0 1 0 6M13 7a7.5 7.5 0 0 1 0 10" /><circle cx="7.6" cy="12" r=".9" /></>, className);
 export const IconPrinter = ({ className }: P) =>
   svg(<><path d="M7 8V3.5h10V8M7 17H5a1.5 1.5 0 0 1-1.5-1.5v-6A1.5 1.5 0 0 1 5 8h14a1.5 1.5 0 0 1 1.5 1.5v6A1.5 1.5 0 0 1 19 17h-2" /><path d="M7 13.5h10v7H7z" /></>, className);
+export const IconMove = ({ className }: P) => svg(<path d="M4 12h12M12 7l5 5-5 5M20 5v14" />, className);
