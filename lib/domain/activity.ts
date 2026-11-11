@@ -1,9 +1,9 @@
 import { formatQuantity, roundQty, type StockUnit } from "./quantity";
 
-type Row = { action: "add" | "remove" | "adjust" | "move" | "undo"; delta: number; itemName: string; unit: StockUnit; at: string };
+type Row = { action: "add" | "remove" | "adjust" | "move" | "undo"; delta: number; itemName: string; unit: StockUnit; at: string; edited?: boolean };
 
-/** "added 2 portions of Chicken curry", read after the person's name. */
-export function activitySentence(r: Row): string {
+/** "added 2 portions of Chicken curry", read after the person's name. `toPlace` names where a move went. */
+export function activitySentence(r: Row, toPlace?: string): string {
   const n = roundQty(Math.abs(r.delta));
   // Plain items read better without the unit: "added 4 × Chicken breasts", "took out Leg of lamb".
   // A lone "l" is easy to misread in a sentence ("1 l of milk"), so litres are spelled out here.
@@ -17,9 +17,9 @@ export function activitySentence(r: Row): string {
     case "undo":
       return `undid a change to ${r.itemName}`;
     case "move":
-      return `moved ${r.itemName}`;
+      return toPlace ? `moved ${r.itemName} to ${toPlace}` : `moved ${r.itemName}`;
     default:
-      return `changed the amount of ${r.itemName}`;
+      return r.edited ? `edited ${r.itemName}` : `changed the amount of ${r.itemName}`;
   }
 }
 

@@ -138,7 +138,7 @@ function Home({ session }: { session: Session }) {
               <li key={a.id} className="flex items-start gap-3">
                 <Avatar name={a.actor ? (names.get(a.actor) ?? "?") : "?"} index={Math.max(0, members.findIndex((m) => m.userId === a.actor))} size={30} />
                 <span className="min-w-0 text-[13.5px] leading-snug">
-                  <span className="font-semibold">{who(a.actor)}</span> {activitySentence(a)}
+                  <span className="font-semibold">{who(a.actor)}</span> {activitySentence(a, a.toLocationId ? placeById.get(a.toLocationId)?.name : undefined)}
                   <span className="block text-[12px] text-mute">
                     {a.locationId ? placeById.get(a.locationId)?.name : ""} · {timeAgo(a.at)}
                   </span>
@@ -292,6 +292,10 @@ function Home({ session }: { session: Session }) {
         onTaken={(before, after, amount, movementId) => {
           refresh();
           announce(tookOutMessage(before, after, amount), movementId);
+        }}
+        onChanged={(message, movementId) => {
+          refresh();
+          announce(message, movementId);
         }}
       />
       <Toast toast={toast} onDone={clear} />

@@ -19,7 +19,7 @@ import { Stepper } from "./Stepper";
 import { placeType } from "@/components/home/placeTypes";
 import { useAiConsent } from "@/components/stock/AiConsent";
 
-const UNITS: { value: StockUnit; label: string }[] = [
+export const UNITS: { value: StockUnit; label: string }[] = [
   { value: "item", label: "Items" },
   { value: "portion", label: "Portions" },
   { value: "pack", label: "Packs" },
@@ -28,7 +28,7 @@ const UNITS: { value: StockUnit; label: string }[] = [
   { value: "ml", label: "ml" },
   { value: "l", label: "litres" },
 ];
-const SIZE_UNITS: StockUnit[] = ["g", "kg", "ml", "l"];
+export const SIZE_UNITS: StockUnit[] = ["g", "kg", "ml", "l"];
 const CHECK_HINT = "From the photo. Worth a quick check.";
 
 const MAX_SHOTS = 3;

@@ -57,13 +57,14 @@ function ActivityFeed({ session }: { session: Session }) {
             <ul className="divide-y divide-line overflow-hidden rounded-[var(--radius-card)] border border-line bg-card shadow-[var(--shadow-card)]">
               {day.map((r) => {
                 const who = r.actor === session.user.id ? "You" : (r.actor && names.get(r.actor)) || "Someone";
-                const place = r.locationId ? placeById.get(r.locationId) : undefined;
+                const placeId = r.action === "move" && r.toLocationId ? r.toLocationId : r.locationId;
+                const place = placeId ? placeById.get(placeId) : undefined;
                 return (
                   <li key={r.id} className="flex items-start gap-3 px-3.5 py-3">
                     <Avatar name={who === "You" ? names.get(session.user.id) ?? "You" : who} index={r.actor ? memberIndex.get(r.actor) ?? 0 : 0} size={36} />
                     <div className="min-w-0 flex-1">
                       <p className="text-[15px] leading-snug">
-                        <span className="font-semibold">{who}</span> {activitySentence(r)}
+                        <span className="font-semibold">{who}</span> {activitySentence(r, r.toLocationId ? placeById.get(r.toLocationId)?.name : undefined)}
                       </p>
                       <p className="mt-0.5 text-[13px] text-mute">
                         {place ? (
