@@ -21,4 +21,6 @@ export const KEYS = {
   pendingInvite: "wit.pendingInvite",
   lastPlace: "wit.lastPlace",
   searches: "wit.searches",
+  accountDeleted: "wit.accountDeleted",
+  aiConsent: "wit.aiConsent",
 } as const;

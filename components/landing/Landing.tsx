@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { LegalLinks } from "@/components/common/LegalLinks";
 import { BrandMark, Wordmark } from "@/components/brand/BrandMark";
 import { PlacePhoto } from "@/components/art/PlacePhoto";
 import { IconPeople, IconSearch, IconUndo } from "@/components/ui/icons";
@@ -102,9 +103,12 @@ export function Landing() {
         <span className="flex items-center gap-2">
           <BrandMark size={22} /> Your household&apos;s list is private to the people you invite.
         </span>
-        <a href="https://www.findthecool.com" className="font-semibold text-fg hover:underline">
-          A FindTheCool project
-        </a>
+        <span className="flex flex-wrap items-center gap-x-5 gap-y-2">
+          <LegalLinks />
+          <a href="https://www.findthecool.com" className="font-semibold text-fg hover:underline">
+            A FindTheCool project
+          </a>
+        </span>
       </footer>
     </div>
   );
