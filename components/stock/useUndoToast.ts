@@ -29,5 +29,5 @@ export function useUndoToast(afterChange: () => void) {
     },
     [afterChange],
   );
-  return { toast, clear: useCallback(() => setToast(null), []), announce };
+  return { toast, clear: useCallback(() => setToast(null), []), announce, show: setToast };
 }
