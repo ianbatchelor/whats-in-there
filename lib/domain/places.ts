@@ -89,3 +89,47 @@ export function isUseUpPlace(type: LocationType): boolean {
 export function isKeepPlace(type: LocationType): boolean {
   return !USE_UP.includes(type);
 }
+
+type Nested = { id: string; name: string; parentId?: string | null; itemCount: number };
+
+/** The place itself, or the place it sits inside. */
+export function topPlaceId<T extends Nested>(id: string, byId: Map<string, T>): string {
+  const p = byId.get(id);
+  return p?.parentId && byId.has(p.parentId) ? p.parentId : id;
+}
+
+/**
+ * Places as Home shows them: only the ones not inside anything, each counting the things in its
+ * boxes too, and how many boxes it holds.
+ */
+export function rollUp<T extends Nested>(places: T[]): (T & { boxCount: number })[] {
+  const byId = new Map(places.map((p) => [p.id, p]));
+  const top = places.filter((p) => !p.parentId || !byId.has(p.parentId));
+  return top.map((p) => {
+    const kids = places.filter((c) => c.parentId === p.id);
+    return { ...p, itemCount: p.itemCount + kids.reduce((n, c) => n + c.itemCount, 0), boxCount: kids.length };
+  });
+}
+
+/** The boxes and shelves inside a place, in the household's order. */
+export function boxesIn<T extends Nested>(places: T[], parentId: string): T[] {
+  return places.filter((p) => p.parentId === parentId);
+}
+
+/** "Blue box, in Garage" for a box, or just the name for a place that isn't inside anything. */
+export function placeLabel<T extends Nested>(place: T, byId: Map<string, T>): string {
+  const parent = place.parentId ? byId.get(place.parentId) : undefined;
+  return parent ? `${place.name}, in ${parent.name}` : place.name;
+}
+
+/** Each place followed by the boxes inside it, for pickers. A box whose place is missing stands on its own. */
+export function nestedOrder<T extends Nested>(places: T[]): { place: T; inside: boolean }[] {
+  const byId = new Map(places.map((p) => [p.id, p]));
+  const out: { place: T; inside: boolean }[] = [];
+  for (const p of places) {
+    if (p.parentId && byId.has(p.parentId)) continue;
+    out.push({ place: p, inside: false });
+    for (const c of places) if (c.parentId === p.id) out.push({ place: c, inside: true });
+  }
+  return out;
+}

@@ -36,16 +36,7 @@ export default function SearchPage() {
 }
 
 function Search({ session }: { session: Session }) {
-  const {
-    current,
-    places,
-    placeById,
-    names,
-    error,
-    setError,
-    version,
-    refresh,
-  } = useHousehold(session);
+  const { current, places, placeById, names, error, setError, version, refresh } = useHousehold(session);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<StockItem[] | null>(null);
   const [busy, setBusy] = useState(false);
@@ -75,11 +66,7 @@ function Search({ session }: { session: Session }) {
   const matchingPlaces = useMemo(() => {
     if (q.length < 2 || !places) return [];
     const lower = q.toLowerCase();
-    return places.filter(
-      (p) =>
-        p.name.toLowerCase().includes(lower) ||
-        placeType(p.type).label.toLowerCase().includes(lower),
-    );
+    return places.filter((p) => p.name.toLowerCase().includes(lower) || placeType(p.type).label.toLowerCase().includes(lower));
   }, [places, q]);
 
   const { toast, clear, announce } = useUndoToast(() => {
@@ -120,22 +107,26 @@ function Search({ session }: { session: Session }) {
           className="min-w-0 flex-1 bg-transparent text-[17px] placeholder:text-mute focus:outline-none focus-visible:outline-none [&::-webkit-search-cancel-button]:hidden"
         />
         {query && !busy ? (
-          <button type="button" onClick={() => setQuery("")} aria-label="Clear search" className="-mr-2 grid size-9 shrink-0 place-items-center rounded-full text-mute hover:bg-sunk hover:text-fg">
+          <button
+            type="button"
+            onClick={() => setQuery("")}
+            aria-label="Clear search"
+            className="-mr-2 grid size-9 shrink-0 place-items-center rounded-full text-mute hover:bg-sunk hover:text-fg"
+          >
             <IconX className="size-4" />
           </button>
         ) : null}
         {!query ? (
-          <Link href="/add/" aria-label="Scan a label" title="Scan a label" className="-mr-2 grid size-10 shrink-0 place-items-center rounded-lg text-leaf hover:bg-sunk">
+          <Link
+            href="/add/"
+            aria-label="Scan a label"
+            title="Scan a label"
+            className="-mr-2 grid size-10 shrink-0 place-items-center rounded-lg text-leaf hover:bg-sunk"
+          >
             <IconScan className="size-5" />
           </Link>
         ) : null}
-        {busy ? (
-          <span
-            className="size-4 animate-spin rounded-full border-2 border-leaf border-r-transparent"
-            role="status"
-            aria-label="Searching"
-          />
-        ) : null}
+        {busy ? <span className="size-4 animate-spin rounded-full border-2 border-leaf border-r-transparent" role="status" aria-label="Searching" /> : null}
       </label>
 
       {error ? <Notice>{error}</Notice> : null}
@@ -147,7 +138,11 @@ function Search({ session }: { session: Session }) {
               <SectionLabel id="recent-h">Recent searches</SectionLabel>
               <div className="flex flex-wrap gap-1.5">
                 {recent.map((r) => (
-                  <button key={r} onClick={() => setQuery(r)} className="min-h-9 rounded-full border border-line bg-card px-3.5 text-[14px] font-medium hover:bg-sunk">
+                  <button
+                    key={r}
+                    onClick={() => setQuery(r)}
+                    className="min-h-9 rounded-full border border-line bg-card px-3.5 text-[14px] font-medium hover:bg-sunk"
+                  >
                     {r}
                   </button>
                 ))}
@@ -160,14 +155,20 @@ function Search({ session }: { session: Session }) {
             <section className="flex flex-col gap-2.5" aria-labelledby="browse-h">
               <SectionLabel id="browse-h">Or look in a place</SectionLabel>
               <div className="flex flex-wrap gap-1.5">
-                {places.map((p) => (
-                  <Link key={p.id} href={`/place/?id=${p.id}`} className="flex min-h-9 items-center gap-2 rounded-full border border-line bg-card py-1 pr-3.5 pl-1 text-[14px] font-medium hover:bg-sunk">
-                    <span className="size-7 overflow-hidden rounded-full">
-                      <PlacePhoto type={p.type} imagePath={p.imagePath} />
-                    </span>
-                    {p.name}
-                  </Link>
-                ))}
+                {places
+                  .filter((p) => !p.parentId)
+                  .map((p) => (
+                    <Link
+                      key={p.id}
+                      href={`/place/?id=${p.id}`}
+                      className="flex min-h-9 items-center gap-2 rounded-full border border-line bg-card py-1 pr-3.5 pl-1 text-[14px] font-medium hover:bg-sunk"
+                    >
+                      <span className="size-7 overflow-hidden rounded-full">
+                        <PlacePhoto type={p.type} imagePath={p.imagePath} />
+                      </span>
+                      {p.name}
+                    </Link>
+                  ))}
               </div>
             </section>
           ) : null}
@@ -189,10 +190,9 @@ function Search({ session }: { session: Session }) {
                         <PlacePhoto type={p.type} imagePath={p.imagePath} />
                       </span>
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate font-display font-bold">
-                          {p.name}
-                        </span>
+                        <span className="block truncate font-display font-bold">{p.name}</span>
                         <span className="block text-[13px] text-mute">
+                          {p.parentId && placeById.get(p.parentId) ? `In ${placeById.get(p.parentId)!.name} · ` : ""}
                           {countThings(p.itemCount)}
                         </span>
                       </span>
@@ -205,16 +205,11 @@ function Search({ session }: { session: Session }) {
           ) : null}
           {shown && shown.length === 0 && matchingPlaces.length > 0 ? null : (
             <section className="flex flex-col gap-2.5" aria-labelledby="si-h">
-              <SectionLabel id="si-h">
-                {shown ? countThings(shown.length) : "Things"}
-              </SectionLabel>
+              <SectionLabel id="si-h">{shown ? countThings(shown.length) : "Things"}</SectionLabel>
               {shown === null ? (
                 <ItemListSkeleton rows={3} />
               ) : shown.length === 0 ? (
-                <p className="text-mute">
-                  Nothing called &ldquo;{q}&rdquo; yet. Check the spelling, or
-                  add it to a place.
-                </p>
+                <p className="text-mute">Nothing called &ldquo;{q}&rdquo; yet. Check the spelling, or add it to a place.</p>
               ) : (
                 <ItemList>
                   {shown.map((item, i) => (

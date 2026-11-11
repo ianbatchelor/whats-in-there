@@ -6,6 +6,7 @@ import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase/client";
 import { friendlyError } from "@/lib/supabase/errors";
 import { loadMembers, loadMemberships, loadPlaces, pickCurrent, type Member, type Membership, type Place } from "@/lib/household";
+import { placeLabel } from "@/lib/domain/places";
 
 /**
  * The signed-in person's current household, its members and places, kept live.
@@ -66,7 +67,11 @@ export function useHousehold(session: Session) {
   }, [current, refreshPlaces]);
 
   const names = useMemo(() => new Map(members.map((m) => [m.userId, m.displayName])), [members]);
-  const placeById = useMemo(() => new Map((places ?? []).map((p) => [p.id, p])), [places]);
+  // Names here read "Blue box, in Garage" for boxes, since they're shown next to things from anywhere.
+  const placeById = useMemo(() => {
+    const raw = new Map((places ?? []).map((p) => [p.id, p]));
+    return new Map((places ?? []).map((p) => [p.id, { ...p, name: placeLabel(p, raw) }]));
+  }, [places]);
   const me = members.find((m) => m.userId === session.user.id);
 
   return {

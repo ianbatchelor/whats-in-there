@@ -196,12 +196,14 @@ export async function moveItem(item: StockItem, locationId: string): Promise<{ i
 }
 
 /** The household's places, for choosing where to move something. Found from the place it's in now. */
-export async function loadPlacesBeside(locationId: string): Promise<{ id: string; name: string; type: LocationType; imagePath: string | null }[]> {
+export async function loadPlacesBeside(
+  locationId: string,
+): Promise<{ id: string; name: string; type: LocationType; imagePath: string | null; parentId: string | null; itemCount: number }[]> {
   const here = await supabase().from("storage_locations").select("household_id").eq("id", locationId).maybeSingle();
   if (here.error) throw here.error;
   if (!here.data) return [];
   const places = await loadPlaces(here.data.household_id as string);
-  return places.map((p) => ({ id: p.id, name: p.name, type: p.type, imagePath: p.imagePath ?? null }));
+  return places.map((p) => ({ id: p.id, name: p.name, type: p.type, imagePath: p.imagePath ?? null, parentId: p.parentId ?? null, itemCount: p.itemCount }));
 }
 
 /** Lends the thing to someone, or marks it back home when `to` is empty. */

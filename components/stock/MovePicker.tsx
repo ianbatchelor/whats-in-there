@@ -6,11 +6,12 @@ import type { LocationType } from "@/lib/household";
 import { loadPlacesBeside, moveItem } from "@/lib/stock";
 import { friendlyError } from "@/lib/supabase/errors";
 import { PlacePhoto } from "@/components/art/PlacePhoto";
+import { nestedOrder, placeLabel } from "@/lib/domain/places";
 import { Button } from "@/components/ui/Button";
 import { Notice } from "@/components/ui/Notice";
 import { Spinner } from "@/components/ui/Spinner";
 
-type Spot = { id: string; name: string; type: LocationType; imagePath: string | null };
+type Spot = { id: string; name: string; type: LocationType; imagePath: string | null; parentId: string | null; itemCount: number };
 
 /** Every other place in the household as a photo row; tapping one moves the thing there. */
 export function MovePicker({
@@ -48,8 +49,10 @@ export function MovePicker({
     }
   }
 
-  const others = (places ?? []).filter((p) => p.id !== item.locationId);
-  const here = (places ?? []).find((p) => p.id === item.locationId);
+  // Each place with its boxes under it, so "Blue box" is found where it really is.
+  const others = nestedOrder(places ?? []).filter(({ place }) => place.id !== item.locationId);
+  const byId = new Map((places ?? []).map((p) => [p.id, p]));
+  const here = byId.get(item.locationId);
 
   return (
     <div className="flex flex-col gap-3">
@@ -62,25 +65,28 @@ export function MovePicker({
         <p className="text-sm text-mute">There&apos;s nowhere else to move it yet. Add another place first.</p>
       ) : (
         <ul className="flex flex-col gap-2">
-          {others.map((p) => (
-            <li key={p.id}>
+          {others.map(({ place: p, inside }) => (
+            <li key={p.id} className={inside ? "pl-6" : undefined}>
               <button
                 type="button"
                 onClick={() => move(p)}
                 disabled={moving !== null}
                 className="lift flex w-full items-center gap-3 overflow-hidden rounded-2xl border border-line bg-card pr-3 text-left disabled:opacity-60"
               >
-                <span className="h-14 w-20 shrink-0 overflow-hidden">
+                <span className={`${inside ? "h-12 w-16" : "h-14 w-20"} shrink-0 overflow-hidden`}>
                   <PlacePhoto type={p.type} imagePath={p.imagePath} />
                 </span>
-                <span className="min-w-0 flex-1 truncate font-display font-bold">{p.name}</span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate font-display font-bold">{p.name}</span>
+                  {inside ? <span className="block truncate text-[13px] text-mute">Inside {byId.get(p.parentId!)?.name}</span> : null}
+                </span>
                 {moving === p.id ? <Spinner /> : null}
               </button>
             </li>
           ))}
         </ul>
       )}
-      {here ? <p className="text-[13px] text-mute">It&apos;s in {here.name} now.</p> : null}
+      {here ? <p className="text-[13px] text-mute">It&apos;s in {placeLabel(here, byId)} now.</p> : null}
       {error ? <Notice>{error}</Notice> : null}
       <Button variant="ghost" onClick={onCancel} disabled={moving !== null}>
         Cancel

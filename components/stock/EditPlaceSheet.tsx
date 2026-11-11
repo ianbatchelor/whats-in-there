@@ -21,16 +21,23 @@ export function EditPlaceSheet({
   itemCount,
   onSaved,
   onRemoved,
+  homes = [],
+  boxCount = 0,
 }: {
   open: boolean;
   onClose: () => void;
-  place: { id: string; name: string; type: LocationType; householdId: string; imagePath?: string | null };
+  place: { id: string; name: string; type: LocationType; householdId: string; imagePath?: string | null; parentId?: string | null };
   itemCount: number;
+  /** Places this one could sit inside. Empty when it holds boxes itself. */
+  homes?: { id: string; name: string }[];
+  /** Boxes inside this place, for the remove warning. */
+  boxCount?: number;
   onSaved: () => void;
   onRemoved: () => void;
 }) {
   const [name, setName] = useState(place.name);
   const [type, setType] = useState<LocationType>(place.type);
+  const [parent, setParent] = useState<string>(place.parentId ?? "");
   const [confirm, setConfirm] = useState(false);
   const [busy, setBusy] = useState<"save" | "remove" | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -85,6 +92,7 @@ export function EditPlaceSheet({
     setBusy("save");
     setError(null);
     const changes: Record<string, unknown> = { name: finalName, type };
+    if ((place.parentId ?? "") !== parent) changes.parent_id = parent || null;
     if (cover.kind === "new") changes.image_path = cover.path;
     if (cover.kind === "none") changes.image_path = null;
     const { error } = await supabase().from("storage_locations").update(changes).eq("id", place.id);
@@ -115,6 +123,27 @@ export function EditPlaceSheet({
     <Sheet open={open} onClose={onClose} title="Edit place">
       <form onSubmit={save} className="-mx-1 flex max-h-[62dvh] flex-col gap-4 overflow-y-auto px-1 pb-1">
         <Field label="Name" value={name} onChange={(e) => setName(e.target.value)} maxLength={60} hint="Stickers keep working when you rename." />
+        {homes.length > 0 ? (
+          <div className="flex min-w-0 flex-col gap-1.5">
+            <label htmlFor="edit-place-parent" className="font-display text-sm font-bold">
+              Inside
+            </label>
+            <select
+              id="edit-place-parent"
+              value={parent}
+              onChange={(e) => setParent(e.target.value)}
+              className="min-h-12 w-full rounded-2xl border border-line bg-card px-4 text-base text-fg focus:border-leaf focus:ring-4 focus:ring-leaf/15 focus:outline-none"
+            >
+              <option value="">Nothing, it&apos;s a place of its own</option>
+              {homes.map((h) => (
+                <option key={h.id} value={h.id}>
+                  {h.name}
+                </option>
+              ))}
+            </select>
+            <p className="text-sm text-mute">For a box, shelf or drawer that lives in another place. Moving it takes everything in it along.</p>
+          </div>
+        ) : null}
         {coverPhotosAvailable() ? (
           <div className="flex min-w-0 flex-col gap-2">
             <span className="font-display text-sm font-bold">Photo</span>
@@ -171,6 +200,7 @@ export function EditPlaceSheet({
               {itemCount > 0
                 ? `${place.name} still has ${itemCount === 1 ? "1 thing" : `${itemCount} things`} in it. They'll be hidden along with it, and its sticker will stop working.`
                 : `Its sticker will stop working.`}
+              {boxCount > 0 ? ` The ${boxCount === 1 ? "box" : `${boxCount} boxes`} inside it will stay, as places of their own.` : ""}
             </p>
             <div className="flex gap-2">
               <Button variant="ghost" className="flex-1" onClick={() => setConfirm(false)}>

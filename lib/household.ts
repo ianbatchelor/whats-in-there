@@ -7,7 +7,18 @@ export type Member = { userId: string; role: Role; joinedAt: string; displayName
 export type LocationType =
   | "freezer" | "fridge" | "pantry" | "cupboard" | "wine" | "attic" | "garage" | "shed" | "wardrobe" | "garden" | "box"
   | "bookshelf" | "toybox" | "desk" | "medicine" | "car" | "other";
-export type Place = { id: string; name: string; type: LocationType; itemCount: number; /** The household's own cover photo, if they added one. */ imagePath?: string | null };
+export type Place = {
+  id: string;
+  name: string;
+  type: LocationType;
+  itemCount: number;
+  /** The household's own cover photo, if they added one. */
+  imagePath?: string | null;
+  /** The place it sits inside ("Blue box" in the Garage), if any. */
+  parentId?: string | null;
+  /** How many boxes or shelves are inside it (Home only). */
+  boxCount?: number;
+};
 
 /**
  * False once the database turns out not to have the cover photo column yet (the app can be
@@ -25,15 +36,22 @@ function missingColumn(error: { code?: string } | null): boolean {
 /** One place by id, or null when it's gone or not yours. */
 export async function loadPlace(locationId: string): Promise<(Omit<Place, "itemCount"> & { householdId: string }) | null> {
   const run = (cols: string) => supabase().from("storage_locations").select(cols).eq("id", locationId).is("archived_at", null).maybeSingle();
-  let res = await run(`id, name, type, household_id${coverPhotos ? ", image_path" : ""}`);
+  let res = await run(`id, name, type, household_id, parent_id${coverPhotos ? ", image_path" : ""}`);
   if (missingColumn(res.error)) {
     coverPhotos = false;
-    res = await run("id, name, type, household_id");
+    res = await run("id, name, type, household_id, parent_id");
   }
   if (res.error) throw res.error;
   const d = res.data as Record<string, unknown> | null;
   if (!d) return null;
-  return { id: d.id as string, name: d.name as string, type: d.type as LocationType, householdId: d.household_id as string, imagePath: (d.image_path as string | null) ?? null };
+  return {
+    id: d.id as string,
+    name: d.name as string,
+    type: d.type as LocationType,
+    householdId: d.household_id as string,
+    imagePath: (d.image_path as string | null) ?? null,
+    parentId: (d.parent_id as string | null) ?? null,
+  };
 }
 
 export async function loadMemberships(userId: string): Promise<Membership[]> {
@@ -91,7 +109,7 @@ export async function loadPlaces(householdId: string): Promise<Place[]> {
       .eq("stock_items.status", "in_stock")
       .order("sort_order")
       .order("created_at");
-  const base = "id, name, type, sort_order, created_at, stock_items(count)";
+  const base = "id, name, type, sort_order, created_at, parent_id, stock_items(count)";
   let res = await run(coverPhotos ? `${base}, image_path` : base);
   if (missingColumn(res.error)) {
     coverPhotos = false;
@@ -104,5 +122,6 @@ export async function loadPlaces(householdId: string): Promise<Place[]> {
     type: l.type as LocationType,
     itemCount: ((l.stock_items as unknown as { count: number }[] | null)?.[0]?.count ?? 0) as number,
     imagePath: (l.image_path as string | null) ?? null,
+    parentId: (l.parent_id as string | null) ?? null,
   }));
 }
