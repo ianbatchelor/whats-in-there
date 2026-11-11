@@ -22,6 +22,11 @@ const PHOTOS: Partial<Record<LocationType, { card: string; wide?: string; positi
   garage: { card: "/places/garage.webp", wide: "/places/garage-wide.webp" },
   box: { card: "/places/box.webp", wide: "/places/box-wide.webp" },
   wine: { card: "/places/wine.webp", wide: "/places/wine-wide.webp" },
+  bookshelf: { card: "/places/bookshelf.webp", wide: "/places/bookshelf-wide.webp" },
+  toybox: { card: "/places/toybox.webp", wide: "/places/toybox-wide.webp", position: "50% 60%" },
+  desk: { card: "/places/desk.webp", wide: "/places/desk-wide.webp", position: "50% 65%" },
+  medicine: { card: "/places/medicine.webp", wide: "/places/medicine-wide.webp" },
+  car: { card: "/places/car.webp", wide: "/places/car-wide.webp", position: "50% 65%" },
   other: { card: "/places/other.webp", wide: "/places/other-wide.webp" },
 };
 
