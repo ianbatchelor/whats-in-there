@@ -32,16 +32,32 @@ import { useFadeIn } from "@/components/ui/useFadeIn";
  * The quiet line under a name: where it is and what it is. The date lives in the status label,
  * so it isn't repeated here unless there is nothing else to say.
  */
-export function itemContext(item: StockItem, place?: string): string {
+export function itemContext(item: StockItem, place?: string, brandFirst = false): string {
   const parts: string[] = [];
+  if (brandFirst && item.brand) parts.push(item.brand);
   if (place) parts.push(place);
-  if (item.brand) parts.push(item.brand);
+  if (item.brand && !brandFirst) parts.push(item.brand);
   if (item.weightValue && item.weightUnit) parts.push(formatQuantity(item.weightValue, item.weightUnit));
   if (parts.length > 0) return parts.join(" · ");
   if (item.notes) parts.push(item.notes);
   else if (item.frozenAt) parts.push(`Frozen ${formatDay(item.frozenAt, { year: false })}`);
-  else parts.push(`Added ${formatDay(item.addedAt, { year: false })}`);
+  // A printed date already shows in the status label; "Added 7 Nov" beside it only crowds the row.
+  else if (!item.useByDate && !item.bestBeforeDate) parts.push(`Added ${formatDay(item.addedAt, { year: false })}`);
   return parts.join(" · ");
+}
+
+/** Shows the text with the first match of the search marked, so people can see why it came up. */
+export function Highlight({ text, match }: { text: string; match?: string }) {
+  const q = match?.trim().toLowerCase();
+  const at = q ? text.toLowerCase().indexOf(q) : -1;
+  if (!q || at < 0) return <>{text}</>;
+  return (
+    <>
+      {text.slice(0, at)}
+      <mark className="rounded-[3px] bg-check px-px text-fg">{text.slice(at, at + q.length)}</mark>
+      {text.slice(at + q.length)}
+    </>
+  );
 }
 
 const TONES: Record<StatusTone, string> = {
@@ -56,7 +72,7 @@ export function StatusPill({ item, className = "" }: { item: StockItem; classNam
   const status = itemStatus(item);
   if (!status) return null;
   return (
-    <span title={status.detail} className={`shrink-0 rounded-full px-2 py-[3px] text-[11.5px] leading-tight font-semibold whitespace-nowrap ${TONES[status.tone]} ${className}`}>
+    <span title={status.detail} className={`shrink-0 rounded-full px-2 py-[3px] text-[12.5px] leading-tight font-semibold whitespace-nowrap ${TONES[status.tone]} ${className}`}>
       {status.label}
     </span>
   );
@@ -122,9 +138,12 @@ export function ItemRow({
   taking = false,
   addedBy,
   index = 0,
+  highlight,
 }: {
   item: StockItem;
   place?: string;
+  /** Search words to show in bold. */
+  highlight?: string;
   onOpen: (item: StockItem) => void;
   onTakeOne?: (item: StockItem) => void;
   taking?: boolean;
@@ -136,6 +155,9 @@ export function ItemRow({
   const status = itemStatus(item);
   const quick = onTakeOne && isCounted(item.unit) && qty >= 1;
   const unitWord = formatQuantity(1, item.unit).replace(/^[\d.]+ /, "");
+  // Found by its brand ("Cathedral City" for the cheddar): show the brand first so the reason is visible.
+  const q = highlight?.trim().toLowerCase();
+  const brandFirst = !!q && !item.productName.toLowerCase().includes(q) && !!item.brand?.toLowerCase().includes(q);
   return (
     <li className="rise flex items-center" style={{ animationDelay: `${Math.min(index, 8) * 30}ms` }}>
       <button
@@ -145,10 +167,14 @@ export function ItemRow({
       >
         <ItemTile name={item.productName} category={item.category} imagePath={item.imagePath} />
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-[15px] font-semibold">{item.productName}</span>
+          <span className="block truncate text-[15px] font-semibold">
+            <Highlight text={item.productName} match={highlight} />
+          </span>
           <span className="mt-0.5 flex items-center gap-2">
             <StatusPill item={item} className="lg:hidden" />
-            <span className="min-w-0 truncate text-[13px] text-mute">{itemContext(item, place)}</span>
+            <span className="min-w-0 truncate text-[13px] text-mute">
+              <Highlight text={itemContext(item, place, brandFirst)} match={brandFirst ? highlight : undefined} />
+            </span>
           </span>
         </span>
         {addedBy !== undefined ? <span className="hidden w-28 shrink-0 truncate text-[13px] text-mute xl:block">{addedBy}</span> : null}
@@ -157,7 +183,7 @@ export function ItemRow({
         </span>
         <span className="min-w-9 shrink-0 text-right leading-tight lg:w-20">
           <span className="block text-[15px] font-semibold tabular-nums">{isCounted(item.unit) ? qty : formatQuantity(qty, item.unit)}</span>
-          {isCounted(item.unit) ? <span className="block text-[11px] text-mute">{formatQuantity(qty, item.unit).replace(/^[\d.]+ /, "")}</span> : null}
+          {isCounted(item.unit) ? <span className="block text-[12px] text-mute">{formatQuantity(qty, item.unit).replace(/^[\d.]+ /, "")}</span> : null}
         </span>
         {quick ? null : <IconChevronRight className="mr-1.5 size-4 shrink-0 text-mute/50" />}
       </button>
@@ -167,7 +193,7 @@ export function ItemRow({
           disabled={taking}
           aria-label={`Take out 1 ${unitWord} of ${item.productName}`}
           title="Take one out"
-          className="mr-2.5 grid size-10 shrink-0 place-items-center rounded-xl border border-line bg-card text-fg transition hover:bg-sunk active:scale-95 disabled:opacity-40"
+          className="mr-2 grid size-11 shrink-0 place-items-center rounded-xl border border-line bg-card text-fg transition hover:bg-sunk active:scale-95 disabled:opacity-40"
         >
           <IconMinus className="size-4" />
         </button>

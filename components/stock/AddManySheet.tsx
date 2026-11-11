@@ -31,12 +31,12 @@ function tips(type: LocationType): {
 } {
   if (type === "wardrobe")
     return {
-      title: "Photograph the rail or a pile",
+      title: "Snap the rail or a pile",
       body: "Open the doors so the whole rail fits, in good light. For drawers, lay things out side by side. Each thing is listed with a name and a type, like Jumpers or Coats.",
       reading: "Looking through the clothes…",
     };
   return {
-    title: "Photograph a whole shelf",
+    title: "Snap a whole shelf",
     body: "Stand back so the shelf fits, with spines or labels facing you and good light. Books are listed by title and author and sorted into sections. About one shelf per photo reads best.",
     reading: "Reading the shelf…",
   };
@@ -376,9 +376,9 @@ function ListRow({
         </div>
         {item.already || (item.unsure && item.include) ? (
           <p className="mt-1 flex gap-1.5 px-1">
-            {item.already ? <span className="rounded-full bg-sunk px-2 py-[2px] text-[11px] font-semibold text-mute">Already here</span> : null}
+            {item.already ? <span className="rounded-full bg-sunk px-2 py-[2px] text-[12px] font-semibold text-mute">Already here</span> : null}
             {item.unsure && item.include ? (
-              <span className="rounded-full bg-soon-bg px-2 py-[2px] text-[11px] font-semibold text-soon">Check the name</span>
+              <span className="rounded-full bg-soon-bg px-2 py-[2px] text-[12px] font-semibold text-soon">Check the name</span>
             ) : null}
           </p>
         ) : null}
@@ -415,7 +415,7 @@ function ListRow({
           disabled={disabled}
           aria-label="Section"
           placeholder="Section"
-          className="w-full truncate rounded-full bg-sunk px-2.5 py-1 text-center text-[11.5px] font-semibold text-fg/75 placeholder:text-mute/60 focus:bg-card focus:ring-2 focus:ring-leaf/30 focus:outline-none"
+          className="w-full truncate rounded-full bg-sunk px-2.5 py-1 text-center text-[12.5px] font-semibold text-fg/75 placeholder:text-mute/60 focus:bg-card focus:ring-2 focus:ring-leaf/30 focus:outline-none"
         />
       </div>
     </li>

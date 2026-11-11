@@ -1,6 +1,6 @@
 import type { StockItem } from "./stock";
 import { SOON_DAYS } from "./stock";
-import { formatDay, monthsBetween, parseIsoDate, storageAge, todayIso } from "./dates";
+import { formatDay, formatMonth, monthsBetween, parseIsoDate, storageAge, todayIso } from "./dates";
 
 /**
  * How much attention a thing needs, from the dates people entered.
@@ -49,7 +49,7 @@ export function itemStatus(item: Dated, today: string = todayIso()): ItemStatus 
       if (days === 1) return { tone: "soon", label: "Use by tomorrow", detail: full };
       if (days <= SOON_DAYS) return { tone: "soon", label: `Use in ${days} days`, detail: full };
       const sameYear = printed.date.slice(0, 4) === today.slice(0, 4);
-      const short = sameYear ? formatDay(printed.date, { year: false }) : formatDay(printed.date).slice(3);
+      const short = sameYear ? formatDay(printed.date, { year: false }) : formatMonth(printed.date);
       return { tone: "ok", label: short, detail: full };
     }
   }

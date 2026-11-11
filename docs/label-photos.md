@@ -17,7 +17,7 @@ No database changes were needed: the bucket, its policies, `ai_extraction_attemp
 
 ## Switching it on
 
-Until these steps are done the add sheet still shows "Snap the label", and a photo gets the message "Reading labels isn't switched on yet. Fill it in below for now." Typing works as before.
+Until these steps are done the add sheet still shows "Scan a label", and a photo gets the message "Reading labels isn't switched on yet. Fill it in below for now." Typing works as before.
 
 1. **Anthropic API key.** At https://console.anthropic.com, open API keys and create a key (the account needs credit). Each photo costs roughly one to two pence.
 2. **Store it in Supabase.** In the Supabase dashboard for the project, open Edge Functions, then Secrets, and add `ANTHROPIC_API_KEY` with the key as its value. Never put this key in the app or in Vercel.

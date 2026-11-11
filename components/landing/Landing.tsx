@@ -39,7 +39,7 @@ export function Landing() {
         </header>
         <div className="mx-auto mt-auto flex w-full max-w-6xl flex-col px-6 pb-[max(36px,env(safe-area-inset-bottom))] lg:my-auto lg:pb-0">
           <div className="max-w-xl">
-            <p className="rise text-[11.5px] font-semibold tracking-[0.18em] text-tape uppercase">For every place you keep things</p>
+            <p className="rise text-[12px] font-semibold tracking-[0.18em] text-tape uppercase">For every place you keep things</p>
             <h1 className="rise mt-3 font-serif text-[clamp(3rem,12vw,5.6rem)] leading-[0.95] font-medium tracking-[-0.02em]" style={{ animationDelay: "60ms" }}>
               See What&apos;s
               <br />
@@ -64,7 +64,7 @@ export function Landing() {
       </section>
 
       <section className="mx-auto max-w-6xl px-6 py-16 lg:py-24">
-        <p className="text-[11.5px] font-semibold tracking-[0.18em] text-leaf uppercase">Not just the freezer</p>
+        <p className="text-[12px] font-semibold tracking-[0.18em] text-leaf uppercase">Not just the freezer</p>
         <h2 className="mt-2 max-w-2xl font-serif text-[clamp(2rem,5vw,3.2rem)] leading-[1.05] font-medium tracking-[-0.02em] text-balance">
           One place to remember what&apos;s inside all of them
         </h2>

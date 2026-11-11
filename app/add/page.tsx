@@ -48,7 +48,7 @@ function Add({ session }: { session: Session }) {
 
   return (
     <AppShell>
-      <PageHeader title="Add something" sub="Snap the label and we'll fill in the details, or type it in." />
+      <PageHeader title="Add something" sub="Scan a label and we'll fill in the details, or type it in." />
       {error ? <Notice>{error}</Notice> : null}
       {!current || places === null ? (
         <HouseholdLoading />

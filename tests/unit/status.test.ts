@@ -7,7 +7,7 @@ const none = { useByDate: null, bestBeforeDate: null, frozenAt: null };
 
 describe("itemStatus", () => {
   it("flags things past a printed date", () => {
-    expect(itemStatus({ ...none, bestBeforeDate: "2026-11-09" }, T)).toMatchObject({ tone: "late", label: "1 day past", detail: "Best before 09 Nov 2026" });
+    expect(itemStatus({ ...none, bestBeforeDate: "2026-11-09" }, T)).toMatchObject({ tone: "late", label: "1 day past", detail: "Best before 9 Nov 2026" });
     expect(itemStatus({ ...none, useByDate: "2026-10-01" }, T)).toMatchObject({ tone: "late", label: "5 weeks past" });
     expect(itemStatus({ ...none, useByDate: "2025-10-01" }, T)?.label).toBe("over a year past");
   });
