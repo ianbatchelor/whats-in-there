@@ -7,10 +7,10 @@ import { AuthGate } from "@/components/AuthGate";
 import { supabase } from "@/lib/supabase/client";
 import { friendlyError } from "@/lib/supabase/errors";
 import { useQueryParam } from "@/lib/hooks/useQueryParam";
-import { loadMembers, loadPlace, type LocationType } from "@/lib/household";
+import { loadMembers, loadPlace, loadPlaces, type LocationType, type Place as PlaceRow } from "@/lib/household";
 import type { StockItem } from "@/lib/domain/stock";
 import { loadItems, loadPlaceLastActivity } from "@/lib/stock";
-import { countThings, isKeepPlace, isUseUpPlace } from "@/lib/domain/places";
+import { boxesIn, countThings, isKeepPlace, isUseUpPlace } from "@/lib/domain/places";
 import { itemStatus, needsAttention } from "@/lib/domain/status";
 import { AppShell, SectionLabel } from "@/components/AppShell";
 import { Screen, Splash } from "@/components/ui/Screen";
@@ -34,8 +34,10 @@ import { TakeOutSheet } from "@/components/stock/TakeOutSheet";
 import { EditPlaceSheet } from "@/components/stock/EditPlaceSheet";
 import { StickerSheet } from "@/components/stickers/StickerSheet";
 import { useCollapsingHeader } from "@/components/common/useCollapsingHeader";
+import { AddPlaceTile, PlaceCard } from "@/components/home/PlaceCard";
+import { AddPlaceSheet } from "@/components/home/AddPlaceSheet";
 
-type PlaceInfo = { id: string; name: string; type: LocationType; householdId: string; imagePath?: string | null };
+type PlaceInfo = { id: string; name: string; type: LocationType; householdId: string; imagePath?: string | null; parentId?: string | null };
 
 export default function PlacePage() {
   return <AuthGate>{() => <Place />}</AuthGate>;
@@ -57,16 +59,24 @@ function Place() {
   const [open, setOpen] = useState<StockItem | null>(null);
   const [category, setCategory] = useState<string | null>(null);
   const [last, setLast] = useState<{ actor: string | null; at: string } | null>(null);
+  /** Every place in the household, for the boxes inside this one and the place this one is in. */
+  const [family, setFamily] = useState<PlaceRow[] | null>(null);
+  const [addingBox, setAddingBox] = useState(false);
   // Pictures first on a bookshelf, or wherever most things have a photo.
   const pictures = place?.type === "bookshelf" || (!!items && items.length > 0 && items.filter((i) => i.imagePath).length * 2 >= items.length);
   const [view, setView] = usePlaceView(place?.id ?? null, pictures);
   const { header: heroHeader, bar: heroBar, big: heroBig, small: heroSmall, shade: heroShade } = useCollapsingHeader(place !== null);
 
-  const refresh = useCallback(async (locationId: string) => {
+  const refresh = useCallback(async (locationId: string, householdId?: string) => {
     try {
-      const [list, latest] = await Promise.all([loadItems(locationId), loadPlaceLastActivity(locationId).catch(() => null)]);
+      const [list, latest, all] = await Promise.all([
+        loadItems(locationId),
+        loadPlaceLastActivity(locationId).catch(() => null),
+        householdId ? loadPlaces(householdId).catch(() => null) : Promise.resolve(null),
+      ]);
       setItems(list);
       setLast(latest);
+      if (all) setFamily(all);
     } catch (e) {
       setError(friendlyError(e));
     }
@@ -85,7 +95,7 @@ function Place() {
         if (!active) return;
         if (!p) return setMissing(true);
         setPlace(p);
-        const [members] = await Promise.all([loadMembers(p.householdId), refresh(p.id)]);
+        const [members] = await Promise.all([loadMembers(p.householdId), refresh(p.id, p.householdId)]);
         if (active) setNames(new Map(members.map((m) => [m.userId, m.displayName])));
       } catch (e) {
         if (active) setError(friendlyError(e));
@@ -102,6 +112,11 @@ function Place() {
     const channel = supabase()
       .channel(`place:${place.id}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "stock_items", filter: `location_id=eq.${place.id}` }, () => refresh(place.id))
+      .on("postgres_changes", { event: "*", schema: "public", table: "storage_locations", filter: `household_id=eq.${place.householdId}` }, () =>
+        loadPlaces(place.householdId)
+          .then(setFamily)
+          .catch(() => {}),
+      )
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "storage_locations", filter: `id=eq.${place.id}` }, async () => {
         const p = await loadPlace(place.id).catch(() => null);
         if (p) setPlace(p);
@@ -122,9 +137,7 @@ function Place() {
     if (!items) return null;
     const q = filter.trim().toLowerCase();
     return items.filter(
-      (i) =>
-        (!category || i.category?.trim() === category) &&
-        (!q || [i.productName, i.brand, i.category, i.notes].some((v) => v?.toLowerCase().includes(q))),
+      (i) => (!category || i.category?.trim() === category) && (!q || [i.productName, i.brand, i.category, i.notes].some((v) => v?.toLowerCase().includes(q))),
     );
   }, [items, filter, category]);
 
@@ -170,6 +183,10 @@ function Place() {
 
   const info = placeType(place.type);
   const keep = isKeepPlace(place.type);
+  const parent = place.parentId ? (family?.find((p) => p.id === place.parentId) ?? null) : null;
+  // One level only: a box doesn't hold boxes.
+  const boxes = family && !place.parentId ? boxesIn(family, place.id) : [];
+  const canHoldBoxes = !place.parentId;
   const grid = keep && view === "grid";
   const lentHere = (items ?? []).filter((i) => i.lentTo).length;
   const count = items?.length ?? 0;
@@ -179,7 +196,7 @@ function Place() {
   const soonHere = due.length - lateHere;
   const summary = [
     // "Kitchen fridge · Fridge" says it twice, and "Something else" says nothing, so the kind is left out then.
-    place.type === "other" || place.name.toLowerCase().includes(info.label.toLowerCase()) ? null : info.label,
+    parent ? `In ${parent.name}` : place.type === "other" || place.name.toLowerCase().includes(info.label.toLowerCase()) ? null : info.label,
     items ? countThings(count) : null,
     lateHere > 0 ? `${lateHere} past ${lateHere === 1 ? "its date" : "a date"}` : null,
     soonHere > 0 ? `${soonHere} to use soon` : null,
@@ -202,8 +219,15 @@ function Place() {
         <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/0 to-black/70" aria-hidden="true" />
         {/* Darkens the photo as the header shrinks, so the small title stays readable. */}
         <div ref={heroShade} className="pointer-events-none absolute inset-0 bg-black/45 opacity-0" aria-hidden="true" />
-        <div ref={heroBar} className="absolute inset-x-0 top-0 z-10 flex items-center justify-between gap-3 px-4 pt-[max(12px,env(safe-area-inset-top))] will-change-transform sm:p-4">
-          <Link href="/" aria-label="Back to My Places" className="grid size-11 place-items-center rounded-full bg-[#fffdf8]/92 text-[#17242a] shadow-[var(--shadow-card)] backdrop-blur transition hover:bg-[#fffdf8]">
+        <div
+          ref={heroBar}
+          className="absolute inset-x-0 top-0 z-10 flex items-center justify-between gap-3 px-4 pt-[max(12px,env(safe-area-inset-top))] will-change-transform sm:p-4"
+        >
+          <Link
+            href={parent ? `/place/?id=${parent.id}` : "/"}
+            aria-label={parent ? `Back to ${parent.name}` : "Back to My Places"}
+            className="grid size-11 place-items-center rounded-full bg-[#fffdf8]/92 text-[#17242a] shadow-[var(--shadow-card)] backdrop-blur transition hover:bg-[#fffdf8]"
+          >
             <IconChevronLeft className="size-5" />
           </Link>
           <span ref={heroSmall} aria-hidden="true" className="min-w-0 flex-1 truncate font-serif text-[18px] font-semibold text-[#fffdf8] opacity-0 sm:hidden">
@@ -236,7 +260,7 @@ function Place() {
 
       {error ? <Notice>{error}</Notice> : null}
 
-      {items && items.length > 0 ? (
+      {items && (items.length > 0 || boxes.length > 0) ? (
         // On phones the search and Add row stays just under the shrunken header, so Add is always in reach.
         <div className="flex flex-col gap-3 max-sm:sticky max-sm:top-[calc(max(12px,env(safe-area-inset-top))+56px)] max-sm:z-10 max-sm:-mx-4 max-sm:bg-bg/95 max-sm:px-4 max-sm:py-2 max-sm:backdrop-blur">
           <div className="flex gap-2">
@@ -287,9 +311,23 @@ function Place() {
         </div>
       ) : null}
 
+      {boxes.length > 0 ? (
+        <section aria-labelledby="boxes-h" className="flex flex-col gap-2.5">
+          <SectionLabel id="boxes-h">
+            Inside {place.name} <span className="font-semibold text-mute">· {boxes.length}</span>
+          </SectionLabel>
+          <ul className="grid grid-cols-2 gap-x-3 gap-y-4 sm:grid-cols-4">
+            {boxes.map((b, i) => (
+              <PlaceCard key={b.id} place={b} index={i} />
+            ))}
+            <AddPlaceTile onClick={() => setAddingBox(true)} label="Add a box or shelf" />
+          </ul>
+        </section>
+      ) : null}
+
       {shown === null ? (
         <ItemListSkeleton rows={4} />
-      ) : items!.length === 0 ? (
+      ) : items!.length === 0 && boxes.length > 0 ? null : items!.length === 0 ? (
         <div className="flex flex-col items-center gap-3 rounded-[24px] bg-sunk/60 px-6 py-10 text-center">
           <span className="block h-28 w-40 overflow-hidden rounded-2xl opacity-90 shadow-[var(--shadow-card)]">
             <PlacePhoto type={place.type} imagePath={place.imagePath} />
@@ -306,6 +344,11 @@ function Place() {
               <IconStack /> Snap a whole shelf
             </Button>
           </div>
+          {canHoldBoxes ? (
+            <button onClick={() => setAddingBox(true)} className="min-h-11 text-[15px] font-semibold text-leaf">
+              Or add a box or shelf inside it
+            </button>
+          ) : null}
         </div>
       ) : shown.length === 0 ? (
         <p className="text-mute">
@@ -341,7 +384,15 @@ function Place() {
         ))
       ) : (
         <section aria-labelledby="items-h" className="flex flex-col gap-2.5">
-          <SectionLabel id="items-h">{filtering ? countThings(shown.length) : ["freezer", "fridge", "pantry"].includes(place.type) ? "Use first" : "In here"}</SectionLabel>
+          <SectionLabel id="items-h">
+            {filtering
+              ? countThings(shown.length)
+              : boxes.length > 0
+                ? "Not in a box"
+                : ["freezer", "fridge", "pantry"].includes(place.type)
+                  ? "Use first"
+                  : "In here"}
+          </SectionLabel>
           {grid ? (
             <ItemGrid items={shown} placeType={place.type} onOpen={setOpen} highlight={filter} />
           ) : (
@@ -407,11 +458,23 @@ function Place() {
           onClose={() => setEditing(false)}
           place={place}
           itemCount={count}
+          boxCount={boxes.length}
+          homes={boxes.length === 0 ? (family ?? []).filter((p) => !p.parentId && p.id !== place.id).map((p) => ({ id: p.id, name: p.name })) : []}
           onSaved={async () => {
             const p = await loadPlace(place.id).catch(() => null);
             if (p) setPlace(p);
+            refresh(place.id, place.householdId);
           }}
           onRemoved={() => router.replace("/")}
+        />
+      ) : null}
+      {addingBox ? (
+        <AddPlaceSheet
+          open={addingBox}
+          onClose={() => setAddingBox(false)}
+          householdId={place.householdId}
+          inside={{ id: place.id, name: place.name }}
+          onAdded={() => refresh(place.id, place.householdId)}
         />
       ) : null}
       {sticker ? <StickerSheet open={sticker} onClose={() => setSticker(false)} place={place} /> : null}

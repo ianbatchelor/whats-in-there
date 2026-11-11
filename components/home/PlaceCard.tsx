@@ -70,7 +70,11 @@ export function GroupCard({ group, late = 0, soon = 0, index = 0, feature = fals
       type={group.type}
       imagePath={single ? single.imagePath : (group.places.find((p) => p.imagePath)?.imagePath ?? null)}
       title={single ? single.name : info.plural}
-      sub={single ? countThings(single.itemCount) : `${countPlaces(group.places.length, group.type)} · ${countThings(group.itemCount)}`}
+      sub={
+        single
+          ? [countThings(single.itemCount), single.boxCount ? `${single.boxCount} ${single.boxCount === 1 ? "box" : "boxes"}` : null].filter(Boolean).join(" · ")
+          : `${countPlaces(group.places.length, group.type)} · ${countThings(group.itemCount)}`
+      }
       late={late}
       soon={soon}
       index={index}
@@ -83,14 +87,14 @@ export function PlaceCard({ place, soon = 0, index = 0 }: { place: { id: string;
   return <Tile href={`/place/?id=${place.id}`} type={place.type} imagePath={place.imagePath} title={place.name} sub={countThings(place.itemCount)} soon={soon} index={index} />;
 }
 
-export function AddPlaceTile({ onClick }: { onClick: () => void }) {
+export function AddPlaceTile({ onClick, label = "Add a place" }: { onClick: () => void; label?: string }) {
   return (
     <li>
       <button onClick={onClick} className="group flex w-full flex-col gap-2 text-left">
         <span className="grid aspect-[4/3] w-full place-items-center rounded-2xl border-[1.5px] border-dashed border-line text-leaf transition group-hover:border-leaf/50 group-hover:bg-sunk">
           <IconPlus className="size-6" />
         </span>
-        <span className="px-0.5 text-[15px] font-semibold text-leaf">Add a place</span>
+        <span className="px-0.5 text-[15px] font-semibold text-leaf">{label}</span>
       </button>
     </li>
   );

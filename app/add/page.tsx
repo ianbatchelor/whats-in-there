@@ -6,7 +6,7 @@ import { AuthGate } from "@/components/AuthGate";
 import { AppShell, SectionLabel } from "@/components/AppShell";
 import { PageHeader, HouseholdLoading } from "@/components/common/PageHeader";
 import { useHousehold } from "@/lib/hooks/useHousehold";
-import { countThings } from "@/lib/domain/places";
+import { countThings, nestedOrder } from "@/lib/domain/places";
 import { KEYS, readLocal, writeLocal } from "@/lib/storage";
 import { Notice } from "@/components/ui/Notice";
 import { Button } from "@/components/ui/Button";
@@ -92,16 +92,20 @@ function Add({ session }: { session: Session }) {
           <section className="flex flex-col gap-2.5" aria-labelledby="add-places-h">
             <SectionLabel id="add-places-h">Or go straight to a place</SectionLabel>
             <ul className="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-card">
-              {places.map((p) => (
+              {nestedOrder(places).map(({ place: p, inside }) => (
                 <li key={p.id}>
-                  <button onClick={() => start(p.id, false)} className="flex w-full items-center gap-3 py-2 pr-3 pl-2 text-left transition hover:bg-sunk/70">
+                  <button
+                    onClick={() => start(p.id, false)}
+                    className={`flex w-full items-center gap-3 py-2 pr-3 text-left transition hover:bg-sunk/70 ${inside ? "pl-8" : "pl-2"}`}
+                  >
                     <span className="h-11 w-14 shrink-0 overflow-hidden rounded-lg">
                       <PlacePhoto type={p.type} imagePath={p.imagePath} />
                     </span>
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-[15px] font-semibold">{p.name}</span>
                       <span className="block truncate text-[13px] text-mute">
-                        {p.type === "other" ? "Place" : placeType(p.type).label} · {countThings(p.itemCount)}
+                        {inside ? `Inside ${places.find((x) => x.id === p.parentId)?.name ?? "a place"}` : p.type === "other" ? "Place" : placeType(p.type).label} ·{" "}
+                        {countThings(p.itemCount)}
                       </span>
                     </span>
                     <IconChevronRight className="size-4 shrink-0 text-mute/50" />

@@ -12,7 +12,18 @@ import { isConfigured } from "@/lib/config";
 import { useSession } from "@/lib/hooks/useSession";
 import { useHousehold } from "@/lib/hooks/useHousehold";
 import { friendlyError } from "@/lib/supabase/errors";
-import { SECTION_LABELS, countThings, groupPlaces, isKeepPlace, isUseUpPlace, sectionOf, usedSections, type PlaceSection } from "@/lib/domain/places";
+import {
+  SECTION_LABELS,
+  countThings,
+  groupPlaces,
+  isKeepPlace,
+  isUseUpPlace,
+  rollUp,
+  sectionOf,
+  topPlaceId,
+  usedSections,
+  type PlaceSection,
+} from "@/lib/domain/places";
 import { timeAgo } from "@/lib/domain/dates";
 import { activitySentence } from "@/lib/domain/activity";
 import type { StockItem } from "@/lib/domain/stock";
@@ -93,8 +104,10 @@ function Home({ session }: { session: Session }) {
   }
   if (!current) return <Splash />;
 
-  const sections = places ? usedSections(places) : [];
-  const shownPlaces = places && section !== "all" ? places.filter((p) => sectionOf(p.type) === section) : places;
+  // Home shows the places that aren't inside anything; a box's things count towards its place.
+  const topPlaces = places ? rollUp(places) : null;
+  const sections = topPlaces ? usedSections(topPlaces) : [];
+  const shownPlaces = topPlaces && section !== "all" ? topPlaces.filter((p) => sectionOf(p.type) === section) : topPlaces;
   const groups = shownPlaces ? groupPlaces(shownPlaces) : null;
   const total = places?.reduce((n, p) => n + p.itemCount, 0) ?? 0;
   const who = (id: string | null) => (id === session.user.id ? "You" : (id && names.get(id)) || "Someone");
@@ -103,7 +116,8 @@ function Home({ session }: { session: Session }) {
   const soonIn = new Map<string, number>();
   for (const i of attention) {
     const m = itemStatus(i)?.tone === "late" ? lateIn : soonIn;
-    m.set(i.locationId, (m.get(i.locationId) ?? 0) + 1);
+    const at = topPlaceId(i.locationId, placeById);
+    m.set(at, (m.get(at) ?? 0) + 1);
   }
   const late = [...lateIn.values()].reduce((a, b) => a + b, 0);
   const sumOver = (m: Map<string, number>, ids: { id: string }[]) => ids.reduce((n, p) => n + (m.get(p.id) ?? 0), 0);
