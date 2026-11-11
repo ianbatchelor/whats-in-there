@@ -7,7 +7,13 @@ import { friendlyError } from "@/lib/supabase/errors";
 import { takeOut } from "@/lib/stock";
 
 /** Wording for the toast after something is taken out; shared by the sheet and the one-tap button. */
-export function tookOutMessage(before: StockItem, after: StockItem, amount: number): string {
+export function tookOutMessage(before: StockItem, after: StockItem, amount: number, keep = false): string {
+  if (keep) {
+    const what = before.unit === "item" ? `${amount} × ${before.productName}` : `${formatQuantity(amount, before.unit)} of ${before.productName}`;
+    return after.quantity > 0
+      ? `Removed ${what}, ${before.unit === "item" ? after.quantity : formatQuantity(after.quantity, after.unit)} left`
+      : `Removed ${before.productName} from the list`;
+  }
   const left = after.quantity > 0 ? `, ${formatQuantity(after.quantity, after.unit)} left` : ", all gone";
   return `Took out ${formatQuantity(amount, before.unit)} of ${before.productName}${left}`;
 }

@@ -426,6 +426,157 @@ function Other({ className, title }: ArtProps) {
   );
 }
 
+function Bookshelf({ className, title }: ArtProps) {
+  const id = useId().replace(/:/g, "");
+  const spines = ["#7a3b2e", C.forest, "#c9a27a", "#4d5b6a", "#b9553e", C.gold, "#6b7f8e", "#8a5a33", "#e9dcc4", "#3e7a57", "#a8763f", "#5d4a85"];
+  const shelf = (y: number, seed: number) => {
+    let x = 66;
+    const out: React.ReactNode[] = [];
+    for (let i = 0; x < 248; i++) {
+      const w = 9 + ((i * 7 + seed) % 4) * 3;
+      const h = 34 + ((i * 5 + seed) % 3) * 5;
+      const lean = i === 4 + (seed % 3);
+      out.push(<rect key={`${y}-${i}`} x={x} y={y - h} width={w} height={h} rx="1.5" fill={spines[(i + seed) % spines.length]} transform={lean ? `rotate(8 ${x + w} ${y})` : undefined} />);
+      x += w + (lean ? 8 : 1.5);
+    }
+    return out;
+  };
+  return (
+    <Frame id={id} bg={["#efe4d2", "#e2d2b8"]} className={className} title={title}>
+      <Floor y={194} />
+      <rect x="54" y="14" width="212" height="182" rx="4" fill="#7a4e2e" />
+      <rect x="62" y="20" width="196" height="170" fill="#5b3a23" />
+      <rect width="320" height="220" fill={`url(#${id}-glow)`} opacity="0.75" />
+      {shelf(70, 0)}
+      {shelf(126, 2)}
+      {shelf(182, 1)}
+      <rect x="62" y="70" width="196" height="6" fill={C.woodLight} />
+      <rect x="62" y="126" width="196" height="6" fill={C.woodLight} />
+      <rect x="62" y="182" width="196" height="8" fill={C.woodLight} />
+      <path d="M232 52 q8 -14 16 0 v18 h-16z" fill={C.leafLight} />
+    </Frame>
+  );
+}
+
+function ToyBox({ className, title }: ArtProps) {
+  const id = useId().replace(/:/g, "");
+  return (
+    <Frame id={id} bg={["#f3e9d8", "#e6d6bc"]} className={className} title={title}>
+      <rect width="320" height="220" fill={`url(#${id}-glow)`} />
+      <Floor y={178} />
+      <Shadow cx={160} y={184} rx={104} />
+      {/* toys poking out */}
+      <circle cx="122" cy="84" r="20" fill="#c4553a" />
+      <path d="M104 78 q18 -10 36 0" stroke={C.cream} strokeWidth="4" fill="none" />
+      <rect x="150" y="62" width="26" height="26" rx="3" fill={C.gold} />
+      <rect x="176" y="72" width="26" height="26" rx="3" fill="#4d7fa3" transform="rotate(10 189 85)" />
+      <circle cx="210" cy="68" r="11" fill="#c9a27a" />
+      <circle cx="202" cy="58" r="5" fill="#c9a27a" />
+      <circle cx="218" cy="58" r="5" fill="#c9a27a" />
+      {/* box */}
+      <rect x="70" y="96" width="180" height="84" rx="6" fill="#3e7a57" />
+      <rect x="70" y="96" width="180" height="12" rx="4" fill="#2f6247" />
+      <rect x="96" y="124" width="22" height="22" rx="3" fill={C.cream} />
+      <rect x="128" y="124" width="22" height="22" rx="3" fill={C.gold} />
+      <rect x="160" y="124" width="22" height="22" rx="3" fill="#c4553a" />
+      <rect x="192" y="124" width="22" height="22" rx="3" fill={C.cream} />
+      {/* lid leaning back */}
+      <path d="M70 96 L58 44 L238 40 L250 96 Z" fill="#4a8a64" opacity="0.55" />
+    </Frame>
+  );
+}
+
+function Desk({ className, title }: ArtProps) {
+  const id = useId().replace(/:/g, "");
+  return (
+    <Frame id={id} bg={["#ece6da", "#dcd2c0"]} className={className} title={title}>
+      <rect width="320" height="220" fill={`url(#${id}-glow)`} />
+      <Floor y={186} />
+      {/* window light */}
+      <rect x="196" y="18" width="84" height="70" rx="4" fill="#fff6dc" opacity="0.8" />
+      <path d="M238 18 v70 M196 53 h84" stroke={C.wallShade} strokeWidth="4" />
+      {/* lamp */}
+      <path d="M86 112 l14 -38 l20 4" stroke={C.ink} strokeWidth="4" fill="none" strokeLinecap="round" />
+      <path d="M110 70 l26 6 l-6 18 z" fill={C.goldDeep} />
+      <rect x="76" y="110" width="22" height="6" rx="2" fill={C.ink} />
+      {/* desk */}
+      <rect x="44" y="116" width="232" height="10" rx="2" fill={C.wood} />
+      <rect x="52" y="126" width="10" height="62" fill={C.woodDark} />
+      <rect x="196" y="126" width="72" height="62" rx="2" fill={C.woodDark} />
+      <rect x="202" y="134" width="60" height="22" rx="2" fill={C.wood} />
+      <rect x="202" y="160" width="60" height="22" rx="2" fill={C.wood} />
+      <rect x="226" y="143" width="12" height="3" rx="1.5" fill={C.gold} />
+      <rect x="226" y="169" width="12" height="3" rx="1.5" fill={C.gold} />
+      {/* things on top */}
+      <rect x="128" y="88" width="56" height="28" rx="2" fill={C.cream} transform="rotate(-6 156 102)" />
+      <rect x="196" y="96" width="14" height="20" rx="2" fill={C.forest} />
+      <path d="M199 96 l-3 -12 M203 96 l1 -14 M207 96 l5 -10" stroke={C.goldDeep} strokeWidth="2.5" strokeLinecap="round" />
+      <rect x="222" y="100" width="40" height="16" rx="2" fill="#c4553a" />
+      <rect x="226" y="92" width="34" height="8" rx="2" fill="#6b7f8e" />
+    </Frame>
+  );
+}
+
+function Medicine({ className, title }: ArtProps) {
+  const id = useId().replace(/:/g, "");
+  const bottle = (x: number, y: number, h: number, c: string) => (
+    <g key={`${x}-${y}`}>
+      <rect x={x} y={y - h} width="18" height={h} rx="3" fill={c} />
+      <rect x={x + 2} y={y - h - 6} width="14" height="7" rx="2" fill={C.cream} />
+      <rect x={x + 3} y={y - h + 8} width="12" height="10" rx="1" fill={C.cream} opacity="0.85" />
+    </g>
+  );
+  return (
+    <Frame id={id} bg={["#e8eeee", "#d6e0df"]} className={className} title={title}>
+      <rect width="320" height="220" fill={`url(#${id}-glow)`} />
+      <rect x="70" y="16" width="180" height="176" rx="6" fill={C.cream} />
+      <rect x="78" y="24" width="164" height="160" rx="3" fill="#f1f5f4" />
+      <rect x="78" y="82" width="164" height="5" fill={C.frostDeep} />
+      <rect x="78" y="140" width="164" height="5" fill={C.frostDeep} />
+      {[bottle(92, 82, 30, "#c98a14"), bottle(116, 82, 38, "#b9553e"), bottle(140, 82, 26, "#4d7fa3")]}
+      <rect x="170" y="56" width="56" height="26" rx="3" fill={C.cream} stroke={C.frostDeep} strokeWidth="2" />
+      <path d="M182 69 h32" stroke="#4d7fa3" strokeWidth="3" />
+      {[bottle(96, 140, 34, C.forest), bottle(124, 140, 28, "#c4553a")]}
+      <rect x="160" y="110" width="66" height="30" rx="4" fill="#3e7a57" />
+      <path d="M193 116 v18 M184 125 h18" stroke={C.cream} strokeWidth="5" strokeLinecap="round" />
+      <rect x="96" y="160" width="56" height="20" rx="4" fill="#e9dcc4" />
+      <rect x="164" y="154" width="22" height="26" rx="3" fill="#6b7f8e" />
+      {/* mirror door swung open */}
+      <path d="M250 16 L292 8 L292 200 L250 192 Z" fill="#c6d8dc" />
+      <path d="M258 30 L284 26 L284 70 Z" fill="#ffffff" opacity="0.5" />
+    </Frame>
+  );
+}
+
+function Car({ className, title }: ArtProps) {
+  const id = useId().replace(/:/g, "");
+  return (
+    <Frame id={id} bg={["#dfe9df", "#e9e1cf"]} className={className} title={title}>
+      <rect width="320" height="220" fill={`url(#${id}-glow)`} />
+      <Floor y={170} color="#c9c2b4" />
+      <Shadow cx={160} y={182} rx={128} />
+      {/* car from behind, boot open */}
+      <path d="M48 168 V120 q0 -12 12 -16 l28 -8 h144 l28 8 q12 4 12 16 v48 z" fill="#4d7fa3" />
+      <rect x="62" y="110" width="196" height="54" rx="4" fill="#2f3e48" />
+      <rect x="70" y="118" width="180" height="40" rx="2" fill="#e9dcc4" />
+      {/* boot contents */}
+      <rect x="80" y="124" width="54" height="34" rx="3" fill={C.wood} />
+      <rect x="140" y="132" width="40" height="26" rx="3" fill={C.forest} />
+      <rect x="186" y="128" width="20" height="30" rx="3" fill={C.gold} />
+      <path d="M212 158 l14 -30 l10 4 l-10 26 z" fill="#c4553a" />
+      {/* open boot lid */}
+      <path d="M64 96 L84 40 H236 L256 96 Z" fill="#5c8fb3" />
+      <path d="M96 50 H224 L238 88 H82 Z" fill="#cfe0ea" opacity="0.8" />
+      {/* bumper, lights, wheels */}
+      <rect x="44" y="164" width="232" height="10" rx="4" fill="#2f3e48" />
+      <rect x="50" y="122" width="10" height="20" rx="3" fill="#c4553a" />
+      <rect x="260" y="122" width="10" height="20" rx="3" fill="#c4553a" />
+      <rect x="60" y="174" width="30" height="12" rx="3" fill={C.ink} />
+      <rect x="230" y="174" width="30" height="12" rx="3" fill={C.ink} />
+    </Frame>
+  );
+}
+
 const ART: Record<LocationType, (p: ArtProps) => React.ReactNode> = {
   freezer: Freezer,
   fridge: Fridge,
@@ -438,6 +589,11 @@ const ART: Record<LocationType, (p: ArtProps) => React.ReactNode> = {
   wardrobe: Wardrobe,
   garden: Garden,
   box: Box,
+  bookshelf: Bookshelf,
+  toybox: ToyBox,
+  desk: Desk,
+  medicine: Medicine,
+  car: Car,
   other: Other,
 };
 
