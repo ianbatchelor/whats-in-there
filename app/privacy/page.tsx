@@ -25,6 +25,10 @@ export default function PrivacyPage() {
           <b>Your households and what&apos;s in them</b>: places, the things you add (names, amounts, dates, brands, notes), photos
           you take of labels, shelves and places, and a history of who added or took out what.
         </li>
+        <li>
+          <b>Who you&apos;ve lent things to</b>, if you mark something as lent: the name you type and the date. Only the people in
+          your household can see it. Use a first name or a nickname; that person doesn&apos;t need an account.
+        </li>
         <li><b>Sticker links</b> for your places, so a sticker or QR code opens the right place.</li>
         <li>
           <b>A log of photo scans</b>: when a scan happened, who made it, what was read from the photo and how much computing
