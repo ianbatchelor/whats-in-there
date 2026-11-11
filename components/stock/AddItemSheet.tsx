@@ -265,7 +265,7 @@ export function AddItemSheet({
 
   return (
     <Sheet open={open} onClose={close} title={places && onPickPlace ? "Add something" : `Add to ${place.name}`}>
-      <form onSubmit={save} className="flex max-h-[75dvh] flex-col gap-4 overflow-y-auto" noValidate>
+      <form onSubmit={save} className="flex max-h-[75dvh] flex-col gap-4 overflow-x-hidden overflow-y-auto overscroll-x-none" noValidate>
         <input ref={camera} type="file" accept="image/*" capture="environment" className="sr-only" tabIndex={-1} aria-hidden="true" onChange={onPhoto} />
         {consentSheet}
 
