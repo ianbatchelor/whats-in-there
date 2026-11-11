@@ -34,3 +34,10 @@ select tests.ok(
   not has_column_privilege('authenticated', 'public.storage_locations', 'link_code', 'UPDATE'),
   'the sticker code is still not writable from the app');
 update public.storage_locations set image_path = null where id = (select v from tests.vars where k = 'photo_loc')::uuid;
+
+-- The photo bucket only takes images of up to 10 MB.
+select tests.ok(
+  (select file_size_limit = 10485760 and allowed_mime_types @> array['image/webp', 'image/jpeg']
+     and not allowed_mime_types @> array['image/svg+xml']
+   from storage.buckets where id = 'item-photos'),
+  'the photo bucket accepts only images of at most 10 MB');
