@@ -30,6 +30,7 @@ import { useBookCover } from "@/lib/covers";
 import { isBook } from "@/lib/domain/covers";
 import type { LocationType } from "@/lib/household";
 import { useFadeIn } from "@/components/ui/useFadeIn";
+import { isLongLent, lentFor } from "@/lib/domain/lending";
 
 /**
  * The quiet line under a name: where it is and what it is. The date lives in the status label,
@@ -75,7 +76,10 @@ export function StatusPill({ item, className = "" }: { item: StockItem; classNam
   const status = itemStatus(item);
   if (!status) return null;
   return (
-    <span title={status.detail} className={`shrink-0 rounded-full px-2 py-[3px] text-[12.5px] leading-tight font-semibold whitespace-nowrap ${TONES[status.tone]} ${className}`}>
+    <span
+      title={status.detail}
+      className={`shrink-0 rounded-full px-2 py-[3px] text-[12.5px] leading-tight font-semibold whitespace-nowrap ${TONES[status.tone]} ${className}`}
+    >
       {status.label}
     </span>
   );
@@ -159,6 +163,7 @@ export function ItemRow({
   highlight,
   keep = false,
   placeType,
+  onReturn,
 }: {
   item: StockItem;
   place?: string;
@@ -174,10 +179,13 @@ export function ItemRow({
   /** Who put it there. Shown as its own column on very wide screens. */
   addedBy?: string;
   index?: number;
+  /** Shows an "It's back" button on things that are lent out. */
+  onReturn?: (item: StockItem) => void;
 }) {
   const qty = roundQty(item.quantity);
   const status = itemStatus(item);
-  const quick = !keep && onTakeOne && isCounted(item.unit) && qty >= 1;
+  const back = !!onReturn && !!item.lentTo;
+  const quick = !back && !keep && onTakeOne && isCounted(item.unit) && qty >= 1;
   const showQty = !(keep && isCounted(item.unit) && qty === 1);
   const unitWord = formatQuantity(1, item.unit).replace(/^[\d.]+ /, "");
   // Found by its brand ("Cathedral City" for the cheddar): show the brand first so the reason is visible.
@@ -197,7 +205,7 @@ export function ItemRow({
           </span>
           <span className="mt-0.5 flex items-center gap-2">
             <StatusPill item={item} className="lg:hidden" />
-            {item.lentTo ? <LentPill item={item} /> : null}
+            {item.lentTo ? <LentPill item={item} className={place ? "max-w-[60%]" : "max-w-full"} /> : null}
             <span className="min-w-0 truncate text-[13px] text-mute">
               <Highlight text={itemContext(item, place, brandFirst)} match={brandFirst ? highlight : undefined} />
             </span>
@@ -213,9 +221,18 @@ export function ItemRow({
             {isCounted(item.unit) ? <span className="block text-[12px] text-mute">{formatQuantity(qty, item.unit).replace(/^[\d.]+ /, "")}</span> : null}
           </span>
         ) : null}
-        {quick ? null : <IconChevronRight className="mr-1.5 size-4 shrink-0 text-mute/50" />}
+        {quick || back ? null : <IconChevronRight className="mr-1.5 size-4 shrink-0 text-mute/50" />}
       </button>
-      {quick ? (
+      {back ? (
+        <button
+          onClick={() => onReturn!(item)}
+          disabled={taking}
+          aria-label={`${item.productName} is back from ${item.lentTo}`}
+          className="mr-2 min-h-11 shrink-0 rounded-xl border border-line bg-card px-3 text-[14px] font-semibold text-fg transition hover:bg-sunk active:scale-95 disabled:opacity-40"
+        >
+          It&apos;s back
+        </button>
+      ) : quick ? (
         <button
           onClick={() => onTakeOne(item)}
           disabled={taking}
@@ -236,15 +253,17 @@ export function bookOf(item: StockItem, placeType: LocationType | undefined): { 
 }
 
 /** "With Mum since 3 Oct", for something that's been lent out. */
-export function LentPill({ item, className = "" }: { item: StockItem; className?: string }) {
+export function LentPill({ item, className = "max-w-[60%]" }: { item: StockItem; className?: string }) {
   if (!item.lentTo) return null;
+  // After a month it's worth asking for back, so it says how long, in the colour for "act on this".
+  const long = isLongLent(item);
   return (
     <span
       title={item.lentOn ? `Lent to ${item.lentTo} on ${formatDay(item.lentOn)}` : `Lent to ${item.lentTo}`}
-      className={`max-w-[60%] shrink-0 truncate rounded-full bg-soon-bg px-2 py-[3px] text-[12.5px] leading-tight font-semibold text-soon ${className}`}
+      className={`shrink-0 truncate rounded-full px-2 py-[3px] text-[12.5px] leading-tight font-semibold ${long ? "bg-late-bg text-late" : "bg-soon-bg text-soon"} ${className}`}
     >
-      With {item.lentTo}
-      {item.lentOn ? <span className="font-normal"> since {formatDay(item.lentOn, { year: false })}</span> : null}
+      {long ? item.lentTo : `With ${item.lentTo}`}
+      {item.lentOn ? <span className="font-normal">{long ? ` · ${lentFor(item.lentOn)}` : ` since ${formatDay(item.lentOn, { year: false })}`}</span> : null}
     </span>
   );
 }
