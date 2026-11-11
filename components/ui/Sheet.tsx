@@ -36,7 +36,6 @@ export function Sheet({
     if (!d) return;
     if (open && !d.open) d.showModal();
     if (!open && d.open) d.close();
-    if (!open) setOffset(0);
   }, [open]);
 
   const onPointerDown = (e: React.PointerEvent) => {
@@ -60,7 +59,10 @@ export function Sheet({
     const speed = dy / Math.max(1, e.timeStamp - start.t);
     if (e.type === "pointerup" && (dy > CLOSE_DISTANCE || (dy > 20 && speed > CLOSE_SPEED))) {
       setOffset(window.innerHeight);
-      window.setTimeout(onClose, 160);
+      window.setTimeout(() => {
+        onClose();
+        setOffset(0);
+      }, 160);
     } else {
       setOffset(0);
     }
