@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
 import { friendlyError } from "@/lib/supabase/errors";
 import { isConfigured } from "@/lib/config";
+import { safeReturnPath } from "@/lib/domain/returnPath";
 import { useSession } from "@/lib/hooks/useSession";
 import { AuthFrame } from "@/components/AuthFrame";
 import { Splash } from "@/components/ui/Screen";
@@ -15,8 +16,7 @@ import { SetupNeeded } from "@/components/SetupNeeded";
 
 /** Only allow same-app paths as a return address. */
 function safeNext(): string {
-  const next = new URLSearchParams(window.location.search).get("next") ?? "/";
-  return next.startsWith("/") && !next.startsWith("//") ? next : "/";
+  return safeReturnPath(new URLSearchParams(window.location.search).get("next"));
 }
 
 export default function SignInPage() {
