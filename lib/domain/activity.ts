@@ -1,6 +1,15 @@
 import { formatQuantity, roundQty, type StockUnit } from "./quantity";
 
-type Row = { action: "add" | "remove" | "adjust" | "move" | "undo"; delta: number; itemName: string; unit: StockUnit; at: string; edited?: boolean };
+type Row = {
+  action: "add" | "remove" | "adjust" | "move" | "undo" | "lend" | "return";
+  delta: number;
+  itemName: string;
+  unit: StockUnit;
+  at: string;
+  edited?: boolean;
+  /** For lending: who it went to, or who gave it back. */
+  person?: string | null;
+};
 
 /** "added 2 portions of Chicken curry", read after the person's name. `toPlace` names where a move went. */
 export function activitySentence(r: Row, toPlace?: string): string {
@@ -16,6 +25,10 @@ export function activitySentence(r: Row, toPlace?: string): string {
       return `took out ${what}`;
     case "undo":
       return `undid a change to ${r.itemName}`;
+    case "lend":
+      return r.person ? `lent ${r.itemName} to ${r.person}` : `lent out ${r.itemName}`;
+    case "return":
+      return r.person ? `got ${r.itemName} back from ${r.person}` : `got ${r.itemName} back`;
     case "move":
       return toPlace ? `moved ${r.itemName} to ${toPlace}` : `moved ${r.itemName}`;
     default:

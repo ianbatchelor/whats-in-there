@@ -18,6 +18,9 @@ export type StockItem = {
   notes: string | null;
   /** Private storage path of the label photo, when the item was added from one. */
   imagePath?: string | null;
+  /** Who it's lent to, and since when (things you keep). */
+  lentTo?: string | null;
+  lentOn?: string | null;
   version: number;
 };
 

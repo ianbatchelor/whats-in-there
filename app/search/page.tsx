@@ -9,14 +9,13 @@ import { PageHeader } from "@/components/common/PageHeader";
 import { useHousehold } from "@/lib/hooks/useHousehold";
 import { friendlyError } from "@/lib/supabase/errors";
 import { searchItems } from "@/lib/stock";
-import { countThings } from "@/lib/domain/places";
+import { countThings, isKeepPlace } from "@/lib/domain/places";
 import type { StockItem } from "@/lib/domain/stock";
-import { formatQuantity } from "@/lib/domain/quantity";
 import { Notice } from "@/components/ui/Notice";
 import { Toast } from "@/components/ui/Toast";
 import { IconChevronRight, IconScan, IconSearch, IconX } from "@/components/ui/icons";
 import { KEYS, readLocal, writeLocal } from "@/lib/storage";
-import { useQuickTake } from "@/components/stock/useQuickTake";
+import { tookOutMessage, useQuickTake } from "@/components/stock/useQuickTake";
 import { placeType } from "@/components/home/placeTypes";
 import { PlacePhoto } from "@/components/art/PlacePhoto";
 import { ItemList, ItemListSkeleton, ItemRow } from "@/components/stock/ItemRow";
@@ -89,6 +88,10 @@ function Search({ session }: { session: Session }) {
 
   const shown = q.length >= 2 ? results : null;
   const { taking, takeOne } = useQuickTake(announce, refresh);
+  const keptIn = (i: StockItem) => {
+    const type = placeById.get(i.locationId)?.type;
+    return !!type && isKeepPlace(type);
+  };
   const [recent, setRecent] = useState<string[]>([]);
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -220,6 +223,8 @@ function Search({ session }: { session: Session }) {
                       index={i}
                       item={item}
                       place={placeById.get(item.locationId)?.name}
+                      placeType={placeById.get(item.locationId)?.type}
+                      keep={keptIn(item)}
                       highlight={q}
                       addedBy={(item.addedBy && names.get(item.addedBy)) || ""}
                       onOpen={(it) => {
@@ -240,18 +245,12 @@ function Search({ session }: { session: Session }) {
       <TakeOutSheet
         item={open}
         placeName={open ? placeById.get(open.locationId)?.name : undefined}
+        keep={open ? keptIn(open) : false}
         names={names}
         onClose={() => setOpen(null)}
         onTaken={(before, after, amount, movementId) => {
           refresh();
-          const left =
-            after.quantity > 0
-              ? `, ${formatQuantity(after.quantity, after.unit)} left`
-              : ", all gone";
-          announce(
-            `Took out ${formatQuantity(amount, before.unit)} of ${before.productName}${left}`,
-            movementId,
-          );
+          announce(tookOutMessage(before, after, amount, keptIn(before)), movementId);
         }}
         onChanged={(message, movementId) => {
           refresh();

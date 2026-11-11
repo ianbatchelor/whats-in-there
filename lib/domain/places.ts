@@ -31,6 +31,11 @@ const SECTION: Record<LocationType, PlaceSection> = {
   shed: "storage",
   wardrobe: "storage",
   box: "storage",
+  bookshelf: "storage",
+  toybox: "storage",
+  desk: "storage",
+  medicine: "storage",
+  car: "storage",
   other: "storage",
   garden: "garden",
 };
@@ -68,4 +73,19 @@ export function soonCounts(rows: { locationId: string; useByDate: string | null;
     if (dates.some((d) => d <= cutoff)) counts.set(r.locationId, (counts.get(r.locationId) ?? 0) + 1);
   }
   return counts;
+}
+
+/**
+ * Places you use things up from (food, drink, medicine, the garden) and places you keep things in
+ * (shelves, wardrobes, boxes). Things in keep places have no quick minus and no "use first" order,
+ * can be lent out, and can show as a grid of pictures.
+ */
+const USE_UP: readonly LocationType[] = ["freezer", "fridge", "pantry", "wine", "garden", "medicine"];
+
+export function isUseUpPlace(type: LocationType): boolean {
+  return USE_UP.includes(type);
+}
+
+export function isKeepPlace(type: LocationType): boolean {
+  return !USE_UP.includes(type);
 }

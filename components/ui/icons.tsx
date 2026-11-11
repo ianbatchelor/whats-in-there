@@ -68,3 +68,14 @@ export const IconSticker = ({ className }: P) =>
 export const IconPrinter = ({ className }: P) =>
   svg(<><path d="M7 8V3.5h10V8M7 17H5a1.5 1.5 0 0 1-1.5-1.5v-6A1.5 1.5 0 0 1 5 8h14a1.5 1.5 0 0 1 1.5 1.5v6A1.5 1.5 0 0 1 19 17h-2" /><path d="M7 13.5h10v7H7z" /></>, className);
 export const IconMove = ({ className }: P) => svg(<path d="M4 12h12M12 7l5 5-5 5M20 5v14" />, className);
+export const IconBlocks = ({ className }: P) =>
+  svg(<><rect x="3.5" y="12.5" width="8" height="8" rx="1.5" /><rect x="12.5" y="12.5" width="8" height="8" rx="1.5" /><path d="M8 11.5 12 4l4 7.5z" /></>, className);
+export const IconDesk = ({ className }: P) => svg(<path d="M3 9.5h18M5 9.5V20M19 9.5V20M13 9.5v6h6M15.5 12.5h1M8 9.5V5.5h5v4" />, className);
+export const IconMedicine = ({ className }: P) => svg(<><rect x="4" y="4" width="16" height="16" rx="3" /><path d="M12 8v8M8 12h8" /></>, className);
+export const IconCar = ({ className }: P) =>
+  svg(<><path d="M4 16.5V12l2-5h12l2 5v4.5zM4 12h16" /><circle cx="7.5" cy="16.5" r="1.8" /><circle cx="16.5" cy="16.5" r="1.8" /></>, className);
+export const IconGrid = ({ className }: P) =>
+  svg(<><rect x="4" y="4" width="6.5" height="6.5" rx="1.5" /><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5" /><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5" /><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5" /></>, className);
+export const IconList = ({ className }: P) => svg(<path d="M9 6.5h11M9 12h11M9 17.5h11M4.5 6.5h.5M4.5 12h.5M4.5 17.5h.5" />, className);
+export const IconHandOver = ({ className }: P) =>
+  svg(<path d="M3 15.5h3.5l4 1.5h4a1.5 1.5 0 0 0 0-3H11M6.5 20.5H3v-8h3.5zM14.5 14l4.2-2.1a1.6 1.6 0 0 1 1.8 2.6L15 19.5l-5 .5-3.5-1.2M12 3.5h6v5h-6z" />, className);

@@ -1,6 +1,11 @@
 import type { LocationType } from "@/lib/household";
 import {
+  IconBlocks,
+  IconBook,
   IconBox,
+  IconCar,
+  IconDesk,
+  IconMedicine,
   IconCupboard,
   IconFridge,
   IconHanger,
@@ -38,6 +43,11 @@ export const PLACE_TYPES: PlaceTypeInfo[] = [
   { value: "garden", label: "Garden", plural: "Garden", unit: ["area", "areas"], example: "Raised Bed 1", thing: "Tulip bulbs", blurb: "Beds, pots and what's planted in them.", Icon: IconSprout },
   { value: "box", label: "Box", plural: "Boxes", unit: ["box", "boxes"], example: "Blue Storage Box", thing: "Tree decorations", blurb: "Storage boxes and crates.", Icon: IconBox },
   { value: "wine", label: "Wine", plural: "Wine", unit: ["rack", "racks"], example: "Wine Rack", thing: "Rioja 2019", blurb: "Bottles, vintages and when to drink them.", Icon: IconWine },
+  { value: "bookshelf", label: "Bookshelf", plural: "Bookshelves", unit: ["shelf", "shelves"], example: "Living Room Bookshelf", thing: "The Hobbit", blurb: "Books, games and films.", Icon: IconBook },
+  { value: "toybox", label: "Toy box", plural: "Toy boxes", unit: ["box", "boxes"], example: "Playroom Toy Box", thing: "Lego fire station", blurb: "Toys, puzzles and dressing up.", Icon: IconBlocks },
+  { value: "desk", label: "Desk", plural: "Desks", unit: ["desk", "desks"], example: "Study Desk", thing: "Spare printer ink", blurb: "Stationery, cables and paperwork.", Icon: IconDesk },
+  { value: "medicine", label: "Medicine cabinet", plural: "Medicine cabinets", unit: ["cabinet", "cabinets"], example: "Bathroom Cabinet", thing: "Paracetamol", blurb: "Medicines and first aid, by date.", Icon: IconMedicine },
+  { value: "car", label: "Car", plural: "Cars", unit: ["car", "cars"], example: "Family Car", thing: "Ice scraper", blurb: "What's in the boot and glovebox.", Icon: IconCar },
   { value: "other", label: "Something else", plural: "Other places", unit: ["place", "places"], example: "Utility Shelf", thing: "Spare phone charger", blurb: "Anywhere you put things.", Icon: IconBox },
 ];
 

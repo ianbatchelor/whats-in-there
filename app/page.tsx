@@ -12,11 +12,11 @@ import { isConfigured } from "@/lib/config";
 import { useSession } from "@/lib/hooks/useSession";
 import { useHousehold } from "@/lib/hooks/useHousehold";
 import { friendlyError } from "@/lib/supabase/errors";
-import { SECTION_LABELS, countThings, groupPlaces, sectionOf, usedSections, type PlaceSection } from "@/lib/domain/places";
+import { SECTION_LABELS, countThings, groupPlaces, isKeepPlace, isUseUpPlace, sectionOf, usedSections, type PlaceSection } from "@/lib/domain/places";
 import { timeAgo } from "@/lib/domain/dates";
 import { activitySentence } from "@/lib/domain/activity";
 import type { StockItem } from "@/lib/domain/stock";
-import { loadActivity, loadAttention, loadUseFirst, type Activity } from "@/lib/stock";
+import { loadActivity, loadAttention, loadLent, loadUseFirst, type Activity } from "@/lib/stock";
 import { itemStatus, needsAttention } from "@/lib/domain/status";
 import { tookOutMessage, useQuickTake } from "@/components/stock/useQuickTake";
 import { Splash } from "@/components/ui/Screen";
@@ -48,6 +48,7 @@ function Home({ session }: { session: Session }) {
   const [useFirst, setUseFirst] = useState<StockItem[]>([]);
   const [activity, setActivity] = useState<Activity[]>([]);
   const [attention, setAttention] = useState<StockItem[]>([]);
+  const [lent, setLent] = useState<StockItem[]>([]);
   const [showAll, setShowAll] = useState(false);
   const [section, setSection] = useState<PlaceSection | "all">("all");
   const [open, setOpen] = useState<StockItem | null>(null);
@@ -55,12 +56,14 @@ function Home({ session }: { session: Session }) {
   const loadExtras = useCallback(async () => {
     if (!current) return;
     try {
-      const [first, acts, due] = await Promise.all([
-        loadUseFirst(current.householdId, 8),
+      const [first, acts, due, out] = await Promise.all([
+        loadUseFirst(current.householdId, 60),
         loadActivity(current.householdId, 40),
         loadAttention(current.householdId),
+        loadLent(current.householdId).catch(() => []),
       ]);
       setUseFirst(first);
+      setLent(out);
       setActivity(acts);
       setAttention(due.filter((i) => needsAttention(i)));
     } catch (e) {
@@ -105,8 +108,17 @@ function Home({ session }: { session: Session }) {
   const late = [...lateIn.values()].reduce((a, b) => a + b, 0);
   const sumOver = (m: Map<string, number>, ids: { id: string }[]) => ids.reduce((n, p) => n + (m.get(p.id) ?? 0), 0);
   const dueIds = new Set(attention.map((i) => i.id));
-  // "Longest stored" is what's left of the use-first order once dated things have their own card.
-  const oldest = useFirst.filter((i) => !dueIds.has(i.id)).slice(0, 4);
+  // "Longest stored" is what's left of the use-first order once dated things have their own card. Only
+  // places things get used up from count: photo albums in the attic are meant to stay there.
+  const inUseUpPlace = (i: StockItem) => {
+    const type = placeById.get(i.locationId)?.type;
+    return !!type && isUseUpPlace(type);
+  };
+  const oldest = useFirst.filter((i) => !dueIds.has(i.id) && inUseUpPlace(i)).slice(0, 4);
+  const keptIn = (i: StockItem) => {
+    const type = placeById.get(i.locationId)?.type;
+    return !!type && isKeepPlace(type);
+  };
   const shownAttention = showAll ? attention : attention.slice(0, 4);
   const firstName = hh.me?.displayName.trim().split(/\s+/)[0];
 
@@ -116,6 +128,8 @@ function Home({ session }: { session: Session }) {
       index={i}
       item={item}
       place={placeById.get(item.locationId)?.name}
+      placeType={placeById.get(item.locationId)?.type}
+      keep={keptIn(item)}
       addedBy={item.addedBy ? who(item.addedBy) : ""}
       onOpen={setOpen}
       onTakeOne={takeOne}
@@ -283,15 +297,23 @@ function Home({ session }: { session: Session }) {
         </section>
       ) : null}
 
+      {lent.length > 0 ? (
+        <section aria-labelledby="lent-h" className="flex flex-col gap-2.5">
+          <SectionLabel id="lent-h">Lent out</SectionLabel>
+          <ItemList>{lent.map(row)}</ItemList>
+        </section>
+      ) : null}
+
       <AddPlaceSheet open={adding} onClose={() => setAdding(false)} householdId={current.householdId} onAdded={refresh} />
       <TakeOutSheet
         item={open}
         placeName={open ? placeById.get(open.locationId)?.name : undefined}
+        keep={open ? keptIn(open) : false}
         names={names}
         onClose={() => setOpen(null)}
         onTaken={(before, after, amount, movementId) => {
           refresh();
-          announce(tookOutMessage(before, after, amount), movementId);
+          announce(tookOutMessage(before, after, amount, keptIn(before)), movementId);
         }}
         onChanged={(message, movementId) => {
           refresh();

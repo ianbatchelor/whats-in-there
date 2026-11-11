@@ -6,7 +6,7 @@ import type { StockUnit } from "@/lib/domain/quantity";
 import { loadPlaces, type LocationType } from "@/lib/household";
 
 const COLUMNS =
-  "id, location_id, product_name, brand, category, quantity, unit, weight_value, weight_unit, use_by_date, best_before_date, frozen_at, added_at, added_by, notes, image_path, version";
+  "id, location_id, product_name, brand, category, quantity, unit, weight_value, weight_unit, use_by_date, best_before_date, frozen_at, added_at, added_by, notes, image_path, version, lent_to, lent_on";
 
 type Row = Record<string, unknown>;
 
@@ -28,6 +28,8 @@ function toItem(r: Row): StockItem {
     addedBy: (r.added_by as string | null) ?? null,
     notes: (r.notes as string | null) ?? null,
     imagePath: (r.image_path as string | null) ?? null,
+    lentTo: (r.lent_to as string | null | undefined) ?? null,
+    lentOn: (r.lent_on as string | null | undefined) ?? null,
     version: r.version as number,
   };
 }
@@ -202,6 +204,44 @@ export async function loadPlacesBeside(locationId: string): Promise<{ id: string
   return places.map((p) => ({ id: p.id, name: p.name, type: p.type, imagePath: p.imagePath ?? null }));
 }
 
+/** Lends the thing to someone, or marks it back home when `to` is empty. */
+export async function lendItem(item: StockItem, to: string | null): Promise<StockItem> {
+  const { data, error } = await supabase().rpc("lend_stock", { p_item: item.id, p_to: to?.trim() || null, p_expected_version: item.version });
+  if (error) throw error;
+  return toItem(data as Row);
+}
+
+/** Everything the household has lent out, longest away first. */
+export async function loadLent(householdId: string): Promise<StockItem[]> {
+  const { data, error } = await supabase()
+    .from("stock_items")
+    .select(COLUMNS)
+    .eq("household_id", householdId)
+    .eq("status", "in_stock")
+    .not("lent_to", "is", null)
+    .order("lent_on")
+    .limit(50);
+  if (error) throw error;
+  return (data ?? []).map(toItem);
+}
+
+/** Names things have been lent to before, most recent first, to offer again. Only your households' history is visible. */
+export async function loadLendNames(): Promise<string[]> {
+  const { data, error } = await supabase()
+    .from("stock_movements")
+    .select("notes")
+    .eq("action", "lend")
+    .order("created_at", { ascending: false })
+    .limit(40);
+  if (error) return [];
+  const seen = new Set<string>();
+  for (const r of data ?? []) {
+    const n = (r.notes as string | null)?.trim();
+    if (n && ![...seen].some((s) => s.toLowerCase() === n.toLowerCase())) seen.add(n);
+  }
+  return [...seen].slice(0, 6);
+}
+
 export async function undo(movementId: string): Promise<void> {
   const { error } = await supabase().rpc("undo_movement", { p_movement: movementId });
   if (error) throw error;
@@ -209,7 +249,7 @@ export async function undo(movementId: string): Promise<void> {
 
 export type Movement = {
   id: string;
-  action: "add" | "remove" | "adjust" | "move" | "undo";
+  action: "add" | "remove" | "adjust" | "move" | "undo" | "lend" | "return";
   delta: number;
   after: number;
   actor: string | null;
@@ -218,6 +258,8 @@ export type Movement = {
   edited: boolean;
   /** For moves: where it went. */
   toLocationId: string | null;
+  /** For lending: who it went to, or who gave it back. */
+  person: string | null;
 };
 
 /**
@@ -241,6 +283,7 @@ function movementFields(r: Row) {
   return {
     edited: r.action === "adjust" && r.notes === "edited",
     toLocationId: (r.to_location_id as string | null | undefined) ?? null,
+    person: r.action === "lend" || r.action === "return" ? ((r.notes as string | null | undefined) ?? null) : null,
   };
 }
 

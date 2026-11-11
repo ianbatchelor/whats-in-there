@@ -58,12 +58,16 @@ export default function PrivacyPage() {
         books and <b>Open Food Facts</b> for food and household products. Only the barcode&apos;s digits are sent, with nothing about
         you.
       </p>
+      <p>
+        To show book covers, your device asks <b>Open Library</b> for the cover of each book on your list, using only the book&apos;s
+        title and author, and then loads the cover picture from Open Library. Nothing about you or your household is sent with it.
+      </p>
 
       <h2>Companies that help run the app</h2>
       <ul>
         <li><b>Supabase</b> stores your account, households and photos, in Europe.</li>
         <li><b>Anthropic</b> reads photos you choose to scan, as above.</li>
-        <li><b>Open Library</b> and <b>Open Food Facts</b> are asked what a scanned barcode is, as above.</li>
+        <li><b>Open Library</b> and <b>Open Food Facts</b> are asked what a scanned barcode is, and Open Library for book covers, as above.</li>
         <li><b>Resend</b> sends the sign-in code emails.</li>
         <li><b>Vercel</b> hosts the website.</li>
         <li><b>Cloudflare</b> may check that sign-ins come from a person and not a bot.</li>

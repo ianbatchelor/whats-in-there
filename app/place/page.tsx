@@ -9,20 +9,22 @@ import { friendlyError } from "@/lib/supabase/errors";
 import { useQueryParam } from "@/lib/hooks/useQueryParam";
 import { loadMembers, loadPlace, type LocationType } from "@/lib/household";
 import type { StockItem } from "@/lib/domain/stock";
-import { formatQuantity } from "@/lib/domain/quantity";
 import { loadItems, loadPlaceLastActivity } from "@/lib/stock";
-import { countThings } from "@/lib/domain/places";
+import { countThings, isKeepPlace, isUseUpPlace } from "@/lib/domain/places";
 import { itemStatus, needsAttention } from "@/lib/domain/status";
 import { AppShell, SectionLabel } from "@/components/AppShell";
 import { Screen, Splash } from "@/components/ui/Screen";
 import { Button } from "@/components/ui/Button";
 import { Notice } from "@/components/ui/Notice";
 import { Toast } from "@/components/ui/Toast";
-import { IconChevronLeft, IconPencil, IconPlus, IconSearch, IconStack, IconSticker } from "@/components/ui/icons";
+import { IconChevronLeft, IconGrid, IconList, IconPencil, IconPlus, IconSearch, IconStack, IconSticker } from "@/components/ui/icons";
 import { PlacePhoto } from "@/components/art/PlacePhoto";
 import { timeAgo } from "@/lib/domain/dates";
 import { placeType } from "@/components/home/placeTypes";
 import { ItemList, ItemListSkeleton, ItemRow } from "@/components/stock/ItemRow";
+import { ItemGrid } from "@/components/stock/ItemGrid";
+import { tookOutMessage } from "@/components/stock/useQuickTake";
+import { usePlaceView } from "@/components/stock/usePlaceView";
 import { useUndoToast } from "@/components/stock/useUndoToast";
 import { useQuickTake } from "@/components/stock/useQuickTake";
 import { AddItemSheet } from "@/components/stock/AddItemSheet";
@@ -32,9 +34,6 @@ import { TakeOutSheet } from "@/components/stock/TakeOutSheet";
 import { EditPlaceSheet } from "@/components/stock/EditPlaceSheet";
 import { StickerSheet } from "@/components/stickers/StickerSheet";
 import { useCollapsingHeader } from "@/components/common/useCollapsingHeader";
-
-/** Places where the order is "use first" (by date), not sections. */
-const USE_FIRST_PLACES: LocationType[] = ["freezer", "fridge", "pantry", "wine", "garden"];
 
 type PlaceInfo = { id: string; name: string; type: LocationType; householdId: string; imagePath?: string | null };
 
@@ -58,6 +57,9 @@ function Place() {
   const [open, setOpen] = useState<StockItem | null>(null);
   const [category, setCategory] = useState<string | null>(null);
   const [last, setLast] = useState<{ actor: string | null; at: string } | null>(null);
+  // Pictures first on a bookshelf, or wherever most things have a photo.
+  const pictures = place?.type === "bookshelf" || (!!items && items.length > 0 && items.filter((i) => i.imagePath).length * 2 >= items.length);
+  const [view, setView] = usePlaceView(place?.id ?? null, pictures);
   const { header: heroHeader, bar: heroBar, big: heroBig, small: heroSmall, shade: heroShade } = useCollapsingHeader(place !== null);
 
   const refresh = useCallback(async (locationId: string) => {
@@ -129,7 +131,7 @@ function Place() {
   // Shelves, rails and boxes read best in sections (Fiction, Coats…) in A to Z order; food stays
   // in use-first order. Sections show only when nothing is being searched or filtered.
   const sections = useMemo(() => {
-    if (!place || !items || USE_FIRST_PLACES.includes(place.type) || filter.trim() || category) return null;
+    if (!place || !items || isUseUpPlace(place.type) || filter.trim() || category) return null;
     const cats = items.map((i) => i.category?.trim() ?? "").filter(Boolean);
     if (new Set(cats).size < 2) return null;
     return groupByCategory(items, (i) => ({ name: i.productName, detail: i.brand ?? "", category: i.category?.trim() || "Other" }), looksLikeBooks(cats));
@@ -167,6 +169,9 @@ function Place() {
   if (!place) return <Splash />;
 
   const info = placeType(place.type);
+  const keep = isKeepPlace(place.type);
+  const grid = keep && view === "grid";
+  const lentHere = (items ?? []).filter((i) => i.lentTo).length;
   const count = items?.length ?? 0;
   const filtering = filter.trim() !== "" || category !== null;
   const due = (items ?? []).filter((i) => needsAttention(i));
@@ -178,6 +183,7 @@ function Place() {
     items ? countThings(count) : null,
     lateHere > 0 ? `${lateHere} past ${lateHere === 1 ? "its date" : "a date"}` : null,
     soonHere > 0 ? `${soonHere} to use soon` : null,
+    lentHere > 0 ? `${lentHere} lent out` : null,
     last ? `updated ${timeAgo(last.at)}` : null,
   ]
     .filter(Boolean)
@@ -245,8 +251,18 @@ function Place() {
                 className="min-w-0 flex-1 bg-transparent text-base placeholder:text-mute focus:outline-none focus-visible:outline-none"
               />
             </label>
+            {keep ? (
+              <button
+                onClick={() => setView(grid ? "list" : "grid")}
+                aria-label={grid ? "Show as a list" : "Show as pictures"}
+                title={grid ? "Show as a list" : "Show as pictures"}
+                className="grid size-12 shrink-0 place-items-center rounded-xl border border-line bg-card text-fg transition hover:bg-sunk active:scale-95"
+              >
+                {grid ? <IconList className="size-5" /> : <IconGrid className="size-5" />}
+              </button>
+            ) : null}
             <Button className="min-h-12 shrink-0 px-4" onClick={() => setAdding(true)}>
-              <IconPlus /> Add item
+              <IconPlus /> Add{keep ? <span className="max-sm:sr-only"> item</span> : " item"}
             </Button>
           </div>
           {categories.length > 1 ? (
@@ -302,21 +318,50 @@ function Place() {
             <SectionLabel id={`sec-${n}`}>
               {sec.category} <span className="font-semibold text-mute">· {sec.items.length}</span>
             </SectionLabel>
-            <ItemList>
-              {sec.items.map((item, i) => (
-                <ItemRow key={item.id} index={i} item={item} addedBy={(item.addedBy && names.get(item.addedBy)) || ""} onOpen={setOpen} onTakeOne={takeOne} taking={taking === item.id} />
-              ))}
-            </ItemList>
+            {grid ? (
+              <ItemGrid items={sec.items} placeType={place.type} onOpen={setOpen} />
+            ) : (
+              <ItemList>
+                {sec.items.map((item, i) => (
+                  <ItemRow
+                    key={item.id}
+                    index={i}
+                    item={item}
+                    keep={keep}
+                    placeType={place.type}
+                    addedBy={(item.addedBy && names.get(item.addedBy)) || ""}
+                    onOpen={setOpen}
+                    onTakeOne={takeOne}
+                    taking={taking === item.id}
+                  />
+                ))}
+              </ItemList>
+            )}
           </section>
         ))
       ) : (
         <section aria-labelledby="items-h" className="flex flex-col gap-2.5">
           <SectionLabel id="items-h">{filtering ? countThings(shown.length) : ["freezer", "fridge", "pantry"].includes(place.type) ? "Use first" : "In here"}</SectionLabel>
-          <ItemList>
-            {shown.map((item, i) => (
-              <ItemRow key={item.id} index={i} item={item} addedBy={(item.addedBy && names.get(item.addedBy)) || ""} onOpen={setOpen} onTakeOne={takeOne} taking={taking === item.id} />
-            ))}
-          </ItemList>
+          {grid ? (
+            <ItemGrid items={shown} placeType={place.type} onOpen={setOpen} highlight={filter} />
+          ) : (
+            <ItemList>
+              {shown.map((item, i) => (
+                <ItemRow
+                  key={item.id}
+                  index={i}
+                  item={item}
+                  keep={keep}
+                  placeType={place.type}
+                  highlight={filter}
+                  addedBy={(item.addedBy && names.get(item.addedBy)) || ""}
+                  onOpen={setOpen}
+                  onTakeOne={takeOne}
+                  taking={taking === item.id}
+                />
+              ))}
+            </ItemList>
+          )}
         </section>
       )}
 
@@ -344,12 +389,12 @@ function Place() {
       ) : null}
       <TakeOutSheet
         item={open}
+        keep={keep}
         names={names}
         onClose={() => setOpen(null)}
         onTaken={(before, after, amount, movementId) => {
           refresh(place.id);
-          const left = after.quantity > 0 ? `, ${formatQuantity(after.quantity, after.unit)} left` : ", all gone";
-          announce(`Took out ${formatQuantity(amount, before.unit)} of ${before.productName}${left}`, movementId);
+          announce(tookOutMessage(before, after, amount, keep), movementId);
         }}
         onChanged={(message, movementId) => {
           refresh(place.id);

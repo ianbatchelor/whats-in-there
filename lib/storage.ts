@@ -23,4 +23,6 @@ export const KEYS = {
   searches: "wit.searches",
   accountDeleted: "wit.accountDeleted",
   aiConsent: "wit.aiConsent",
+  covers: "wit.covers",
+  placeView: "wit.placeView",
 } as const;

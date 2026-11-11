@@ -26,6 +26,9 @@ import {
   IconWrench,
 } from "@/components/ui/icons";
 import { useItemPhoto } from "@/lib/itemPhotos";
+import { useBookCover } from "@/lib/covers";
+import { isBook } from "@/lib/domain/covers";
+import type { LocationType } from "@/lib/household";
 import { useFadeIn } from "@/components/ui/useFadeIn";
 
 /**
@@ -64,7 +67,7 @@ const TONES: Record<StatusTone, string> = {
   late: "bg-late-bg text-late",
   soon: "bg-soon-bg text-soon",
   ok: "bg-ok-bg text-ok",
-  plain: "bg-sunk text-mute",
+  plain: "bg-sunk text-fg/80",
 };
 
 /** The small coloured label that says whether a thing needs attention. */
@@ -78,7 +81,7 @@ export function StatusPill({ item, className = "" }: { item: StockItem; classNam
   );
 }
 
-const KINDS: Record<ItemKind, { Icon: (p: { className?: string }) => React.ReactNode; tint: string }> = {
+export const KINDS: Record<ItemKind, { Icon: (p: { className?: string }) => React.ReactNode; tint: string }> = {
   meat: { Icon: IconMeat, tint: "bg-[#f6e7e2] text-[#97452f] dark:bg-[#3a221c] dark:text-[#eba58f]" },
   fish: { Icon: IconFish, tint: "bg-[#e4eef3] text-[#3b6781] dark:bg-[#1c2c36] dark:text-[#9cc4da]" },
   dairy: { Icon: IconMilk, tint: "bg-[#eaeff5] text-[#4a6384] dark:bg-[#20283a] dark:text-[#a9bcd8]" },
@@ -96,9 +99,24 @@ const KINDS: Record<ItemKind, { Icon: (p: { className?: string }) => React.React
   thing: { Icon: IconBox, tint: "bg-sunk text-mute" },
 };
 
-/** The item's own photo when it has one; otherwise a small drawing of the kind of thing it is. */
-export function ItemTile({ name, category, imagePath, size = 44 }: { name: string; category?: string | null; imagePath?: string | null; size?: number }) {
-  const photo = useItemPhoto(imagePath);
+/** The item's own photo when it has one, then a book's cover; otherwise a small drawing of the kind of thing it is. */
+export function ItemTile({
+  name,
+  category,
+  imagePath,
+  size = 44,
+  book = null,
+}: {
+  name: string;
+  category?: string | null;
+  imagePath?: string | null;
+  size?: number;
+  /** Look for a cover with this title and author, when there's no photo. */
+  book?: { title: string; author: string | null } | null;
+}) {
+  const own = useItemPhoto(imagePath);
+  const cover = useBookCover(imagePath ? null : book);
+  const photo = own ?? cover;
   const [broken, setBroken] = useState<string | null>(null);
   const { seen, onLoad, className: fadeClass } = useFadeIn();
   if (photo && broken !== photo) {
@@ -139,9 +157,15 @@ export function ItemRow({
   addedBy,
   index = 0,
   highlight,
+  keep = false,
+  placeType,
 }: {
   item: StockItem;
   place?: string;
+  /** The kind of place it's in, so books on a bookshelf can show their cover. */
+  placeType?: LocationType;
+  /** It's in a place for keeping things: no quick minus, and no "1 item" when there's just the one. */
+  keep?: boolean;
   /** Search words to show in bold. */
   highlight?: string;
   onOpen: (item: StockItem) => void;
@@ -153,7 +177,8 @@ export function ItemRow({
 }) {
   const qty = roundQty(item.quantity);
   const status = itemStatus(item);
-  const quick = onTakeOne && isCounted(item.unit) && qty >= 1;
+  const quick = !keep && onTakeOne && isCounted(item.unit) && qty >= 1;
+  const showQty = !(keep && isCounted(item.unit) && qty === 1);
   const unitWord = formatQuantity(1, item.unit).replace(/^[\d.]+ /, "");
   // Found by its brand ("Cathedral City" for the cheddar): show the brand first so the reason is visible.
   const q = highlight?.trim().toLowerCase();
@@ -163,15 +188,16 @@ export function ItemRow({
       <button
         onClick={() => onOpen(item)}
         className="flex min-w-0 flex-1 items-center gap-3 py-2.5 pr-2 pl-3.5 text-left transition hover:bg-sunk/70 active:bg-sunk"
-        aria-label={`${item.productName}, ${formatQuantity(item.quantity, item.unit)}${place ? `, in ${place}` : ""}${status ? `. ${status.detail}` : ""}. See details`}
+        aria-label={`${item.productName}${showQty ? `, ${formatQuantity(item.quantity, item.unit)}` : ""}${place ? `, in ${place}` : ""}${item.lentTo ? `, lent to ${item.lentTo}` : ""}${status ? `. ${status.detail}` : ""}. See details`}
       >
-        <ItemTile name={item.productName} category={item.category} imagePath={item.imagePath} />
+        <ItemTile name={item.productName} category={item.category} imagePath={item.imagePath} book={bookOf(item, placeType)} />
         <span className="min-w-0 flex-1">
           <span className="block truncate text-[15px] font-semibold">
             <Highlight text={item.productName} match={highlight} />
           </span>
           <span className="mt-0.5 flex items-center gap-2">
             <StatusPill item={item} className="lg:hidden" />
+            {item.lentTo ? <LentPill item={item} /> : null}
             <span className="min-w-0 truncate text-[13px] text-mute">
               <Highlight text={itemContext(item, place, brandFirst)} match={brandFirst ? highlight : undefined} />
             </span>
@@ -181,10 +207,12 @@ export function ItemRow({
         <span className="hidden w-36 shrink-0 justify-end lg:flex">
           <StatusPill item={item} />
         </span>
-        <span className="min-w-9 shrink-0 text-right leading-tight lg:w-20">
-          <span className="block text-[15px] font-semibold tabular-nums">{isCounted(item.unit) ? qty : formatQuantity(qty, item.unit)}</span>
-          {isCounted(item.unit) ? <span className="block text-[12px] text-mute">{formatQuantity(qty, item.unit).replace(/^[\d.]+ /, "")}</span> : null}
-        </span>
+        {showQty ? (
+          <span className="min-w-9 shrink-0 text-right leading-tight lg:w-20">
+            <span className="block text-[15px] font-semibold tabular-nums">{isCounted(item.unit) ? qty : formatQuantity(qty, item.unit)}</span>
+            {isCounted(item.unit) ? <span className="block text-[12px] text-mute">{formatQuantity(qty, item.unit).replace(/^[\d.]+ /, "")}</span> : null}
+          </span>
+        ) : null}
         {quick ? null : <IconChevronRight className="mr-1.5 size-4 shrink-0 text-mute/50" />}
       </button>
       {quick ? (
@@ -199,6 +227,25 @@ export function ItemRow({
         </button>
       ) : null}
     </li>
+  );
+}
+
+/** The title and author to find a cover with, for things that are books. */
+export function bookOf(item: StockItem, placeType: LocationType | undefined): { title: string; author: string | null } | null {
+  return isBook(item, placeType) ? { title: item.productName, author: item.brand } : null;
+}
+
+/** "With Mum since 3 Oct", for something that's been lent out. */
+export function LentPill({ item, className = "" }: { item: StockItem; className?: string }) {
+  if (!item.lentTo) return null;
+  return (
+    <span
+      title={item.lentOn ? `Lent to ${item.lentTo} on ${formatDay(item.lentOn)}` : `Lent to ${item.lentTo}`}
+      className={`max-w-[60%] shrink-0 truncate rounded-full bg-soon-bg px-2 py-[3px] text-[12.5px] leading-tight font-semibold text-soon ${className}`}
+    >
+      With {item.lentTo}
+      {item.lentOn ? <span className="font-normal"> since {formatDay(item.lentOn, { year: false })}</span> : null}
+    </span>
   );
 }
 
