@@ -25,4 +25,6 @@ export const KEYS = {
   aiConsent: "wit.aiConsent",
   covers: "wit.covers",
   placeView: "wit.placeView",
+  seasonDone: "wit.seasonDone",
+  seasonSnooze: "wit.seasonSnooze",
 } as const;

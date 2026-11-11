@@ -42,6 +42,7 @@ import { listPreview } from "@/lib/domain/shopping";
 import { AddPlaceSheet } from "@/components/home/AddPlaceSheet";
 import { AddPlaceTile, GroupCard } from "@/components/home/PlaceCard";
 import { FirstThingsTip, StarterPlaces } from "@/components/home/StarterPlaces";
+import { SeasonalReminders } from "@/components/home/SeasonalReminders";
 import { ItemList, ItemRow } from "@/components/stock/ItemRow";
 import { TakeOutSheet } from "@/components/stock/TakeOutSheet";
 import { useUndoToast } from "@/components/stock/useUndoToast";
@@ -94,7 +95,7 @@ function Home({ session }: { session: Session }) {
     loadExtras();
   }, [loadExtras, version]);
 
-  const { toast, clear, announce } = useUndoToast(() => {
+  const { toast, clear, announce, show } = useUndoToast(() => {
     refresh();
   });
   const { taking, takeOne } = useQuickTake(announce, refresh);
@@ -344,6 +345,8 @@ function Home({ session }: { session: Session }) {
           <IconChevronRight className="size-4 shrink-0 text-mute/60" />
         </Link>
       ) : null}
+
+      {places && places.length > 0 ? <SeasonalReminders householdId={current.householdId} places={places} onToast={show} /> : null}
 
       <section className="flex flex-col gap-3" aria-labelledby="places-h">
         <h2 id="places-h" className="sr-only">
