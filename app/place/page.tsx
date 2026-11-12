@@ -9,7 +9,7 @@ import { friendlyError } from "@/lib/supabase/errors";
 import { useQueryParam } from "@/lib/hooks/useQueryParam";
 import { loadMembers, loadPlace, loadPlaces, type LocationType, type Place as PlaceRow } from "@/lib/household";
 import type { StockItem } from "@/lib/domain/stock";
-import { loadItems, loadPlaceLastActivity } from "@/lib/stock";
+import { loadItems, loadPeeks, loadPlaceLastActivity } from "@/lib/stock";
 import { boxesIn, countThings, isKeepPlace, isUseUpPlace } from "@/lib/domain/places";
 import { itemStatus, needsAttention } from "@/lib/domain/status";
 import { AppShell, SectionLabel } from "@/components/AppShell";
@@ -19,6 +19,8 @@ import { Notice } from "@/components/ui/Notice";
 import { Toast } from "@/components/ui/Toast";
 import { IconChevronLeft, IconGrid, IconList, IconPencil, IconPlus, IconSearch, IconStack, IconSticker } from "@/components/ui/icons";
 import { PlacePhoto } from "@/components/art/PlacePhoto";
+import { BoxCover } from "@/components/place/BoxCover";
+import { pickPeeks, toPeek, type Peek } from "@/lib/domain/boxLook";
 import { timeAgo } from "@/lib/domain/dates";
 import { placeType } from "@/components/home/placeTypes";
 import { ItemList, ItemListSkeleton, ItemRow } from "@/components/stock/ItemRow";
@@ -67,6 +69,8 @@ function Place() {
   /** Every place in the household, for the boxes inside this one and the place this one is in. */
   const [family, setFamily] = useState<PlaceRow[] | null>(null);
   const [addingBox, setAddingBox] = useState(false);
+  /** A few things from each box inside this place, for their covers. */
+  const [peeks, setPeeks] = useState<Map<string, Peek[]> | null>(null);
   // Pictures first on a bookshelf, or wherever most things have a photo.
   const pictures = place?.type === "bookshelf" || (!!items && items.length > 0 && items.filter((i) => i.imagePath).length * 2 >= items.length);
   const [view, setView] = usePlaceView(place?.id ?? null, pictures);
@@ -162,6 +166,28 @@ function Place() {
     return groupByCategory(items, (i) => ({ name: i.productName, detail: i.brand ?? "", category: i.category?.trim() || "Other" }), looksLikeBooks(cats));
   }, [place, items, filter, category]);
 
+  // Covers for the boxes inside this place: one query for a few things from each. Reloaded when a
+  // box is added, renamed or gets more things (its count changes).
+  const boxKey =
+    place && family && !place.parentId
+      ? boxesIn(family, place.id)
+          .map((b) => `${b.id}:${b.itemCount}`)
+          .join(",")
+      : "";
+  useEffect(() => {
+    if (!boxKey) {
+      setPeeks(null); // eslint-disable-line react-hooks/set-state-in-effect
+      return;
+    }
+    let live = true;
+    loadPeeks(boxKey.split(",").map((k) => k.split(":")[0]!))
+      .then((m) => live && setPeeks(m))
+      .catch(() => live && setPeeks(new Map()));
+    return () => {
+      live = false;
+    };
+  }, [boxKey]);
+
   const { toast, clear, announce } = useUndoToast(() => {
     if (place) refresh(place.id);
   });
@@ -242,7 +268,20 @@ function Place() {
         className="reveal relative z-20 -mx-4 -mt-[max(16px,env(safe-area-inset-top))] overflow-hidden max-sm:sticky max-sm:top-0 max-sm:shadow-[0_10px_24px_-18px_rgba(0,0,0,0.5)] sm:mx-0 sm:mt-0 sm:rounded-[24px]"
       >
         <div className="h-56 sm:h-64 lg:h-72">
-          <PlacePhoto type={place.type} imagePath={place.imagePath} variant="wide" eager className="reveal-img" />
+          {place.parentId ? (
+            <BoxCover
+              id={place.id}
+              type={place.type}
+              imagePath={place.imagePath}
+              peeks={items ? pickPeeks(items.map(toPeek)) : null}
+              total={items?.length ?? 0}
+              wide
+              eager
+              className="reveal-img"
+            />
+          ) : (
+            <PlacePhoto type={place.type} imagePath={place.imagePath} variant="wide" eager className="reveal-img" />
+          )}
         </div>
         <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/0 to-black/70" aria-hidden="true" />
         {/* Darkens the photo as the header shrinks, so the small title stays readable. */}
@@ -348,7 +387,12 @@ function Place() {
           </SectionLabel>
           <ul className="grid grid-cols-2 gap-x-3 gap-y-4 sm:grid-cols-4">
             {boxes.map((b, i) => (
-              <PlaceCard key={b.id} place={b} index={i} />
+              <PlaceCard
+                key={b.id}
+                place={b}
+                index={i}
+                cover={<BoxCover id={b.id} type={b.type} imagePath={b.imagePath} peeks={peeks ? (peeks.get(b.id) ?? []) : null} total={b.itemCount} />}
+              />
             ))}
             <AddPlaceTile onClick={() => setAddingBox(true)} label="Add a box or shelf" />
           </ul>
