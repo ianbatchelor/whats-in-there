@@ -16,6 +16,7 @@ function Tile({
   soon = 0,
   index = 0,
   feature = false,
+  cover,
 }: {
   href: string;
   type: LocationType;
@@ -26,12 +27,14 @@ function Tile({
   soon?: number;
   index?: number;
   feature?: boolean;
+  /** Drawn instead of the place photo, e.g. a box's own colour and contents. */
+  cover?: React.ReactNode;
 }) {
   return (
     <li className={`rise ${feature ? "col-span-2 sm:col-span-1" : ""}`} style={{ animationDelay: `${Math.min(index, 8) * 40}ms` }}>
       <Link href={href} className="group flex flex-col gap-2">
         <span className={`lift relative block overflow-hidden rounded-2xl bg-sunk ${feature ? "aspect-[2/1] sm:aspect-[4/3]" : "aspect-[4/3]"}`}>
-          <PlacePhoto type={type} imagePath={imagePath} className="transition duration-700 ease-out group-hover:scale-[1.04]" eager={index < 6} />
+          {cover ?? <PlacePhoto type={type} imagePath={imagePath} className="transition duration-700 ease-out group-hover:scale-[1.04]" eager={index < 6} />}
           {late > 0 || soon > 0 ? <UrgencyBadge late={late} soon={soon} /> : null}
         </span>
         <span className="min-w-0 px-0.5">
@@ -50,7 +53,9 @@ function UrgencyBadge({ late, soon }: { late: number; soon: number }) {
       <span className={`size-1.5 shrink-0 rounded-full ${late > 0 ? "bg-[#c4502c]" : "bg-[#c98a14]"}`} aria-hidden="true" />
       {late > 0 ? (
         <>
-          <span className="text-[#a63b1a]">{late} past {late === 1 ? "its date" : "a date"}</span>
+          <span className="text-[#a63b1a]">
+            {late} past {late === 1 ? "its date" : "a date"}
+          </span>
           {soon > 0 ? <span className="text-[#855a0b]">· {soon} soon</span> : null}
         </>
       ) : (
@@ -61,7 +66,19 @@ function UrgencyBadge({ late, soon }: { late: number; soon: number }) {
 }
 
 /** A kind of place on My Places. One place opens it directly; several open the list of them. */
-export function GroupCard({ group, late = 0, soon = 0, index = 0, feature = false }: { group: PlaceGroup; late?: number; soon?: number; index?: number; feature?: boolean }) {
+export function GroupCard({
+  group,
+  late = 0,
+  soon = 0,
+  index = 0,
+  feature = false,
+}: {
+  group: PlaceGroup;
+  late?: number;
+  soon?: number;
+  index?: number;
+  feature?: boolean;
+}) {
   const info = placeType(group.type);
   const single = group.places.length === 1 ? group.places[0]! : null;
   return (
@@ -72,7 +89,9 @@ export function GroupCard({ group, late = 0, soon = 0, index = 0, feature = fals
       title={single ? single.name : info.plural}
       sub={
         single
-          ? [countThings(single.itemCount), single.boxCount ? `${single.boxCount} ${single.boxCount === 1 ? "box" : "boxes"}` : null].filter(Boolean).join(" · ")
+          ? [countThings(single.itemCount), single.boxCount ? `${single.boxCount} ${single.boxCount === 1 ? "box" : "boxes"}` : null]
+              .filter(Boolean)
+              .join(" · ")
           : `${countPlaces(group.places.length, group.type)} · ${countThings(group.itemCount)}`
       }
       late={late}
@@ -83,8 +102,29 @@ export function GroupCard({ group, late = 0, soon = 0, index = 0, feature = fals
   );
 }
 
-export function PlaceCard({ place, soon = 0, index = 0 }: { place: { id: string; name: string; type: LocationType; itemCount: number; imagePath?: string | null }; soon?: number; index?: number }) {
-  return <Tile href={`/place/?id=${place.id}`} type={place.type} imagePath={place.imagePath} title={place.name} sub={countThings(place.itemCount)} soon={soon} index={index} />;
+export function PlaceCard({
+  place,
+  soon = 0,
+  index = 0,
+  cover,
+}: {
+  place: { id: string; name: string; type: LocationType; itemCount: number; imagePath?: string | null };
+  soon?: number;
+  index?: number;
+  cover?: React.ReactNode;
+}) {
+  return (
+    <Tile
+      href={`/place/?id=${place.id}`}
+      type={place.type}
+      imagePath={place.imagePath}
+      title={place.name}
+      sub={countThings(place.itemCount)}
+      soon={soon}
+      index={index}
+      cover={cover}
+    />
+  );
 }
 
 export function AddPlaceTile({ onClick, label = "Add a place" }: { onClick: () => void; label?: string }) {

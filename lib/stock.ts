@@ -4,6 +4,7 @@ import { SOON_DAYS, addDays, likePattern, sortUseFirst } from "@/lib/domain/stoc
 import { todayIso } from "@/lib/domain/dates";
 import type { StockUnit } from "@/lib/domain/quantity";
 import { loadPlaces, type LocationType } from "@/lib/household";
+import { pickPeeks, type Peek } from "@/lib/domain/boxLook";
 
 const COLUMNS =
   "id, location_id, product_name, brand, category, quantity, unit, weight_value, weight_unit, use_by_date, best_before_date, frozen_at, added_at, added_by, notes, image_path, version, lent_to, lent_on";
@@ -229,12 +230,7 @@ export async function loadLent(householdId: string): Promise<StockItem[]> {
 
 /** Names things have been lent to before, most recent first, to offer again. Only your households' history is visible. */
 export async function loadLendNames(): Promise<string[]> {
-  const { data, error } = await supabase()
-    .from("stock_movements")
-    .select("notes")
-    .eq("action", "lend")
-    .order("created_at", { ascending: false })
-    .limit(40);
+  const { data, error } = await supabase().from("stock_movements").select("notes").eq("action", "lend").order("created_at", { ascending: false }).limit(40);
   if (error) return [];
   const seen = new Set<string>();
   for (const r of data ?? []) {
@@ -316,7 +312,10 @@ export async function loadActivity(householdId: string, limit = 60): Promise<Act
   const data = await selectMovements((extra) =>
     supabase()
       .from("stock_movements")
-      .select(("id, action, quantity_delta, quantity_after, actor_user_id, created_at, stock_item_id, item:stock_items(product_name, unit, location_id)" + extra) as string)
+      .select(
+        ("id, action, quantity_delta, quantity_after, actor_user_id, created_at, stock_item_id, item:stock_items(product_name, unit, location_id)" +
+          extra) as string,
+      )
       .eq("household_id", householdId)
       .order("created_at", { ascending: false })
       .limit(limit),
@@ -383,4 +382,32 @@ export async function loadAttention(householdId: string): Promise<StockItem[]> {
     .limit(500);
   if (error) throw error;
   return sortUseFirst((data ?? []).map(toItem));
+}
+
+/** A few things from each box or shelf, newest first, for drawing their covers. One query for all of them. */
+export async function loadPeeks(locationIds: string[]): Promise<Map<string, Peek[]>> {
+  const out = new Map<string, Peek[]>();
+  if (locationIds.length === 0) return out;
+  const { data, error } = await supabase()
+    .from("stock_items")
+    .select("location_id, product_name, brand, category, image_path")
+    .in("location_id", locationIds)
+    .eq("status", "in_stock")
+    .order("added_at", { ascending: false })
+    .limit(400);
+  if (error) throw error;
+  const rows = new Map<string, Peek[]>();
+  for (const r of data ?? []) {
+    const id = r.location_id as string;
+    const list = rows.get(id) ?? [];
+    list.push({
+      name: r.product_name as string,
+      brand: (r.brand as string | null) ?? null,
+      category: (r.category as string | null) ?? null,
+      imagePath: (r.image_path as string | null) ?? null,
+    });
+    rows.set(id, list);
+  }
+  for (const [id, list] of rows) out.set(id, pickPeeks(list));
+  return out;
 }
