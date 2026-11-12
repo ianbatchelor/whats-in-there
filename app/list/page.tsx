@@ -276,12 +276,12 @@ function Row({
       <div className="flex min-w-0 flex-1 flex-col gap-0.5 py-1">
         <p className={`truncate font-semibold ${bought ? "text-mute line-through decoration-mute/60" : ""}`}>
           {item.name}
-          {amount ? <span className="font-normal text-mute"> · {amount}</span> : null}
+          {amount && !bought ? <span className="font-normal text-mute"> · {amount}</span> : null}
         </p>
         <div className="flex min-w-0 items-center gap-1.5 text-[13px] text-mute">
-          <label className="relative inline-flex min-w-0 shrink items-center gap-1 rounded-full bg-sunk py-0.5 pr-2 pl-2.5 font-medium text-fg/80 focus-within:ring-2 focus-within:ring-leaf/40">
+          <label className="relative inline-flex min-h-8 min-w-0 shrink items-center gap-1 rounded-full bg-sunk pr-2.5 pl-3 font-medium text-fg/80 focus-within:ring-2 focus-within:ring-leaf/40">
             <span className="truncate">{spotName ?? "Goes in…"}</span>
-            <span aria-hidden="true" className="text-[10px]">
+            <span aria-hidden="true" className="text-[12px]">
               ▾
             </span>
             <select
@@ -289,7 +289,7 @@ function Row({
               value={spotName ? (item.locationId ?? "") : ""}
               onChange={(e) => onPlace(e.target.value || null)}
               disabled={busy}
-              className="absolute inset-0 w-full cursor-pointer opacity-0"
+              className="absolute inset-x-0 -inset-y-1.5 w-full cursor-pointer opacity-0"
             >
               <option value="">Not sure yet</option>
               {spots.map((s) => (

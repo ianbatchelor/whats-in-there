@@ -85,6 +85,8 @@ function Body({
   const counted = isCounted(item.unit);
   const qty = roundQty(item.quantity);
   const step = counted && !Number.isInteger(qty) ? 0.5 : 1;
+  // One pack, one tin: nothing to choose, so the question is simply whether it's used up.
+  const single = counted && qty <= step;
   const [count, setCount] = useState(Math.min(step, qty));
   const [typed, setTyped] = useState("");
   const [busy, setBusy] = useState(false);
@@ -174,7 +176,8 @@ function Body({
         {item.imagePath ? <ItemTile name={item.productName} imagePath={item.imagePath} size={64} /> : null}
         <div className="flex min-w-0 flex-1 flex-col gap-1">
           <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] text-mute">
-            <StatusPill item={item} />
+            {/* A far-off date would read twice ("6 Dec", then "Best before 6 Dec 2026"), so the pill is only for dates that need acting on. */}
+            {itemStatus(item)?.tone === "ok" ? null : <StatusPill item={item} />}
             <span>{[placeName, itemStatus(item)?.detail].filter(Boolean).join(" · ")}</span>
           </p>
           <p className="text-sm text-mute">
@@ -275,7 +278,7 @@ function Body({
           </div>
 
           <div className="flex flex-col gap-3 rounded-[var(--radius-card)] border border-line bg-card p-4">
-            <p className="text-sm font-bold">{keep ? "Not keeping it any more?" : "How much are you taking?"}</p>
+            <p className="text-sm font-bold">{keep ? "Not keeping it any more?" : single ? "Used it up?" : "How much are you taking?"}</p>
             {counted ? (
               qty > step ? (
                 <Stepper value={count} min={step} max={qty} step={step} onChange={setCount} label="Amount to take out" />
@@ -295,9 +298,11 @@ function Body({
                   ? all
                     ? "Remove from the list"
                     : `Remove ${formatQuantity(amount || 0, item.unit)}`
-                  : all
-                    ? "Take out all"
-                    : `Take out ${formatQuantity(amount || 0, item.unit)}`}
+                  : single
+                    ? "Take it out"
+                    : all
+                      ? "Take out all"
+                      : `Take out ${formatQuantity(amount || 0, item.unit)}`}
               </Button>
               {!all ? (
                 <Button variant="ghost" onClick={() => submit(qty)} disabled={busy}>

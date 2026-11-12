@@ -28,6 +28,7 @@ import { usePlaceView } from "@/components/stock/usePlaceView";
 import { useUndoToast } from "@/components/stock/useUndoToast";
 import { useQuickTake } from "@/components/stock/useQuickTake";
 import { AddItemSheet } from "@/components/stock/AddItemSheet";
+import { StarterThings } from "@/components/place/StarterThings";
 import { AddManySheet } from "@/components/stock/AddManySheet";
 import { groupByCategory, looksLikeBooks } from "@/lib/domain/manyItems";
 import { TakeOutSheet } from "@/components/stock/TakeOutSheet";
@@ -194,17 +195,33 @@ function Place() {
   const due = (items ?? []).filter((i) => needsAttention(i));
   const lateHere = due.filter((i) => itemStatus(i)?.tone === "late").length;
   const soonHere = due.length - lateHere;
-  const summary = [
+  const boxed = boxes.reduce((n, b) => n + b.itemCount, 0);
+  const facts = [
     // "Kitchen fridge · Fridge" says it twice, and "Something else" says nothing, so the kind is left out then.
     parent ? `In ${parent.name}` : place.type === "other" || place.name.toLowerCase().includes(info.label.toLowerCase()) ? null : info.label,
-    items ? countThings(count) : null,
+    // The same total as on Home, so a shed with things in boxes doesn't look emptier from inside.
+    items ? (boxed > 0 ? `${countThings(count + boxed)}, ${boxed} in boxes` : countThings(count)) : null,
     lateHere > 0 ? `${lateHere} past ${lateHere === 1 ? "its date" : "a date"}` : null,
     soonHere > 0 ? `${soonHere} to use soon` : null,
     lentHere > 0 ? `${lentHere} lent out` : null,
-    last ? `updated ${timeAgo(last.at)}` : null,
-  ]
-    .filter(Boolean)
-    .join(" · ");
+  ].filter(Boolean);
+  // "updated…" is the first thing to go when the line would be cut off on a phone.
+  const updated = last ? `updated ${timeAgo(last.at)}` : null;
+  const summary = [...facts, ...(updated && facts.join(" · ").length + updated.length < 42 ? [updated] : [])].join(" · ");
+  // One-tap adds while a place is new: shown in the empty state, and under a short list until it fills up.
+  const starters = (
+    <StarterThings
+      placeId={place.id}
+      type={place.type}
+      have={(items ?? []).map((i) => i.productName)}
+      label="Tap to add some common things. You can edit them after."
+      onAdded={(item, movementId) => {
+        refresh(place.id);
+        announce(`Added ${item.productName}`, movementId);
+      }}
+      onError={setError}
+    />
+  );
   const catCount = (c: string) => (items ?? []).filter((i) => i.category?.trim() === c).length;
 
   return (
@@ -251,7 +268,9 @@ function Place() {
           </div>
         </div>
         <div ref={heroBig} className="absolute inset-x-5 bottom-4 text-[#fffdf8] sm:inset-x-7 sm:bottom-6">
-          <h1 className="truncate pb-0.5 font-serif text-[2.1rem] leading-tight font-semibold tracking-[-0.015em] [text-shadow:0_2px_12px_rgba(0,0,0,0.3)] sm:text-[2.6rem]">
+          <h1
+            className={`line-clamp-2 pb-0.5 font-serif leading-[1.1] text-balance ${place.name.length > 18 ? "text-[1.75rem]" : "text-[2.1rem]"} font-semibold tracking-[-0.015em] [text-shadow:0_2px_12px_rgba(0,0,0,0.3)] sm:text-[2.6rem]`}
+          >
             {place.name}
           </h1>
           <p className="truncate text-[14px] text-[#fffdf8]/90">{summary}</p>
@@ -328,11 +347,8 @@ function Place() {
       {shown === null ? (
         <ItemListSkeleton rows={4} />
       ) : items!.length === 0 && boxes.length > 0 ? null : items!.length === 0 ? (
-        <div className="flex flex-col items-center gap-3 rounded-[24px] bg-sunk/60 px-6 py-10 text-center">
-          <span className="block h-28 w-40 overflow-hidden rounded-2xl opacity-90 shadow-[var(--shadow-card)]">
-            <PlacePhoto type={place.type} imagePath={place.imagePath} />
-          </span>
-          <h2 className="mt-2 font-display text-xl font-bold">Nothing recorded here yet</h2>
+        <div className="flex flex-col items-center gap-3 rounded-[24px] bg-sunk/40 px-6 py-8 text-center">
+          <h2 className="font-display text-xl font-bold">Nothing recorded here yet</h2>
           <p className="max-w-sm text-sm text-mute">
             Add what&apos;s in {place.name} as you put it in, like &ldquo;{info.thing}&rdquo;. It takes a few seconds per thing.
           </p>
@@ -349,6 +365,7 @@ function Place() {
               Or add a box or shelf inside it
             </button>
           ) : null}
+          <div className="mt-2 w-full border-t border-line pt-5 text-left">{starters}</div>
         </div>
       ) : shown.length === 0 ? (
         <p className="text-mute">
@@ -415,6 +432,8 @@ function Place() {
           )}
         </section>
       )}
+
+      {items && items.length > 0 && items.length < 3 && !filtering && boxes.length === 0 ? starters : null}
 
       <AddItemSheet
         open={adding}
