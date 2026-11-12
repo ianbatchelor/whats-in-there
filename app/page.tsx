@@ -27,7 +27,7 @@ import {
 import { timeAgo } from "@/lib/domain/dates";
 import { activitySentence } from "@/lib/domain/activity";
 import type { StockItem } from "@/lib/domain/stock";
-import { lendItem, loadActivity, loadAttention, loadLent, loadUseFirst, type Activity } from "@/lib/stock";
+import { loadActivity, loadAttention, loadLent, loadUseFirst, type Activity } from "@/lib/stock";
 import { isLongLent } from "@/lib/domain/lending";
 import { itemStatus, needsAttention } from "@/lib/domain/status";
 import { tookOutMessage, useQuickTake } from "@/components/stock/useQuickTake";
@@ -36,13 +36,12 @@ import { Avatar } from "@/components/ui/Avatar";
 import { Notice } from "@/components/ui/Notice";
 import { Button } from "@/components/ui/Button";
 import { Toast } from "@/components/ui/Toast";
-import { IconBasket, IconCheck, IconChevronRight, IconScan, IconSearch } from "@/components/ui/icons";
+import { IconBasket, IconCheck, IconHandOver, IconLeaf, IconScan, IconSearch } from "@/components/ui/icons";
 import { loadToBuy } from "@/lib/shopping";
-import { listPreview } from "@/lib/domain/shopping";
 import { AddPlaceSheet } from "@/components/home/AddPlaceSheet";
 import { AddPlaceTile, GroupCard } from "@/components/home/PlaceCard";
 import { FirstThingsTip, StarterPlaces } from "@/components/home/StarterPlaces";
-import { SeasonalReminders } from "@/components/home/SeasonalReminders";
+import { useSeasonal } from "@/components/home/SeasonalReminders";
 import { ItemList, ItemRow } from "@/components/stock/ItemRow";
 import { TakeOutSheet } from "@/components/stock/TakeOutSheet";
 import { useUndoToast } from "@/components/stock/useUndoToast";
@@ -65,10 +64,10 @@ function Home({ session }: { session: Session }) {
   const [attention, setAttention] = useState<StockItem[]>([]);
   const [lent, setLent] = useState<StockItem[]>([]);
   const [toBuy, setToBuy] = useState<string[] | null>(null);
-  const [returningId, setReturningId] = useState<string | null>(null);
   const [showAll, setShowAll] = useState(false);
   const [section, setSection] = useState<PlaceSection | "all">("all");
   const [open, setOpen] = useState<StockItem | null>(null);
+  const seasonal = useSeasonal(current?.householdId, places);
 
   const loadExtras = useCallback(async () => {
     if (!current) return;
@@ -95,7 +94,7 @@ function Home({ session }: { session: Session }) {
     loadExtras();
   }, [loadExtras, version]);
 
-  const { toast, clear, announce, show } = useUndoToast(() => {
+  const { toast, clear, announce } = useUndoToast(() => {
     refresh();
   });
   const { taking, takeOne } = useQuickTake(announce, refresh);
@@ -146,18 +145,6 @@ function Home({ session }: { session: Session }) {
 
   // Lent things that have been away a month or more come up near the top, so they get asked for back.
   const longLent = lent.filter((i) => isLongLent(i)).length;
-  async function giveBack(item: StockItem) {
-    setReturningId(item.id);
-    try {
-      await lendItem(item, null);
-      announce(`${item.productName} is back from ${item.lentTo}`, null);
-      refresh();
-    } catch (e) {
-      hh.setError(friendlyError(e));
-    } finally {
-      setReturningId(null);
-    }
-  }
 
   const row = (item: StockItem, i: number) => (
     <ItemRow
@@ -172,32 +159,6 @@ function Home({ session }: { session: Session }) {
       onTakeOne={takeOne}
       taking={taking === item.id}
     />
-  );
-
-  const lentSection = (
-    <section aria-labelledby="lent-h" className="flex flex-col gap-2.5">
-      <div className="flex items-baseline justify-between">
-        <SectionLabel id="lent-h">Lent out</SectionLabel>
-        {longLent > 0 ? (
-          <span className="text-[13px] font-semibold text-late">{longLent === 1 ? "1 away over a month" : `${longLent} away over a month`}</span>
-        ) : null}
-      </div>
-      <ItemList>
-        {lent.map((item, i) => (
-          <ItemRow
-            key={item.id}
-            index={i}
-            item={item}
-            // The place is in the details; here the room goes to who has it and for how long.
-            placeType={placeById.get(item.locationId)?.type}
-            keep
-            onOpen={setOpen}
-            onReturn={giveBack}
-            taking={returningId === item.id}
-          />
-        ))}
-      </ItemList>
-    </section>
   );
 
   const rail = (
@@ -320,33 +281,44 @@ function Home({ session }: { session: Session }) {
         </p>
       ) : null}
 
-      {longLent > 0 ? lentSection : null}
-
-      {places && places.length > 0 && toBuy ? (
-        <Link
-          href="/list/"
-          className="lift flex items-center gap-3.5 rounded-2xl border border-line bg-card py-3 pr-3 pl-3.5 shadow-[var(--shadow-card)]"
-          aria-label={toBuy.length > 0 ? `Shopping list, ${toBuy.length} to buy` : "Shopping list, nothing to buy"}
-        >
-          <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-ok-bg text-ok" aria-hidden="true">
-            <IconBasket className="size-6" />
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className="block font-display font-bold">Shopping list</span>
-            <span className="block truncate text-[14px] text-mute">
-              {toBuy.length > 0 ? listPreview(toBuy) : "Nothing to buy. Add things as they run out."}
-            </span>
-          </span>
-          {toBuy.length > 0 ? (
-            <span className="grid h-7 min-w-7 place-items-center rounded-full bg-go px-2 text-[13px] font-bold text-on-go tabular-nums" aria-hidden="true">
-              {toBuy.length}
-            </span>
-          ) : null}
-          <IconChevronRight className="size-4 shrink-0 text-mute/60" />
-        </Link>
+      {places && places.length > 0 ? (
+        <Glance
+          tiles={[
+            {
+              href: "/list/",
+              Icon: IconBasket,
+              label: "Shopping",
+              n: toBuy?.length ?? null,
+              caption: toBuy && toBuy.length === 0 ? "nothing to buy" : "to buy",
+              tone: "",
+            },
+            ...(lent.length > 0
+              ? [
+                  {
+                    href: "/lent/",
+                    Icon: IconHandOver,
+                    label: "Lent out",
+                    n: longLent > 0 ? longLent : lent.length,
+                    caption: longLent > 0 ? "away over a month" : lent.length === 1 ? "thing lent" : "things lent",
+                    tone: longLent > 0 ? "text-late" : "",
+                  },
+                ]
+              : []),
+            ...(seasonal.shown && seasonal.shown.length > 0
+              ? [
+                  {
+                    href: "/season/",
+                    Icon: IconLeaf,
+                    label: seasonal.season,
+                    n: seasonal.shown.length,
+                    caption: seasonal.shown.length === 1 ? "job to do" : "jobs to do",
+                    tone: "",
+                  },
+                ]
+              : []),
+          ]}
+        />
       ) : null}
-
-      {places && places.length > 0 ? <SeasonalReminders householdId={current.householdId} places={places} onToast={show} /> : null}
 
       <section className="flex flex-col gap-3" aria-labelledby="places-h">
         <h2 id="places-h" className="sr-only">
@@ -361,7 +333,7 @@ function Home({ session }: { session: Session }) {
                   key={s}
                   onClick={() => setSection(s)}
                   aria-pressed={section === s}
-                  className={`h-8 rounded-full border px-3.5 text-[13px] font-semibold transition ${
+                  className={`h-10 rounded-full border px-4 text-[13.5px] font-semibold transition ${
                     section === s ? "border-fg bg-fg text-bg" : "border-line bg-card text-mute hover:text-fg"
                   }`}
                 >
@@ -396,8 +368,6 @@ function Home({ session }: { session: Session }) {
         </section>
       ) : null}
 
-      {lent.length > 0 && longLent === 0 ? lentSection : null}
-
       <AddPlaceSheet open={adding} onClose={() => setAdding(false)} householdId={current.householdId} onAdded={refresh} />
       <TakeOutSheet
         item={open}
@@ -423,4 +393,30 @@ function Home({ session }: { session: Session }) {
 function greeting(now: Date = new Date()): string {
   const h = now.getHours();
   return h < 5 ? "Good evening" : h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
+}
+
+type Tile = { href: string; Icon: (p: { className?: string }) => React.ReactNode; label: string; n: number | null; caption: string; tone: string };
+
+/** The shopping list, lent things and seasonal jobs at a glance, so Home stays short and the places stay near the top. */
+function Glance({ tiles }: { tiles: Tile[] }) {
+  return (
+    <ul className={`grid gap-2.5 ${tiles.length === 3 ? "grid-cols-3" : tiles.length === 2 ? "grid-cols-2" : "grid-cols-1"}`}>
+      {tiles.map((t) => (
+        <li key={t.href} className="min-w-0">
+          <Link
+            href={t.href}
+            className="lift flex h-full min-h-[104px] flex-col gap-1 rounded-2xl border border-line bg-card p-3 shadow-[var(--shadow-card)]"
+            aria-label={`${t.label}: ${t.n ?? ""} ${t.caption}`}
+          >
+            <span className="flex min-w-0 items-center gap-1.5 text-[13px] font-semibold text-mute">
+              <t.Icon className="size-4 shrink-0 text-leaf" />
+              <span className="truncate">{t.label}</span>
+            </span>
+            <span className={`mt-auto font-display text-[1.6rem] leading-none font-bold tabular-nums ${t.tone}`}>{t.n ?? "–"}</span>
+            <span className={`text-[13px] leading-tight ${t.tone || "text-mute"}`}>{t.caption}</span>
+          </Link>
+        </li>
+      ))}
+    </ul>
+  );
 }

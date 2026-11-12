@@ -39,7 +39,8 @@ import { isLongLent, lentFor } from "@/lib/domain/lending";
 export function itemContext(item: StockItem, place?: string, brandFirst = false): string {
   const parts: string[] = [];
   if (brandFirst && item.brand) parts.push(item.brand);
-  if (place) parts.push(place);
+  // In lists that span places (Home, search), where it is matters more than the brand, and the row is short.
+  if (place) return [...parts, place].join(" · ");
   if (item.brand && !brandFirst) parts.push(item.brand);
   if (item.weightValue && item.weightUnit) parts.push(formatQuantity(item.weightValue, item.weightUnit));
   if (parts.length > 0) return parts.join(" · ");
@@ -212,7 +213,7 @@ export function ItemRow({
           </span>
         </span>
         {addedBy !== undefined ? <span className="hidden w-28 shrink-0 truncate text-[13px] text-mute xl:block">{addedBy}</span> : null}
-        <span className="hidden w-36 shrink-0 justify-end lg:flex">
+        <span className="hidden w-36 shrink-0 justify-start lg:flex">
           <StatusPill item={item} />
         </span>
         {showQty ? (
@@ -220,8 +221,12 @@ export function ItemRow({
             <span className="block text-[15px] font-semibold tabular-nums">{isCounted(item.unit) ? qty : formatQuantity(qty, item.unit)}</span>
             {isCounted(item.unit) ? <span className="block text-[12px] text-mute">{formatQuantity(qty, item.unit).replace(/^[\d.]+ /, "")}</span> : null}
           </span>
-        ) : null}
-        {quick || back ? null : <IconChevronRight className="mr-1.5 size-4 shrink-0 text-mute/50" />}
+        ) : (
+          // Keeps the columns lined up on wide screens when a row has no amount to show.
+          <span className="hidden w-20 shrink-0 lg:block" aria-hidden="true" />
+        )}
+        {/* On wide screens the chevron takes the same room as the minus button, so columns line up. */}
+        {quick || back ? null : <IconChevronRight className="mr-1.5 size-4 shrink-0 text-mute/50 lg:mr-6" />}
       </button>
       {back ? (
         <button
@@ -252,7 +257,7 @@ export function bookOf(item: StockItem, placeType: LocationType | undefined): { 
   return isBook(item, placeType) ? { title: item.productName, author: item.brand } : null;
 }
 
-/** "With Mum since 3 Oct", for something that's been lent out. */
+/** "Mum · 5 days", for something that's been lent out; the full date is in its title and details. */
 export function LentPill({ item, className = "max-w-[60%]" }: { item: StockItem; className?: string }) {
   if (!item.lentTo) return null;
   // After a month it's worth asking for back, so it says how long, in the colour for "act on this".
@@ -262,8 +267,8 @@ export function LentPill({ item, className = "max-w-[60%]" }: { item: StockItem;
       title={item.lentOn ? `Lent to ${item.lentTo} on ${formatDay(item.lentOn)}` : `Lent to ${item.lentTo}`}
       className={`shrink-0 truncate rounded-full px-2 py-[3px] text-[12.5px] leading-tight font-semibold ${long ? "bg-late-bg text-late" : "bg-soon-bg text-soon"} ${className}`}
     >
-      {long ? item.lentTo : `With ${item.lentTo}`}
-      {item.lentOn ? <span className="font-normal">{long ? ` · ${lentFor(item.lentOn)}` : ` since ${formatDay(item.lentOn, { year: false })}`}</span> : null}
+      {item.lentTo}
+      {item.lentOn ? <span className="font-normal"> · {lentFor(item.lentOn)}</span> : null}
     </span>
   );
 }

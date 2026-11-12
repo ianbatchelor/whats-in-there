@@ -28,7 +28,7 @@ const UNIT_WORDS: Record<StockUnit, [string, string]> = {
   g: ["g", "g"],
   kg: ["kg", "kg"],
   ml: ["ml", "ml"],
-  l: ["l", "l"],
+  l: ["L", "L"],
 };
 
 export function formatQuantity(value: number, unit: StockUnit): string {

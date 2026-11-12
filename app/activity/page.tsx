@@ -59,23 +59,35 @@ function ActivityFeed({ session }: { session: Session }) {
                 const who = r.actor === session.user.id ? "You" : (r.actor && names.get(r.actor)) || "Someone";
                 const placeId = r.action === "move" && r.toLocationId ? r.toLocationId : r.locationId;
                 const place = placeId ? placeById.get(placeId) : undefined;
-                return (
-                  <li key={r.id} className="flex items-start gap-3 px-3.5 py-3">
-                    <Avatar name={who === "You" ? names.get(session.user.id) ?? "You" : who} index={r.actor ? memberIndex.get(r.actor) ?? 0 : 0} size={36} />
+                // The whole entry opens its place, so the tap target is the row rather than a small link.
+                const body = (
+                  <>
+                    <Avatar
+                      name={who === "You" ? (names.get(session.user.id) ?? "You") : who}
+                      index={r.actor ? (memberIndex.get(r.actor) ?? 0) : 0}
+                      size={36}
+                    />
                     <div className="min-w-0 flex-1">
                       <p className="text-[15px] leading-snug">
                         <span className="font-semibold">{who}</span> {activitySentence(r, r.toLocationId ? placeById.get(r.toLocationId)?.name : undefined)}
                       </p>
                       <p className="mt-0.5 text-[13px] text-mute">
-                        {place ? (
-                          <Link href={`/place/?id=${place.id}`} className="font-semibold text-leaf">
-                            {place.name}
-                          </Link>
-                        ) : null}
+                        {place ? <span className="font-semibold text-leaf">{place.name}</span> : null}
                         {place ? " · " : ""}
                         {new Date(r.at).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
                       </p>
                     </div>
+                  </>
+                );
+                return (
+                  <li key={r.id}>
+                    {place ? (
+                      <Link href={`/place/?id=${place.id}`} className="flex items-start gap-3 px-3.5 py-3 transition hover:bg-sunk/70 active:bg-sunk">
+                        {body}
+                      </Link>
+                    ) : (
+                      <div className="flex items-start gap-3 px-3.5 py-3">{body}</div>
+                    )}
                   </li>
                 );
               })}
