@@ -29,6 +29,7 @@ import { useUndoToast } from "@/components/stock/useUndoToast";
 import { useQuickTake } from "@/components/stock/useQuickTake";
 import { AddItemSheet } from "@/components/stock/AddItemSheet";
 import { StarterThings } from "@/components/place/StarterThings";
+import { QuickSheet } from "@/components/place/QuickSheet";
 import { AddManySheet } from "@/components/stock/AddManySheet";
 import { groupByCategory, looksLikeBooks } from "@/lib/domain/manyItems";
 import { TakeOutSheet } from "@/components/stock/TakeOutSheet";
@@ -46,6 +47,9 @@ export default function PlacePage() {
 
 function Place() {
   const id = useQueryParam("id");
+  // Arrived from the place's sticker or QR label: start with the quick choices.
+  const fromSticker = useQueryParam("quick") === "1";
+  const [quick, setQuick] = useState(false);
   const router = useRouter();
   const [place, setPlace] = useState<PlaceInfo | null>(null);
   const [items, setItems] = useState<StockItem[] | null>(null);
@@ -106,6 +110,13 @@ function Place() {
       active = false;
     };
   }, [id, router, refresh]);
+
+  useEffect(() => {
+    if (!place || !fromSticker) return;
+    setQuick(true); // eslint-disable-line react-hooks/set-state-in-effect
+    // Back or a reload shouldn't open it again.
+    window.history.replaceState(window.history.state, "", `/place/?id=${place.id}`);
+  }, [place, fromSticker]);
 
   // Someone else in the household adds or takes something out: refresh this list.
   useEffect(() => {
@@ -457,6 +468,22 @@ function Place() {
           }}
         />
       ) : null}
+      <QuickSheet
+        open={quick}
+        onClose={() => setQuick(false)}
+        place={place}
+        items={items}
+        keep={keep}
+        placeName={(locationId) => (family ?? []).find((p) => p.id === locationId)?.name}
+        onPutIn={() => setAdding(true)}
+        onTakeOne={takeOne}
+        taking={taking}
+        onOpenItem={setOpen}
+        onMoved={(item, movementId) => {
+          refresh(place.id, place.householdId);
+          announce(`Moved ${item.productName} here`, movementId);
+        }}
+      />
       <TakeOutSheet
         item={open}
         keep={keep}

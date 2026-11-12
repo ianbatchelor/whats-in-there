@@ -16,7 +16,8 @@ const noopSubscribe = () => () => {};
 
 /**
  * Where a sticker or printed QR label lands: https://seewhatsinhere.com/l/<code> (or /l/?c=<code>).
- * Opens the place it belongs to, after signing in if needed. A code that isn't one of your places
+ * Opens the place it belongs to, with the quick choices (took out, put in, moved here) on top,
+ * after signing in if needed. A code that isn't one of your places
  * gets the same answer whether it doesn't exist or belongs to another household.
  */
 export default function StickerPage() {
@@ -40,7 +41,7 @@ export default function StickerPage() {
     resolveSticker(code)
       .then((id) => {
         if (!active) return;
-        if (id) router.replace(`/place/?id=${id}`);
+        if (id) router.replace(`/place/?id=${id}&quick=1`);
         else setProblem("unknown");
       })
       .catch((e) => active && setProblem(friendlyError(e)));
