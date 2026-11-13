@@ -22,7 +22,7 @@ export default function PrivacyPage() {
         <li><b>Your email address</b>, only to send you sign-in codes. We don&apos;t send marketing emails.</li>
         <li><b>The name you choose</b>, shown to the people in your households.</li>
         <li>
-          <b>Your households and what&apos;s in them</b>: places, the things you add (names, amounts, dates, brands, notes), photos
+          <b>Your households and what&apos;s in them</b>: places, the things you add (names, amounts, dates, brands, notes, wine tasting notes), photos
           you take of labels, shelves and places, your household&apos;s shopping list, and a history of who added or took out what.
         </li>
         <li>

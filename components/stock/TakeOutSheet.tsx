@@ -13,6 +13,7 @@ import { Notice } from "@/components/ui/Notice";
 import { Stepper } from "./Stepper";
 import { bottles, isWine, ItemTile, itemTitle, StatusPill } from "./ItemRow";
 import { colourInfo } from "@/lib/domain/wine";
+import { WineNotesList, WineRating } from "./WineNotes";
 import { itemStatus } from "@/lib/domain/status";
 import { IconBasket, IconCheck, IconHandOver, IconMove, IconPencil } from "@/components/ui/icons";
 import { addToList } from "@/lib/shopping";
@@ -88,7 +89,9 @@ function Body({
   onTaken: (before: StockItem, after: StockItem, amount: number, movementId: string | null) => void;
   onChanged: (message: string, movementId: string | null) => void;
 }) {
-  const [mode, setMode] = useState<"view" | "edit" | "move" | "lend">("view");
+  const [mode, setMode] = useState<"view" | "edit" | "move" | "lend" | "rate">("view");
+  /** Bottles left after opening one, while asking how it was. */
+  const [left, setLeft] = useState(0);
   const counted = isCounted(item.unit);
   const qty = roundQty(item.quantity);
   const step = counted && !Number.isInteger(qty) ? 0.5 : 1;
@@ -126,6 +129,13 @@ function Body({
       // Used the last of it: on the list for next time, if asked. The take-out stands either way.
       if (canList && rebuy && !listed && roundQty(chosen) === qty) await addToList(householdId!, fromStock(item)).catch(() => {});
       onTaken(item, after, chosen, movementId);
+      // A bottle opened: ask how it was before closing. Taking out several at once (a case given away) doesn't ask.
+      if (wine && householdId && chosen === 1) {
+        setLeft(roundQty(after.quantity));
+        setMode("rate");
+        setBusy(false);
+        return;
+      }
       onClose();
     } catch (err) {
       setError(friendlyError(err));
@@ -203,7 +213,15 @@ function Body({
         </div>
       </div>
 
-      {mode === "edit" ? (
+      {mode === "rate" && householdId ? (
+        <WineRating
+          item={item}
+          householdId={householdId}
+          left={left}
+          // The "Opened a bottle" toast with its Undo stays up, so a note saves quietly.
+          onDone={onClose}
+        />
+      ) : mode === "edit" ? (
         <EditItemForm
           item={item}
           wine={wine}
@@ -328,7 +346,7 @@ function Body({
                 </Button>
               ) : null}
             </div>
-            {all && canList && !listed ? (
+            {all && canList && !listed && !wine ? (
               <label className="flex min-h-11 cursor-pointer items-center gap-3 text-[15px]">
                 <input type="checkbox" checked={rebuy} onChange={(e) => setRebuy(e.target.checked)} className="size-5 accent-[var(--color-go)]" />
                 Add it to the shopping list
@@ -344,6 +362,8 @@ function Body({
           </div>
 
           {error ? <Notice>{error}</Notice> : null}
+
+          {wine && householdId ? <WineNotesList item={item} householdId={householdId} names={names} /> : null}
 
           <section aria-labelledby="hist-h" className="flex flex-col gap-2">
             <h3 id="hist-h" className="text-[13px] font-semibold text-mute">
