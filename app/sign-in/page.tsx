@@ -73,7 +73,7 @@ export default function SignInPage() {
     if (error) return setError(friendlyError(error));
     setEmail(address);
     setStep("code");
-    setInfo(`We've emailed a sign-in code to ${address}.`);
+    setInfo(`We've emailed a sign-in code to ${address}. It can take a minute or two to arrive (check spam too). If you ask for another code, only the newest email's code will work.`);
   }
 
   async function verify(e: React.FormEvent) {
