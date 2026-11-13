@@ -23,7 +23,11 @@ export default function PrivacyPage() {
         <li><b>The name you choose</b>, shown to the people in your households.</li>
         <li>
           <b>Your households and what&apos;s in them</b>: places, the things you add (names, amounts, dates, brands, notes), photos
-          you take of labels, shelves and places, and a history of who added or took out what.
+          you take of labels, shelves and places, your household&apos;s shopping list, and a history of who added or took out what.
+        </li>
+        <li>
+          <b>Who you&apos;ve lent things to</b>, if you mark something as lent: the name you type and the date. Only the people in
+          your household can see it. Use a first name or a nickname; that person doesn&apos;t need an account.
         </li>
         <li><b>Sticker links</b> for your places, so a sticker or QR code opens the right place.</li>
         <li>
