@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { Notice } from "@/components/ui/Notice";
 import { IconLink, IconStar } from "@/components/ui/icons";
 import { friendlyError } from "@/lib/supabase/errors";
-import { cleanLink, cleanPrice, firstName, linkLabel, linkProblem, looksLikeLink, type WishIdea } from "@/lib/domain/presents";
+import { cleanLink, cleanPrice, firstName, linkLabel, linkProblem, looksLikeLink, type WishIdea, type WishKind } from "@/lib/domain/presents";
 import { readLink, updateIdea, wishPictureUrl } from "@/lib/presents";
 
 /** The details of one idea: a note (size, colour), a shop link, a rough price, and top of the list. */
@@ -19,7 +19,9 @@ export function IdeaSheet({
   onClose,
   onSaved,
   onRemove,
+  kind = "presents",
 }: {
+  kind?: WishKind;
   idea: WishIdea | null;
   mine: boolean;
   personName: string;
@@ -28,7 +30,9 @@ export function IdeaSheet({
   onSaved: () => void;
   onRemove: (idea: WishIdea) => void;
 }) {
+  const books = kind === "books";
   const [title, setTitle] = useState("");
+  const [author, setAuthor] = useState("");
   const [note, setNote] = useState("");
   const [link, setLink] = useState("");
   const [price, setPrice] = useState("");
@@ -44,6 +48,7 @@ export function IdeaSheet({
     if (!idea) return;
     /* eslint-disable react-hooks/set-state-in-effect */
     setTitle(idea.title);
+    setAuthor(idea.author ?? "");
     setNote(idea.note ?? "");
     setLink(idea.link ?? "");
     setPrice(idea.price ?? "");
@@ -67,7 +72,15 @@ export function IdeaSheet({
     setBusy(true);
     setError(null);
     try {
-      await updateIdea(idea.id, { title: title.trim(), note: note.trim() || null, link: l, price: cleanPrice(price), favourite, imagePath });
+      await updateIdea(idea.id, {
+        title: title.trim(),
+        note: note.trim() || null,
+        link: l,
+        price: cleanPrice(price),
+        favourite,
+        imagePath,
+        ...(books ? { author: author.trim() || null } : {}),
+      });
       onSaved();
     } catch (err) {
       setError(friendlyError(err));
@@ -106,7 +119,11 @@ export function IdeaSheet({
   }
 
   return (
-    <Sheet open={!!idea} onClose={onClose} title={mine ? "Your idea" : `Idea for ${firstName(personName)}`}>
+    <Sheet
+      open={!!idea}
+      onClose={onClose}
+      title={books ? (mine ? "Your book" : `Book for ${firstName(personName)}`) : mine ? "Your idea" : `Idea for ${firstName(personName)}`}
+    >
       <form onSubmit={save} className="-mx-1 flex max-h-[78dvh] flex-col gap-4 overflow-y-auto px-1 pb-1">
         {imagePath ? (
           <div className="flex items-center gap-3">
@@ -117,7 +134,8 @@ export function IdeaSheet({
             </button>
           </div>
         ) : null}
-        <Field label="What is it?" value={title} onChange={(e) => setTitle(e.target.value)} maxLength={120} required />
+        <Field label={books ? "Title" : "What is it?"} value={title} onChange={(e) => setTitle(e.target.value)} maxLength={120} required />
+        {books ? <Field label="Author (optional)" value={author} onChange={(e) => setAuthor(e.target.value)} maxLength={120} placeholder="Hilary Mantel" /> : null}
         <div className="flex flex-col gap-1.5">
           <label htmlFor="idea-note" className="font-display text-sm font-bold">
             Details <span className="font-normal text-mute">(optional)</span>
@@ -128,7 +146,7 @@ export function IdeaSheet({
             onChange={(e) => setNote(e.target.value)}
             maxLength={300}
             rows={2}
-            placeholder="Size M, the dark blue one"
+            placeholder={books ? "The paperback, please" : "Size M, the dark blue one"}
             className="w-full rounded-2xl border border-line bg-card px-4 py-3 text-base text-fg placeholder:text-mute/80 focus:border-leaf focus:ring-4 focus:ring-leaf/15 focus:outline-none"
           />
         </div>
@@ -163,7 +181,7 @@ export function IdeaSheet({
         >
           <IconStar className={`size-5 shrink-0 ${favourite ? "fill-[#e9b949]! stroke-[#c8962a]!" : "text-mute"}`} />
           <span className="flex-1">
-            <span className="block font-semibold">Top of the list</span>
+            <span className="block font-semibold">{books ? "Most wanted" : "Top of the list"}</span>
             <span className="block text-[13.5px] text-mute">Shown first, with a star.</span>
           </span>
         </button>

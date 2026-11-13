@@ -1,7 +1,10 @@
 /** Present ideas: one wish list per person, shared with the household and, by link, with family. */
 
+export type WishKind = "presents" | "books";
+
 export type WishList = {
   id: string;
+  kind: WishKind;
   forUser: string | null;
   name: string | null;
   shareCode: string | null;
@@ -18,6 +21,10 @@ export type WishIdea = {
   favourite: boolean;
   /** A copy of the shop's picture, in the public wish-pictures bucket. */
   imagePath: string | null;
+  /** Books only: the author, the ISBN from a scanned barcode, and Open Library's cover number. */
+  author: string | null;
+  isbn: string | null;
+  coverId: number | null;
   addedBy: string | null;
   addedAt: string;
 };
