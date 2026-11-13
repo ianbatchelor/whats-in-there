@@ -48,6 +48,9 @@ export const IconMeat = ({ className }: P) =>
   svg(<><path d="M14.5 4c3.6 0 5.5 2.6 5.5 5.6 0 5-5.6 9.4-10.5 9.4-3 0-5.5-1.9-5.5-4.5 0-3 3.2-3.7 4.3-5.9C9.4 6.4 11 4 14.5 4z" /><circle cx="14" cy="10" r="2" /></>, className);
 export const IconFish = ({ className }: P) =>
   svg(<><path d="M3 12c2.5-4 6-6 10-6 3.5 0 6.5 2.5 8 6-1.5 3.5-4.5 6-8 6-4 0-7.5-2-10-6z" /><path d="M3 7.5 6 12l-3 4.5" /><circle cx="16.5" cy="10.8" r=".6" /></>, className);
+export const IconEgg = ({ className }: P) => svg(<path d="M12 3.5c3.4 0 6.5 5.2 6.5 9.6A6.4 6.4 0 0 1 12 20.5a6.4 6.4 0 0 1-6.5-7.4C5.5 8.7 8.6 3.5 12 3.5z" />, className);
+export const IconCheese = ({ className }: P) =>
+  svg(<><path d="M3.5 17V11l11-5.5 6 5.5v6z" /><path d="M3.5 11h17" /><circle cx="9" cy="14.2" r="1.1" /><circle cx="15" cy="14.5" r="0.9" /></>, className);
 export const IconMilk = ({ className }: P) => svg(<path d="M9 3h6v3l2.5 3.5V21h-11V9.5L9 6zM6.5 13.5h11" />, className);
 export const IconLeaf = ({ className }: P) => svg(<path d="M5 19C5 10.5 10 5.5 20 4.5c0 10-5 14.5-15 14.5zM5 19l8-8" />, className);
 export const IconBread = ({ className }: P) => svg(<path d="M6 10.5a3.5 3.5 0 0 1 1-6.8h10a3.5 3.5 0 0 1 1 6.8V19a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1zM10 9v2M14 9v2" />, className);

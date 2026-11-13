@@ -296,7 +296,7 @@ function Body({
               <Button className="flex-1" variant={keep ? "ghost" : undefined} busy={busy} onClick={() => submit(amount)} disabled={!amount}>
                 {keep
                   ? all
-                    ? "Remove from the list"
+                    ? "Remove it"
                     : `Remove ${formatQuantity(amount || 0, item.unit)}`
                   : single
                     ? "Take it out"

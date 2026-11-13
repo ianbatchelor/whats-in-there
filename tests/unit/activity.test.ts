@@ -6,6 +6,9 @@ describe("activitySentence", () => {
     expect(activitySentence({ action: "add", delta: 2, itemName: "Chicken curry", unit: "portion", at: "" })).toBe("added 2 portions of Chicken curry");
     expect(activitySentence({ action: "remove", delta: -1, itemName: "Peas", unit: "pack", at: "" })).toBe("took out 1 pack of Peas");
     expect(activitySentence({ action: "add", delta: 4, itemName: "Chicken breasts", unit: "item", at: "" })).toBe("added 4 × Chicken breasts");
+    expect(activitySentence({ action: "remove", delta: -0.5, itemName: "Semi-skimmed milk", unit: "item", at: "" })).toBe("took out half of the Semi-skimmed milk");
+    expect(activitySentence({ action: "remove", delta: -1.5, itemName: "Baguettes", unit: "item", at: "" })).toBe("took out 1½ × Baguettes");
+    expect(activitySentence({ action: "remove", delta: -0.3, itemName: "Rice", unit: "item", at: "" })).toBe("took out some of the Rice");
     expect(activitySentence({ action: "remove", delta: -1, itemName: "Leg of lamb", unit: "item", at: "" })).toBe("took out Leg of lamb");
     expect(activitySentence({ action: "remove", delta: -1, itemName: "Milk", unit: "l", at: "" })).toBe("took out 1 litre of Milk");
     expect(activitySentence({ action: "add", delta: 2.5, itemName: "Milk", unit: "l", at: "" })).toBe("added 2.5 litres of Milk");

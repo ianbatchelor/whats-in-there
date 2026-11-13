@@ -1,5 +1,6 @@
 "use client";
 
+import type { Place } from "@/lib/household";
 import { useMemo, useRef, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { AuthGate } from "@/components/AuthGate";
@@ -104,8 +105,7 @@ function Add({ session }: { session: Session }) {
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-[15px] font-semibold">{p.name}</span>
                       <span className="block truncate text-[13px] text-mute">
-                        {inside ? `Inside ${places.find((x) => x.id === p.parentId)?.name ?? "a place"}` : p.type === "other" ? "Place" : placeType(p.type).label} ·{" "}
-                        {countThings(p.itemCount)}
+                        {placeLine(p, inside ? (places.find((x) => x.id === p.parentId)?.name ?? "a place") : null)}
                       </span>
                     </span>
                     <IconChevronRight className="size-4 shrink-0 text-mute/50" />
@@ -138,4 +138,15 @@ function Add({ session }: { session: Session }) {
       <Toast toast={toast} onDone={clear} />
     </AppShell>
   );
+}
+
+/**
+ * "Bookshelf · 4 things", or just "6 things" when the name already says what kind of place it is
+ * ("Freezer · Freezer · 6 things" said it twice).
+ */
+function placeLine(p: { name: string; type: Place["type"]; itemCount: number }, inside: string | null): string {
+  const kind = p.type === "other" ? null : placeType(p.type).label;
+  const said = !kind || p.name.toLowerCase().includes(kind.toLowerCase());
+  const lead = inside ? `Inside ${inside}` : said ? null : kind;
+  return [lead, countThings(p.itemCount)].filter(Boolean).join(" · ");
 }

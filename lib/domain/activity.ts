@@ -17,7 +17,7 @@ export function activitySentence(r: Row, toPlace?: string): string {
   // Plain items read better without the unit: "added 4 × Chicken breasts", "took out Leg of lamb".
   // A lone "l" is easy to misread in a sentence ("1 l of milk"), so litres are spelled out here.
   const amount = r.unit === "l" ? `${formatQuantity(n, r.unit).slice(0, -2)} ${n === 1 ? "litre" : "litres"}` : formatQuantity(n, r.unit);
-  const what = r.unit === "item" ? (n === 1 ? r.itemName : `${n} × ${r.itemName}`) : `${amount} of ${r.itemName}`;
+  const what = r.unit === "item" ? itemAmount(n, r.itemName) : `${amount} of ${r.itemName}`;
   switch (r.action) {
     case "add":
       return `added ${what}`;
@@ -34,6 +34,21 @@ export function activitySentence(r: Row, toPlace?: string): string {
     default:
       return r.edited ? `edited ${r.itemName}` : `changed the amount of ${r.itemName}`;
   }
+}
+
+const PARTS: Record<string, string> = { "0.25": "a quarter of", "0.5": "half of", "0.75": "three quarters of" };
+
+/**
+ * Plain things counted in ones: "Leg of lamb", "4 × Chicken breasts". Part of one reads as words
+ * ("half of the Semi-skimmed milk"), never "0.5 ×", which looks like a sum.
+ */
+function itemAmount(n: number, name: string): string {
+  if (n === 1) return name;
+  if (n < 1) return `${PARTS[String(n)] ?? "some of"} the ${name}`;
+  const whole = Math.floor(n);
+  const half = n - whole === 0.5 ? "½" : null;
+  if (Number.isInteger(n) || half) return `${whole}${half ?? ""} × ${name}`;
+  return `some of the ${name}`;
 }
 
 function dayKey(d: Date): string {

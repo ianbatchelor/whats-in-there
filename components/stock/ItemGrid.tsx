@@ -8,7 +8,7 @@ import { itemKind } from "@/lib/domain/itemKind";
 import { useItemPhoto } from "@/lib/itemPhotos";
 import { useBookCover } from "@/lib/covers";
 import { useFadeIn } from "@/components/ui/useFadeIn";
-import { Highlight, KINDS, bookOf } from "./ItemRow";
+import { Highlight, KINDS, LentPill, bookOf } from "./ItemRow";
 
 /**
  * Things you keep as a wall of pictures: book covers, the photo of each coat, so a shelf looks like
@@ -52,16 +52,13 @@ function Tile({ item, placeType, onOpen, index, highlight }: { item: StockItem; 
               {isCounted(item.unit) ? `×${qty}` : formatQuantity(qty, item.unit)}
             </span>
           ) : null}
-          {item.lentTo ? (
-            <span className="absolute inset-x-1.5 bottom-1.5 truncate rounded-full bg-white/95 px-2 py-0.5 text-center text-[12px] font-semibold text-[#855a0b]">
-              With {item.lentTo}
-            </span>
-          ) : null}
         </span>
         <span className="line-clamp-2 px-0.5 text-[13.5px] leading-snug font-semibold">
           <Highlight text={item.productName} match={highlight} />
         </span>
         {item.brand ? <span className="-mt-1 truncate px-0.5 text-[12.5px] text-mute">{item.brand}</span> : null}
+        {/* Under the cover, not on it, so the title and author printed on the cover stay readable. */}
+        {item.lentTo ? <LentPill item={item} className="max-w-full self-start" /> : null}
       </button>
     </li>
   );

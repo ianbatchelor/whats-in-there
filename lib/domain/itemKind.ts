@@ -3,7 +3,7 @@
  * picture instead of initials. Only ever used for the icon; a wrong guess costs nothing.
  */
 export type ItemKind =
-  | "meat" | "fish" | "dairy" | "veg" | "bakery" | "tin" | "frozen" | "drink" | "wine"
+  | "meat" | "fish" | "egg" | "cheese" | "dairy" | "veg" | "bakery" | "tin" | "frozen" | "drink" | "wine"
   | "clothes" | "tool" | "garden" | "light" | "paper" | "thing";
 
 const WORDS: [ItemKind, RegExp][] = [
@@ -11,7 +11,9 @@ const WORDS: [ItemKind, RegExp][] = [
   ["frozen", /\b(ice cream|ice lolly|lollies|sorbet|ice cubes?|frozen)\b/],
   ["fish", /\b(fish|salmon|cod|haddock|tuna|prawns?|mackerel|trout|sea bass|scampi|fish fingers?)\b/],
   ["meat", /\b(beef|mince|steak|chicken|pork|lamb|bacon|sausages?|ham|turkey|duck|burgers?|meatballs?|gammon|chorizo|ribs)\b/],
-  ["dairy", /\b(milk|cheese|cheddar|brie|feta|mozzarella|parmesan|halloumi|yoghurt|yogurt|butter|cream|eggs?|custard)\b/],
+  ["egg", /\b(eggs?)\b/],
+  ["cheese", /\b(cheese|cheddar|brie|feta|mozzarella|parmesan|halloumi|stilton|camembert|gouda|edam)\b/],
+  ["dairy", /\b(milk|yoghurt|yogurt|butter|cream|custard)\b/],
   ["bakery", /\b(bread|loaf|rolls?|baguette|bagels?|croissants?|pastry|pizza|pie|cake|muffins?|crumpets?|wraps?|naan|pitta)\b/],
   ["veg", /\b(peas|beans|carrots?|broccoli|spinach|sweetcorn|corn|potato(es)?|chips|onions?|peppers?|tomato(es)?|berries|strawberr(y|ies)|raspberr(y|ies)|blueberr(y|ies)|apples?|bananas?|fruit|veg|vegetables?|salad|lettuce|herbs?|mushrooms?|garlic|lemons?)\b/],
   ["drink", /\b(juice|squash|water|cola|lemonade|tea|coffee|smoothie)\b/],

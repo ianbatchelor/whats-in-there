@@ -309,7 +309,14 @@ function BookWishLists({ session }: { session: Session }) {
                       aria-pressed={on}
                       className={`flex w-[84px] flex-col items-center gap-2 rounded-2xl pt-3 pb-2 transition ${on ? "bg-card shadow-[var(--shadow-lift)] ring-1 ring-line" : "opacity-85 hover:opacity-100"}`}
                     >
-                      <BookStack index={i} count={n} className={`h-[52px] w-[52px] ${n === 0 ? "opacity-45" : ""}`} />
+                      {n === 0 ? (
+                        // No books yet: an empty slot, not a faint stack that reads as nothing.
+                        <span className="grid h-[52px] w-[52px] place-items-center rounded-[14px] border-2 border-dashed border-line text-mute">
+                          <IconBook className="size-5" />
+                        </span>
+                      ) : (
+                        <BookStack index={i} count={n} className="h-[52px] w-[52px]" />
+                      )}
                       <span className={`flex max-w-full flex-col px-1 font-display text-[13.5px] leading-tight font-bold ${on ? "" : "text-mute"}`}>
                         <span className="truncate">{p.userId === me ? "You" : firstName(p.name)}</span>
                         {p.list?.friend ? <span className="text-[11px] font-semibold" style={{ color: BOOK_LOOK.ribbon }}>friend</span> : null}
@@ -335,20 +342,24 @@ function BookWishLists({ session }: { session: Session }) {
                 <p className="font-display text-[12.5px] font-bold tracking-[0.08em] uppercase opacity-75">
                   {mine ? "Your book wish list" : person.list?.friend ? `${firstName(person.name)}'s own list` : `For ${firstName(person.name)}`}
                 </p>
-                <h2 id="list-h" className="mt-1 font-serif text-[2rem] leading-[1.05] font-semibold tracking-[-0.015em] sm:text-[2.4rem]">
+                <h2 id="list-h" className="mt-1 font-serif text-[1.7rem] leading-[1.05] font-semibold tracking-[-0.015em] sm:text-[2.4rem]">
                   {wantsToRead(person.name, mine)}
                 </h2>
-                <p className="mt-2 max-w-[34ch] text-[14.5px] leading-snug opacity-85">
-                  {mine
-                    ? "Friends can say they'll get you one. You won't see which, so it stays a surprise."
-                    : `Say you'll get one so nobody doubles up. ${firstName(person.name)} won't see.`}
-                </p>
+                {mine && person.list?.shareCode ? (
+                  <p className="mt-1.5 text-[13.5px] leading-snug opacity-80">Shared. Anyone with the link can see it.</p>
+                ) : (
+                  <p className="mt-2 max-w-[34ch] text-[14.5px] leading-snug opacity-85">
+                    {mine
+                      ? "Friends can say they'll get you one. You won't see which, so it stays a surprise."
+                      : `Say you'll get one so nobody doubles up. ${firstName(person.name)} won't see.`}
+                  </p>
+                )}
                 <button
                   onClick={startShare}
                   className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-btn)] px-4 font-display text-[14.5px] font-bold shadow-[0_6px_16px_-10px_rgba(0,0,0,0.6)] transition active:scale-[0.98]"
                   style={{ background: BOOK_LOOK.paper, color: BOOK_LOOK.cloth }}
                 >
-                  <IconShare className="size-[18px]" /> {person.list?.shareCode ? "Shared with friends" : "Share with friends"}
+                  <IconShare className="size-[18px]" /> {mine ? "Share my list" : `Share ${firstName(person.name)}'s list`}
                 </button>
               </ClothBand>
 
