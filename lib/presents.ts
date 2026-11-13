@@ -2,13 +2,14 @@ import { supabase } from "@/lib/supabase/client";
 import { config } from "@/lib/config";
 import type { WishClaim, WishIdea, WishKind, WishList } from "@/lib/domain/presents";
 
-const LIST_COLUMNS = "id, kind, for_user, name, share_code, created_at";
-const IDEA_COLUMNS = "id, list_id, title, note, link, price, favourite, image_path, author, isbn, cover_id, added_by, added_at";
+const LIST_COLUMNS = "id, kind, friend, for_user, name, share_code, created_at";
+const IDEA_COLUMNS = "id, list_id, title, note, link, price, favourite, image_path, author, isbn, cover_id, suggested_by, added_by, added_at";
 
 function toList(r: Record<string, unknown>): WishList {
   return {
     id: r.id as string,
     kind: r.kind === "books" ? "books" : "presents",
+    friend: r.friend === true,
     forUser: (r.for_user as string | null) ?? null,
     name: (r.name as string | null) ?? null,
     shareCode: (r.share_code as string | null) ?? null,
@@ -29,6 +30,7 @@ function toIdea(r: Record<string, unknown>): WishIdea {
     author: (r.author as string | null) ?? null,
     isbn: (r.isbn as string | null) ?? null,
     coverId: typeof r.cover_id === "number" ? r.cover_id : null,
+    suggestedBy: (r.suggested_by as string | null) ?? null,
     addedBy: (r.added_by as string | null) ?? null,
     addedAt: r.added_at as string,
   };
@@ -225,10 +227,11 @@ export type SharedIdea = {
   imagePath?: string | null;
   author?: string | null;
   coverId?: number | null;
+  suggestedBy?: string | null;
   taken: boolean;
   takenBy: string | null;
 };
-export type SharedList = { name: string; kind?: WishKind; ideas: SharedIdea[] };
+export type SharedList = { name: string; kind?: WishKind; friend?: boolean; ideas: SharedIdea[] };
 
 export async function loadShared(code: string): Promise<SharedList | null> {
   const { data, error } = await supabase().rpc("shared_wish_list", { p_code: code });
@@ -245,5 +248,39 @@ export async function claimShared(code: string, ideaId: string, name: string): P
 
 export async function unclaimShared(code: string, ideaId: string, token: string): Promise<void> {
   const { error } = await supabase().rpc("unclaim_shared_wish", { p_code: code, p_idea: ideaId, p_token: token });
+  if (error) throw error;
+}
+
+// ---------- Friends' own book lists, from a share link, with no account ----------
+
+export type NewBook = { title: string; author: string | null; isbn: string | null; coverId: number | null };
+
+/** Starts a friend's own list beside the one they were sent. Returns its link code and the key this browser keeps. */
+export async function startFriendList(code: string, name: string): Promise<{ code: string; key: string }> {
+  const { data, error } = await supabase().rpc("start_friend_book_list", { p_code: code, p_name: name.trim() });
+  if (error) throw error;
+  const r = data as { code?: unknown; key?: unknown } | null;
+  if (typeof r?.code !== "string" || typeof r?.key !== "string") throw new Error("failed");
+  return { code: r.code, key: r.key };
+}
+
+export async function addFriendBook(code: string, key: string, b: NewBook): Promise<void> {
+  const { error } = await supabase().rpc("add_friend_book", { p_code: code, p_key: key, p_title: b.title, p_author: b.author, p_isbn: b.isbn, p_cover: b.coverId });
+  if (error) throw error;
+}
+
+export async function removeFriendBook(code: string, key: string, ideaId: string): Promise<void> {
+  const { error } = await supabase().rpc("remove_friend_book", { p_code: code, p_key: key, p_idea: ideaId });
+  if (error) throw error;
+}
+
+export async function removeFriendList(code: string, key: string): Promise<void> {
+  const { error } = await supabase().rpc("remove_friend_book_list", { p_code: code, p_key: key });
+  if (error) throw error;
+}
+
+/** "Suggest a book" for the list someone was sent, with their first name. */
+export async function suggestBook(code: string, name: string, b: NewBook): Promise<void> {
+  const { error } = await supabase().rpc("suggest_shared_book", { p_code: code, p_name: name.trim(), p_title: b.title, p_author: b.author, p_isbn: b.isbn, p_cover: b.coverId });
   if (error) throw error;
 }

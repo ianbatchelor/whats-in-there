@@ -310,7 +310,10 @@ function BookWishLists({ session }: { session: Session }) {
                       className={`flex w-[84px] flex-col items-center gap-2 rounded-2xl pt-3 pb-2 transition ${on ? "bg-card shadow-[var(--shadow-lift)] ring-1 ring-line" : "opacity-85 hover:opacity-100"}`}
                     >
                       <BookStack index={i} count={n} className={`h-[52px] w-[52px] ${n === 0 ? "opacity-45" : ""}`} />
-                      <span className={`max-w-full truncate px-1 font-display text-[13.5px] font-bold ${on ? "" : "text-mute"}`}>{p.userId === me ? "You" : firstName(p.name)}</span>
+                      <span className={`flex max-w-full flex-col px-1 font-display text-[13.5px] leading-tight font-bold ${on ? "" : "text-mute"}`}>
+                        <span className="truncate">{p.userId === me ? "You" : firstName(p.name)}</span>
+                        {p.list?.friend ? <span className="text-[11px] font-semibold" style={{ color: BOOK_LOOK.ribbon }}>friend</span> : null}
+                      </span>
                     </button>
                   </li>
                 );
@@ -329,7 +332,9 @@ function BookWishLists({ session }: { session: Session }) {
           {person ? (
             <section aria-labelledby="list-h" className="flex flex-col gap-4">
               <ClothBand>
-                <p className="font-display text-[12.5px] font-bold tracking-[0.08em] uppercase opacity-75">{mine ? "Your book wish list" : `For ${firstName(person.name)}`}</p>
+                <p className="font-display text-[12.5px] font-bold tracking-[0.08em] uppercase opacity-75">
+                  {mine ? "Your book wish list" : person.list?.friend ? `${firstName(person.name)}'s own list` : `For ${firstName(person.name)}`}
+                </p>
                 <h2 id="list-h" className="mt-1 font-serif text-[2rem] leading-[1.05] font-semibold tracking-[-0.015em] sm:text-[2.4rem]">
                   {wantsToRead(person.name, mine)}
                 </h2>
@@ -397,6 +402,7 @@ function BookWishLists({ session }: { session: Session }) {
                           mine={mine}
                           busy={busy === b.id}
                           addedBy={b.addedBy && b.addedBy !== person.userId ? who(b.addedBy) : null}
+                          suggestedBy={b.suggestedBy}
                           owned={ownedIn(b.title)}
                           alsoWanted={alsoWanted(b)}
                           claim={c ? { byMe: c.claimedBy === me, name: c.claimedName ?? who(c.claimedBy), fromLink: !c.claimedBy } : null}

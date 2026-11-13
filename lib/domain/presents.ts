@@ -5,6 +5,8 @@ export type WishKind = "presents" | "books";
 export type WishList = {
   id: string;
   kind: WishKind;
+  /** A friend's own book list, started from a share link by someone outside the household. */
+  friend: boolean;
   forUser: string | null;
   name: string | null;
   shareCode: string | null;
@@ -25,6 +27,8 @@ export type WishIdea = {
   author: string | null;
   isbn: string | null;
   coverId: number | null;
+  /** The first name of a friend who suggested it through a share link. */
+  suggestedBy: string | null;
   addedBy: string | null;
   addedAt: string;
 };

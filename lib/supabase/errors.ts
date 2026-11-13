@@ -18,6 +18,8 @@ const messages: Record<string, string> = {
   already_on_list: "That's already on the shopping list.",
   already_taken: "Someone else has just said they're getting that one.",
   name_needed: "Add your first name, so others know who's getting it.",
+  too_many_books: "That list is full for now. Take a few books off, or try again later.",
+  too_many_lists: "This household already has lots of friends' lists. Ask them to make room first.",
   last_owner: "You're the only owner. Make someone else an owner before you leave.",
 };
 
