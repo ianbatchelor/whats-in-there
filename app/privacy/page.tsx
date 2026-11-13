@@ -43,6 +43,14 @@ export default function PrivacyPage() {
         itself, not just by the app.
       </p>
 
+      <h2>Present lists you share</h2>
+      <p>
+        If you share a present list, anyone with its link can see who the list is for and the ideas on it (titles, notes, links
+        and prices), without an account. Nothing else from your household is shown. Someone using the link can mark an idea
+        &ldquo;I&apos;m getting this&rdquo; and type a first name; we store that name and when it was marked, and the person the
+        list is for never sees who is getting what. You can stop sharing at any time, and the old link stops working.
+      </p>
+
       <h2>Reading photos with AI</h2>
       <p>
         When you scan a label, a shelf or a rail, the photo is sent to <b>Claude, an AI made by Anthropic</b>, which reads what&apos;s
