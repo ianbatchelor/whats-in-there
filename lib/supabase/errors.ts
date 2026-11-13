@@ -30,7 +30,7 @@ export function friendlyError(error: unknown): string {
         : "";
   const code = Object.keys(messages).find((k) => raw === k || raw.startsWith(`${k}`));
   if (code) return messages[code]!;
-  if (/token has expired|invalid.*otp|otp.*invalid/i.test(raw)) return "That code didn't work. Check it, or send a new one.";
+  if (/token has expired|invalid.*otp|otp.*invalid/i.test(raw)) return "That code didn't work. Only the code in the newest email works, and only for a short while. Check the latest email, or send a new code and wait for it to arrive.";
   if (/could not find the function|function .* does not exist/i.test(raw)) return "This needs a quick database update first. It'll work once that's done.";
   if (/invalid input value for enum/i.test(raw)) return "This kind of place needs a quick database update first. Pick another kind for now.";
   if (/captcha/i.test(raw)) return "We couldn't check you're not a robot. Reload the page and try again.";
