@@ -11,9 +11,22 @@ import { Button } from "@/components/ui/Button";
 import { Notice } from "@/components/ui/Notice";
 import { Stepper } from "./Stepper";
 import { SIZE_UNITS, UNITS } from "./AddItemSheet";
+import { fromDraft, toDraft, WineExtras, WineMain } from "./WineFields";
 
 /** Change any detail of something already added: a misread name, a date, how much there is. */
-export function EditItemForm({ item, onSaved, onCancel }: { item: StockItem; onSaved: (after: StockItem) => void; onCancel: () => void }) {
+export function EditItemForm({
+  item,
+  onSaved,
+  onCancel,
+  wine: isWine = false,
+}: {
+  item: StockItem;
+  onSaved: (after: StockItem) => void;
+  onCancel: () => void;
+  /** A bottle of wine: asks about vintage, colour and when to drink it instead of dates and pack size. */
+  wine?: boolean;
+}) {
+  const [wine, setWine] = useState(() => toDraft(item));
   const [name, setName] = useState(item.productName);
   const [unit, setUnit] = useState<StockUnit>(item.unit);
   const [amount, setAmount] = useState(String(roundQty(item.quantity)));
@@ -45,6 +58,8 @@ export function EditItemForm({ item, onSaved, onCancel }: { item: StockItem; onS
     if (!Number.isFinite(qty) || qty <= 0) return setError("Enter how much there is. To clear it out, use Take out instead.");
     const sizeValue = size.trim() ? roundQty(Number(size.replace(",", "."))) : null;
     if (sizeValue !== null && (!Number.isFinite(sizeValue) || sizeValue <= 0)) return setError("Enter the pack size as a number, or leave it empty.");
+    const details = isWine ? fromDraft(wine) : null;
+    if (details && !details.ok) return setError(details.error);
     setBusy(true);
     try {
       const after = await updateItem(item, {
@@ -59,6 +74,7 @@ export function EditItemForm({ item, onSaved, onCancel }: { item: StockItem; onS
         bestBeforeDate: bestBefore || null,
         frozenAt: frozenAt || null,
         notes: notes.trim() || null,
+        wine: details?.ok ? details.wine : undefined,
       });
       onSaved(after);
     } catch (err) {
@@ -69,9 +85,21 @@ export function EditItemForm({ item, onSaved, onCancel }: { item: StockItem; onS
 
   return (
     <form onSubmit={save} className="flex flex-col gap-4" noValidate>
-      <Field label="What is it?" value={name} onChange={(e) => setName(e.target.value)} maxLength={120} autoComplete="off" error={nameError} />
+      <Field label={isWine ? "Which wine?" : "What is it?"} value={name} onChange={(e) => setName(e.target.value)} maxLength={120} autoComplete="off" error={nameError} />
 
-      <fieldset className="flex min-w-0 flex-col gap-2">
+      {isWine ? (
+        <>
+          <fieldset className="flex min-w-0 flex-col gap-2">
+            <legend className="mb-1.5 text-sm font-bold">How many bottles?</legend>
+            <Stepper value={Number(amount) || 0} min={1} max={999} onChange={(n) => setAmount(String(n))} label="Bottles" />
+          </fieldset>
+          <WineMain draft={wine} onChange={setWine} />
+          <WineExtras draft={wine} onChange={setWine} />
+          <Field label="Producer" placeholder="Optional" value={brand} onChange={(e) => setBrand(e.target.value)} maxLength={80} />
+        </>
+      ) : null}
+
+      <fieldset className={`flex min-w-0 flex-col gap-2 ${isWine ? "hidden" : ""}`}>
         <legend className="mb-1.5 text-sm font-bold">How much is there?</legend>
         <div className="flex gap-1.5 overflow-x-auto pb-1" role="radiogroup" aria-label="Unit">
           {UNITS.map((u) => (
@@ -107,10 +135,11 @@ export function EditItemForm({ item, onSaved, onCancel }: { item: StockItem; onS
         )}
       </fieldset>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className={`grid grid-cols-2 gap-3 ${isWine ? "hidden" : ""}`}>
         <Field label="Use by" type="date" value={useBy} onChange={(e) => setUseBy(e.target.value)} />
         <Field label="Best before" type="date" value={bestBefore} onChange={(e) => setBestBefore(e.target.value)} />
       </div>
+      {isWine ? null : (
       <Field
         label="Frozen on"
         type="date"
@@ -119,8 +148,9 @@ export function EditItemForm({ item, onSaved, onCancel }: { item: StockItem; onS
         onChange={(e) => setFrozenAt(e.target.value)}
         hint={frozenAt ? "Clear it if it's been taken out of the freezer to defrost." : "Only for things in a freezer."}
       />
+      )}
 
-      <div className="flex min-w-0 flex-col gap-2">
+      <div className={`flex min-w-0 flex-col gap-2 ${isWine ? "hidden" : ""}`}>
         <Field label="Pack size" inputMode="decimal" placeholder="Optional, e.g. 750" value={size} onChange={(e) => setSize(e.target.value)} />
         <div className="flex gap-1.5" role="radiogroup" aria-label="Pack size unit">
           {SIZE_UNITS.map((u) => (
@@ -137,8 +167,12 @@ export function EditItemForm({ item, onSaved, onCancel }: { item: StockItem; onS
           ))}
         </div>
       </div>
-      <Field label="Brand or author" placeholder="Optional" value={brand} onChange={(e) => setBrand(e.target.value)} maxLength={80} />
-      <Field label="Section" placeholder="Optional, e.g. Fiction or Coats" value={category} onChange={(e) => setCategory(e.target.value)} maxLength={40} />
+      {isWine ? null : (
+        <>
+          <Field label="Brand or author" placeholder="Optional" value={brand} onChange={(e) => setBrand(e.target.value)} maxLength={80} />
+          <Field label="Section" placeholder="Optional, e.g. Fiction or Coats" value={category} onChange={(e) => setCategory(e.target.value)} maxLength={40} />
+        </>
+      )}
       <Field label="Notes" placeholder="Optional" value={notes} onChange={(e) => setNotes(e.target.value)} maxLength={500} />
 
       {error ? <Notice>{error}</Notice> : null}

@@ -1,5 +1,6 @@
 import type { StockItem } from "./stock";
 import { SOON_DAYS } from "./stock";
+import { wineStatus } from "./wine";
 import { formatDay, formatMonth, monthsBetween, parseIsoDate, storageAge, todayIso } from "./dates";
 
 /**
@@ -11,7 +12,7 @@ import { formatDay, formatMonth, monthsBetween, parseIsoDate, storageAge, todayI
 export type StatusTone = "late" | "soon" | "ok" | "plain";
 export type ItemStatus = { tone: StatusTone; label: string; /** Fuller wording for screen readers and details. */ detail: string };
 
-type Dated = Pick<StockItem, "useByDate" | "bestBeforeDate" | "frozenAt">;
+type Dated = Pick<StockItem, "useByDate" | "bestBeforeDate" | "frozenAt" | "drinkFrom" | "drinkUntil" | "savedFor">;
 
 /** Months in the freezer after which the label turns amber as a nudge. */
 export const LONG_FROZEN_MONTHS = 6;
@@ -33,6 +34,8 @@ function span(days: number): string {
 }
 
 export function itemStatus(item: Dated, today: string = todayIso()): ItemStatus | null {
+  const wine = wineStatus(item, Number(today.slice(0, 4)));
+  if (wine) return { tone: wine.tone, label: wine.label, detail: wine.detail };
   const printed = [
     item.useByDate ? { date: item.useByDate, kind: "use by" } : null,
     item.bestBeforeDate ? { date: item.bestBeforeDate, kind: "best before" } : null,
@@ -66,5 +69,5 @@ export function itemStatus(item: Dated, today: string = todayIso()): ItemStatus 
 /** Things that deserve a look: past a printed date or close to one. Long-frozen things are a nudge, not counted here. */
 export function needsAttention(item: Dated, today: string = todayIso()): boolean {
   const s = itemStatus(item, today);
-  return !!s && (s.tone === "late" || (s.tone === "soon" && !!(item.useByDate || item.bestBeforeDate)));
+  return !!s && (s.tone === "late" || (s.tone === "soon" && !!(item.useByDate || item.bestBeforeDate || item.drinkUntil)));
 }

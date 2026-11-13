@@ -11,7 +11,8 @@ import { Field } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 import { Notice } from "@/components/ui/Notice";
 import { Stepper } from "./Stepper";
-import { ItemTile, StatusPill } from "./ItemRow";
+import { bottles, isWine, ItemTile, itemTitle, StatusPill } from "./ItemRow";
+import { colourInfo } from "@/lib/domain/wine";
 import { itemStatus } from "@/lib/domain/status";
 import { IconBasket, IconCheck, IconHandOver, IconMove, IconPencil } from "@/components/ui/icons";
 import { addToList } from "@/lib/shopping";
@@ -30,9 +31,12 @@ export function TakeOutSheet({
   onClose,
   onTaken,
   onChanged,
+  wine = false,
 }: {
   item: StockItem | null;
   placeName?: string;
+  /** It's in a wine rack: bottles, vintage and when to drink it. */
+  wine?: boolean;
   /** It's in a place for keeping things (a shelf, a wardrobe), not using them up. */
   keep?: boolean;
   /** Lets things be put on the household's shopping list. */
@@ -44,7 +48,7 @@ export function TakeOutSheet({
   onChanged: (message: string, movementId: string | null) => void;
 }) {
   return (
-    <Sheet side open={item !== null} onClose={onClose} title={item?.productName ?? ""}>
+    <Sheet side open={item !== null} onClose={onClose} title={item ? itemTitle(item, wine ? "wine" : undefined) : ""}>
       {item ? (
         <Body
           key={`${item.id}:${item.version}`}
@@ -56,6 +60,7 @@ export function TakeOutSheet({
           onClose={onClose}
           onTaken={onTaken}
           onChanged={onChanged}
+          wine={wine || isWine(item)}
         />
       ) : null}
     </Sheet>
@@ -71,9 +76,11 @@ function Body({
   onClose,
   onTaken,
   onChanged,
+  wine,
 }: {
   item: StockItem;
   placeName?: string;
+  wine: boolean;
   keep: boolean;
   householdId?: string;
   names: Map<string, string>;
@@ -180,10 +187,12 @@ function Body({
             {itemStatus(item)?.tone === "ok" ? null : <StatusPill item={item} />}
             <span>{[placeName, itemStatus(item)?.detail].filter(Boolean).join(" · ")}</span>
           </p>
+          {wine ? <p className="text-sm text-mute">{[colourInfo(item.wineColour)?.label, item.grape, item.region].filter(Boolean).join(" · ")}</p> : null}
           <p className="text-sm text-mute">
             {[
+              wine ? `${bottles(qty)} left` : null,
               // A book is just there; "1 item left" only makes sense for things that get used up.
-              keep && counted && qty === 1 ? null : keep ? formatQuantity(qty, item.unit) : `${formatQuantity(qty, item.unit)} left`,
+              wine ? null : keep && counted && qty === 1 ? null : keep ? formatQuantity(qty, item.unit) : `${formatQuantity(qty, item.unit)} left`,
               item.brand,
               addedBy ? `added by ${addedBy}` : null,
             ]
@@ -197,6 +206,7 @@ function Body({
       {mode === "edit" ? (
         <EditItemForm
           item={item}
+          wine={wine}
           onCancel={() => setMode("view")}
           onSaved={(after) => {
             onChanged(`Saved changes to ${after.productName}`, null);
@@ -278,7 +288,7 @@ function Body({
           </div>
 
           <div className="flex flex-col gap-3 rounded-[var(--radius-card)] border border-line bg-card p-4">
-            <p className="text-sm font-bold">{keep ? "Not keeping it any more?" : single ? "Used it up?" : "How much are you taking?"}</p>
+            <p className="text-sm font-bold">{wine ? (single ? "Opening the last bottle?" : "Opening a bottle?") : keep ? "Not keeping it any more?" : single ? "Used it up?" : "How much are you taking?"}</p>
             {counted ? (
               qty > step ? (
                 <Stepper value={count} min={step} max={qty} step={step} onChange={setCount} label="Amount to take out" />
@@ -294,7 +304,15 @@ function Body({
             )}
             <div className="flex gap-2">
               <Button className="flex-1" variant={keep ? "ghost" : undefined} busy={busy} onClick={() => submit(amount)} disabled={!amount}>
-                {keep
+                {wine
+                  ? single
+                    ? "Opened it"
+                    : all
+                      ? "Take out all"
+                      : amount === 1
+                        ? "Opened one"
+                        : `Opened ${bottles(amount || 0)}`
+                  : keep
                   ? all
                     ? "Remove it"
                     : `Remove ${formatQuantity(amount || 0, item.unit)}`

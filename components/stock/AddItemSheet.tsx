@@ -18,6 +18,8 @@ import { IconCamera, IconStack } from "@/components/ui/icons";
 import { Stepper } from "./Stepper";
 import { placeType } from "@/components/home/placeTypes";
 import { useAiConsent } from "@/components/stock/AiConsent";
+import { EMPTY_WINE, fromDraft, toDraft, WineExtras, WineMain, type WineDraft } from "./WineFields";
+import { bottles } from "./ItemRow";
 
 export const UNITS: { value: StockUnit; label: string }[] = [
   { value: "item", label: "Items" },
@@ -72,6 +74,9 @@ export function AddItemSheet({
   ref?: Ref<AddItemHandle>;
 }) {
   const isFreezer = place.type === "freezer";
+  const isWine = place.type === "wine";
+  const [wine, setWine] = useState<WineDraft>(EMPTY_WINE);
+  const [guessed, setGuessed] = useState(false);
   const [name, setName] = useState("");
   const [unit, setUnit] = useState<StockUnit>("item");
   const [amount, setAmount] = useState("1");
@@ -141,6 +146,8 @@ export function AddItemSheet({
     setSize("");
     setSizeUnit("g");
     setNotes("");
+    setWine(EMPTY_WINE);
+    setGuessed(false);
     setError(null);
     setNameError(undefined);
     attempt.current += 1;
@@ -169,6 +176,13 @@ export function AddItemSheet({
     if (r.weightUnit) setSizeUnit(r.weightUnit);
     setUseBy(r.useByDate ?? "");
     setBestBefore(r.bestBeforeDate ?? "");
+    if (r.wine && isWine) {
+      setWine(toDraft(r.wine));
+      setGuessed(r.wine.guessed);
+      setUnit("item");
+      if (r.wine.grape || r.wine.region || r.brand) setMore(true);
+      return;
+    }
     if (r.brand || r.weightValue || r.useByDate || r.bestBeforeDate || r.check.some((f) => f !== "product_name" && f !== "quantity")) {
       setMore(true);
     }
@@ -216,7 +230,7 @@ export function AddItemSheet({
       keptPaths.current = shots.map((s) => s.path);
       fill(result.reading);
       const r = result.reading;
-      setPhoto({ state: "read", shots, check: r.check, hasDate: !!(r.useByDate || r.bestBeforeDate) });
+      setPhoto({ state: "read", shots, check: r.check, hasDate: !!(r.useByDate || r.bestBeforeDate || (isWine && r.wine)) });
     } catch (err) {
       if (mine !== attempt.current) return;
       fail(err instanceof Error && err.message === "photo_failed" ? "That photo couldn't be opened. Try another one." : friendlyError(err));
@@ -233,6 +247,8 @@ export function AddItemSheet({
     if (!Number.isFinite(qty) || qty <= 0) return setError("Enter how much there is.");
     const sizeValue = size.trim() ? roundQty(Number(size.replace(",", "."))) : null;
     if (sizeValue !== null && (!Number.isFinite(sizeValue) || sizeValue <= 0)) return setError("Enter the pack size as a number, or leave it empty.");
+    const details = isWine ? fromDraft(wine) : null;
+    if (details && !details.ok) return setError(details.error);
     setBusy(true);
     try {
       const { item, movementId } = await addItem({
@@ -248,6 +264,7 @@ export function AddItemSheet({
         bestBeforeDate: bestBefore || null,
         notes: notes.trim(),
         imagePath: photo.state === "read" ? (photo.shots[0]?.path ?? null) : null,
+        wine: details?.ok ? details.wine : undefined,
       });
       // The front photo stays with the item; the back and side photos were only for reading.
       if (photo.state === "read") void discardLabelPhoto(...photo.shots.slice(1).map((s) => s.path));
@@ -304,7 +321,11 @@ export function AddItemSheet({
             </span>
             <span className="min-w-0">
               <span className="block font-display text-[15px] font-bold">Scan a label</span>
-              <span className="block text-[13px] text-mute">Start with the front. We&apos;ll fill in the name, size and dates for you to check.</span>
+              <span className="block text-[13px] text-mute">
+                {isWine
+                  ? "Snap the front label. We'll fill in the wine, vintage and when it's best to drink, for you to check."
+                  : "Start with the front. We'll fill in the name, size and dates for you to check."}
+              </span>
             </span>
           </button>
         ) : (
@@ -353,8 +374,8 @@ export function AddItemSheet({
         {photo.state === "none" && onMany && FOOD_PLACES.includes(place.type) ? <ManyCard onClick={() => { close(); onMany(); }} quiet /> : null}
 
         <Field
-          label="What is it?"
-          placeholder={placeType(place.type).thing}
+          label={isWine ? "Which wine?" : "What is it?"}
+          placeholder={isWine ? "e.g. Rioja Reserva" : placeType(place.type).thing}
           value={name}
           onChange={(e) => setName(e.target.value)}
           maxLength={120}
@@ -366,7 +387,17 @@ export function AddItemSheet({
           disabled={reading}
         />
 
-        <fieldset className="flex min-w-0 flex-col gap-2" disabled={reading}>
+        {isWine ? (
+          <>
+            <fieldset className="flex min-w-0 flex-col gap-2" disabled={reading}>
+              <legend className="mb-1.5 text-sm font-bold">How many bottles?</legend>
+              <Stepper value={Number(amount) || 0} min={1} max={999} onChange={(n) => setAmount(String(n))} label="Bottles" />
+            </fieldset>
+            <WineMain draft={wine} onChange={setWine} check={check} guessed={guessed} disabled={reading} />
+          </>
+        ) : null}
+
+        <fieldset className={`flex min-w-0 flex-col gap-2 ${isWine ? "hidden" : ""}`} disabled={reading}>
           <legend className="mb-1.5 text-sm font-bold">How much?</legend>
           <div className="flex gap-1.5 overflow-x-auto pb-1" role="radiogroup" aria-label="Unit">
             {UNITS.map((u) => (
@@ -403,7 +434,25 @@ export function AddItemSheet({
           <Field label="Frozen on" type="date" value={frozenAt} max={todayIso()} onChange={(e) => setFrozenAt(e.target.value)} hint="Leave as today if it's going in now." />
         ) : null}
 
-        {more ? (
+        {more && isWine ? (
+          <div className="flex flex-col gap-4">
+            <WineExtras draft={wine} onChange={setWine} check={check} />
+            <Field
+              label="Producer"
+              placeholder="Optional, e.g. Bodegas Muga"
+              value={brand}
+              onChange={(e) => setBrand(e.target.value)}
+              maxLength={80}
+              check={check.has("brand")}
+              hint={check.has("brand") ? CHECK_HINT : undefined}
+            />
+            <Field label="Notes" placeholder="Optional, e.g. From Majestic, £14" value={notes} onChange={(e) => setNotes(e.target.value)} maxLength={500} />
+          </div>
+        ) : isWine ? (
+          <button type="button" onClick={() => setMore(true)} className="self-start text-sm font-bold text-go">
+            + Grape, region, producer, notes
+          </button>
+        ) : more ? (
           <div className="flex flex-col gap-4">
             <div className="grid grid-cols-2 gap-3">
               <Field
@@ -469,7 +518,7 @@ export function AddItemSheet({
 
         {error ? <Notice>{error}</Notice> : null}
         <Button type="submit" busy={busy} disabled={reading}>
-          Add to {place.name}
+          {isWine ? `Add ${bottles(Number(amount) || 1)}` : `Add to ${place.name}`}
         </Button>
       </form>
     </Sheet>

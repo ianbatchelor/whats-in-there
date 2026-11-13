@@ -1,4 +1,5 @@
 import type { StockUnit } from "./quantity";
+import { wineKey, type WineDetails } from "./wine";
 
 export type StockItem = {
   id: string;
@@ -22,9 +23,9 @@ export type StockItem = {
   lentTo?: string | null;
   lentOn?: string | null;
   version: number;
-};
+} & Partial<WineDetails>;
 
-type Dated = Pick<StockItem, "useByDate" | "bestBeforeDate" | "frozenAt" | "addedAt">;
+type Dated = Pick<StockItem, "useByDate" | "bestBeforeDate" | "frozenAt" | "addedAt" | "drinkFrom" | "drinkUntil" | "savedFor">;
 
 /** Days ahead within which a printed date jumps the queue. */
 export const SOON_DAYS = 14;
@@ -41,6 +42,8 @@ export function addDays(iso: string, days: number): string {
  * unsafe; it only sorts by the dates people entered.
  */
 export function useFirstKey(item: Dated, today: string): string {
+  const wine = wineKey(item, Number(today.slice(0, 4)));
+  if (wine) return wine;
   const printed = [item.useByDate, item.bestBeforeDate].filter(Boolean).sort()[0];
   if (printed && printed <= addDays(today, SOON_DAYS)) return `0${printed}`;
   return `1${(item.frozenAt ?? item.addedAt).slice(0, 10)}`;
