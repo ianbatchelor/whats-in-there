@@ -51,6 +51,11 @@ export default function PrivacyPage() {
         list is for never sees who is getting what. You can stop sharing at any time, and the old link stops working.
       </p>
       <p>
+        Someone with a book wish list link can also suggest a book for it, or start a book list of their own, giving only a first
+        name. We store that name with the books they add, and their list shows in the household that sent the link, so the
+        household can get them a book. Their list is kept from the same browser with a private key; they can remove it at any time.
+      </p>
+      <p>
         If you paste a shop link into a present idea, our server opens that page to fill in the name, price and picture, and may
         send the page&apos;s text to <b>Claude (Anthropic)</b> to read them. The product picture is saved so the idea can show it.
         These shop pictures are kept apart from your household&apos;s own photos, and anyone who has the address of a picture can

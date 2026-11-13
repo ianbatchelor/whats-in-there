@@ -131,9 +131,13 @@ export function ShareSheet({
               </Button>
             </div>
             {said ? <p className="text-[14px] text-mute">{said}</p> : null}
-            <button onClick={stop} disabled={busy !== null} className="min-h-10 self-start text-[14px] font-semibold text-mute hover:text-fg">
-              Stop sharing (the link stops working)
-            </button>
+            {list.friend ? (
+              <p className="text-[14px] text-mute">This is {first}&apos;s own list, started from your link. {first} keeps it up to date from their link.</p>
+            ) : (
+              <button onClick={stop} disabled={busy !== null} className="min-h-10 self-start text-[14px] font-semibold text-mute hover:text-fg">
+                Stop sharing (the link stops working)
+              </button>
+            )}
           </>
         ) : (
           <>

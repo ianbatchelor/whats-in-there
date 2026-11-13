@@ -5,13 +5,26 @@ import Link from "next/link";
 import { isConfigured } from "@/lib/config";
 import { friendlyError } from "@/lib/supabase/errors";
 import { firstName, linkLabel, wishCodeFrom, wrapFor } from "@/lib/domain/presents";
-import { claimShared, loadShared, unclaimShared, wishPictureUrl, type SharedIdea, type SharedList } from "@/lib/presents";
+import {
+  addFriendBook,
+  claimShared,
+  loadShared,
+  removeFriendBook,
+  removeFriendList,
+  startFriendList,
+  suggestBook,
+  unclaimShared,
+  wishPictureUrl,
+  type SharedIdea,
+  type SharedList,
+} from "@/lib/presents";
+import { OwnListTools, SharedBookAdd, StartOwnList, SuggestBook } from "@/components/books/SharedBookExtras";
 import { SetupNeeded } from "@/components/SetupNeeded";
 import { Splash } from "@/components/ui/Screen";
 import { Notice } from "@/components/ui/Notice";
 import { Button } from "@/components/ui/Button";
 import { BrandMark, Wordmark } from "@/components/brand/BrandMark";
-import { IconBook, IconCheck, IconGift, IconLink, IconStar } from "@/components/ui/icons";
+import { IconBook, IconCheck, IconGift, IconLink, IconStar, IconX } from "@/components/ui/icons";
 import { Bow, paperStyle } from "@/components/presents/Gift";
 import { BookCover, Ribbon, clothStyle } from "@/components/books/Book";
 import { BOOK_LOOK } from "@/lib/domain/books";
@@ -57,6 +70,10 @@ export default function SharedWishPage() {
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [tokens, setTokens] = useState<Record<string, string>>({});
+  // A friend's own book list: the private key this browser keeps to change it, and the code of
+  // this browser's own list, wherever it was started.
+  const [key, setKey] = useState<string | null>(null);
+  const [myList, setMyList] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!code) return;
@@ -70,7 +87,10 @@ export default function SharedWishPage() {
   useEffect(() => {
     if (!code) return;
     /* eslint-disable react-hooks/set-state-in-effect */
-    setRole((store.get(`${code}:role`) as "giver" | "owner" | null) ?? null);
+    const k = store.get(`${code}:key`);
+    setKey(k);
+    setMyList(store.get("mylist"));
+    setRole(k ? "owner" : ((store.get(`${code}:role`) as "giver" | "owner" | null) ?? null));
     setMyName(store.get("name") ?? "");
     try {
       setTokens(JSON.parse(store.get(`${code}:tokens`) ?? "{}"));
@@ -80,6 +100,45 @@ export default function SharedWishPage() {
     /* eslint-enable react-hooks/set-state-in-effect */
     load();
   }, [code, load]);
+
+  async function startOwn(name: string) {
+    if (!code) return;
+    const made = await startFriendList(code, name);
+    store.set("name", name.trim());
+    store.set(`${made.code}:key`, made.key);
+    store.set(`${made.code}:role`, "owner");
+    store.set("mylist", made.code);
+    // A full load: the page reads its code from the address once.
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+    window.location.assign(`/wish/?c=${made.code}`);
+  }
+
+  async function removeOwnBook(idea: SharedIdea) {
+    if (!code || !key) return;
+    setBusy(idea.id);
+    setError(null);
+    try {
+      await removeFriendBook(code, key, idea.id);
+    } catch (e) {
+      setError(friendlyError(e));
+    } finally {
+      setBusy(null);
+      load();
+    }
+  }
+
+  async function removeOwnList() {
+    if (!code || !key) return;
+    try {
+      await removeFriendList(code, key);
+      store.set(`${code}:key`, null);
+      if (store.get("mylist") === code) store.set("mylist", null);
+      setKey(null);
+      setList(null);
+    } catch (e) {
+      setError(friendlyError(e));
+    }
+  }
 
   function choose(r: "giver" | "owner") {
     setRole(r);
@@ -196,7 +255,12 @@ export default function SharedWishPage() {
         ) : (
           <>
             <div className="rounded-[var(--radius-card)] border border-line bg-card px-5 py-4 text-[15px] shadow-[var(--shadow-card)]">
-              {role === "owner" ? (
+              {key ? (
+                <p className="text-mute">
+                  This is your book wish list. Anyone with its link can see it and say they&apos;ll get you one, and you won&apos;t see which. Add the books
+                  you&apos;d like to read below.
+                </p>
+              ) : role === "owner" ? (
                 <p className="text-mute">
                   This is your list as {books ? "friends" : "family"} see it. What&apos;s being got stays hidden.{" "}
                   <button onClick={() => choose("giver")} className="font-semibold text-fg underline decoration-line underline-offset-4">
@@ -213,8 +277,20 @@ export default function SharedWishPage() {
 
             {error ? <Notice>{error}</Notice> : null}
 
+            {key && code ? (
+              <SharedBookAdd
+                forName="you"
+                onAdd={async (b) => {
+                  await addFriendBook(code, key, b);
+                  await load();
+                }}
+              />
+            ) : null}
+
             {ideas.length === 0 ? (
-              <p className="rounded-[var(--radius-card)] border-2 border-dashed border-line p-6 text-center text-mute">Nothing on the list yet. Check back soon.</p>
+              <p className="rounded-[var(--radius-card)] border-2 border-dashed border-line p-6 text-center text-mute">
+                {key ? "Nothing on your list yet. Search for a book above, or scan the barcode on the back of one." : "Nothing on the list yet. Check back soon."}
+              </p>
             ) : (
               <ul className="flex flex-col gap-2.5">
                 {ideas.map((i) => {
@@ -245,6 +321,7 @@ export default function SharedWishPage() {
                           <span className={`font-semibold leading-snug ${takenShown && !mineClaim ? "line-through decoration-mute/50" : ""}`}>{i.title}</span>
                         </p>
                         {books && i.author ? <p className="text-[14px] leading-snug text-mute">{i.author}</p> : null}
+                        {i.suggestedBy ? <p className="text-[13px] font-semibold text-[#9b2c2e]">Suggested by {i.suggestedBy}</p> : null}
                         {i.note ? <p className="text-[14px] leading-snug text-mute">{i.note}</p> : null}
                         {i.price || i.link ? (
                           <p className="flex flex-wrap items-center gap-1.5 pt-0.5 text-[12.5px]">
@@ -308,11 +385,49 @@ export default function SharedWishPage() {
                           )
                         ) : null}
                       </div>
+                      {key ? (
+                        <button
+                          onClick={() => removeOwnBook(i)}
+                          disabled={busy !== null}
+                          aria-label={`Take ${i.title} off your list`}
+                          className="grid size-11 shrink-0 place-items-center self-start text-mute hover:text-fg"
+                        >
+                          <IconX className="size-4" />
+                        </button>
+                      ) : null}
                     </li>
                   );
                 })}
               </ul>
             )}
+
+            {key && code && list ? <OwnListTools code={code} name={list.name} onRemove={removeOwnList} /> : null}
+
+            {books && !key && role === "giver" && code && list ? (
+              <SuggestBook
+                listName={list.name}
+                myName={myName}
+                onSuggest={async (name, b) => {
+                  await suggestBook(code, name, b);
+                  store.set("name", name.trim());
+                  await load();
+                }}
+              />
+            ) : null}
+
+            {books && !key && list && !list.friend ? (
+              myList && myList !== code ? (
+                <Link
+                  href={`/wish/?c=${myList}`}
+                  className="rounded-[var(--radius-card)] border border-line bg-card px-5 py-4 font-display text-[15px] font-bold shadow-[var(--shadow-card)]"
+                  style={{ color: BOOK_LOOK.cloth }}
+                >
+                  Go to your own book wish list ›
+                </Link>
+              ) : (
+                <StartOwnList listName={list.name} myName={myName} onStart={startOwn} />
+              )
+            ) : null}
 
             <p className="pt-2 text-center text-[13px] text-mute">
               Made with{" "}

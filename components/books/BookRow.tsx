@@ -15,6 +15,7 @@ export function BookRow({
   mine,
   busy,
   addedBy,
+  suggestedBy = null,
   owned,
   alsoWanted,
   claim,
@@ -27,6 +28,8 @@ export function BookRow({
   mine: boolean;
   busy: boolean;
   addedBy: string | null;
+  /** A friend who suggested it through the share link. */
+  suggestedBy?: string | null;
   /** The name of the place it's already kept, if the household has it. */
   owned: string | null;
   /** First names of others in the house who want it too. */
@@ -49,7 +52,7 @@ export function BookRow({
           {book.author ? <span className="text-[14px] leading-snug text-mute">{book.author}</span> : null}
           {book.note ? <span className="line-clamp-2 text-[13.5px] leading-snug text-mute">{book.note}</span> : null}
         </button>
-        {book.favourite || owned || alsoWanted.length || addedBy ? (
+        {book.favourite || owned || alsoWanted.length || addedBy || suggestedBy ? (
           <span className="flex flex-wrap items-center gap-1.5 pt-0.5 text-[12.5px]">
             {book.favourite ? (
               <span className="inline-flex items-center gap-1 rounded-full bg-check px-2 py-0.5 font-semibold text-[#7a5508]">
@@ -67,7 +70,11 @@ export function BookRow({
                 {alsoWanted.join(" and ")} too
               </span>
             ) : null}
-            {addedBy ? <span className="text-mute">added by {addedBy}</span> : null}
+            {suggestedBy ? (
+              <span className="rounded-full bg-[#f8e3e1] px-2 py-0.5 font-semibold text-[#9b2c2e]">Suggested by {suggestedBy}</span>
+            ) : addedBy ? (
+              <span className="text-mute">added by {addedBy}</span>
+            ) : null}
           </span>
         ) : null}
         {claim ? (

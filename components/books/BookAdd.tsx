@@ -36,14 +36,17 @@ export function BookAdd({
   onAddTyped,
   onLink,
   onScan,
+  placeholder = "Search a title, or paste a link",
 }: {
   forName: string;
   busy: string | null;
   status: string | null;
-  ownedIn: (title: string) => string | null;
+  ownedIn?: (title: string) => string | null;
   onAdd: (book: FoundBook) => Promise<void>;
   onAddTyped: (title: string) => Promise<void>;
-  onLink: (link: string) => Promise<void>;
+  /** Shop links need an account; without this, a link is just text. */
+  onLink?: (link: string) => Promise<void>;
+  placeholder?: string;
   onScan: (photo: File) => Promise<void>;
 }) {
   const [text, setText] = useState("");
@@ -52,7 +55,7 @@ export function BookAdd({
   const [offline, setOffline] = useState(false);
   const camera = useRef<HTMLInputElement>(null);
   const q = text.trim();
-  const isLink = looksLikeLink(q);
+  const isLink = !!onLink && looksLikeLink(q);
 
   // Look the title up as they type, after a short pause.
   useEffect(() => {
@@ -81,7 +84,7 @@ export function BookAdd({
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!q) return;
-    if (isLink) await onLink(q);
+    if (isLink) await onLink!(q);
     else await onAddTyped(q);
     setText("");
     setFound(null);
@@ -112,7 +115,7 @@ export function BookAdd({
           id="book-add"
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder="Search a title, or paste a link"
+          placeholder={placeholder}
           maxLength={200}
           autoComplete="off"
           enterKeyHint="search"
@@ -150,7 +153,7 @@ export function BookAdd({
           {results.length ? (
             <ul className="divide-y divide-line">
               {results.map((b) => {
-                const owned = ownedIn(b.title);
+                const owned = ownedIn?.(b.title) ?? null;
                 return (
                   <li key={`${b.title}|${b.author}|${b.coverId}`} className="flex items-center gap-3 px-3 py-2.5">
                     <BookCover title={b.title} author={b.author} coverId={b.coverId} look={false} className="w-10 text-[8px]" />
