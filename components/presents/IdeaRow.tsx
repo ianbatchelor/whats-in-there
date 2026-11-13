@@ -1,6 +1,7 @@
 import type { Wrap, WishIdea } from "@/lib/domain/presents";
 import { linkLabel } from "@/lib/domain/presents";
 import { IconCheck, IconLink, IconStar } from "@/components/ui/icons";
+import { wishPictureUrl } from "@/lib/presents";
 
 export type ClaimView = { byMe: boolean; name: string; fromLink: boolean };
 
@@ -38,6 +39,12 @@ export function IdeaRow({
       <span aria-hidden="true" className="relative w-3.5 shrink-0" style={{ background: wrap.paper }}>
         <span className="absolute top-4 left-1/2 size-[7px] -translate-x-1/2 rounded-full bg-card ring-1 ring-black/10" />
       </span>
+      {idea.imagePath ? (
+        <button onClick={onOpen} tabIndex={-1} aria-hidden="true" className="my-3 ml-3 size-16 shrink-0 overflow-hidden rounded-xl bg-white ring-1 ring-line">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={wishPictureUrl(idea.imagePath)} alt="" loading="lazy" className="h-full w-full object-contain" />
+        </button>
+      ) : null}
       <button onClick={onOpen} className="flex min-w-0 flex-1 flex-col gap-1 py-3 pr-2 pl-3.5 text-left" aria-label={`${idea.title}. Open to see or change details`}>
         <span className="flex min-w-0 items-start gap-1.5">
           {idea.favourite ? (

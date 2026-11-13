@@ -5,7 +5,7 @@ import Link from "next/link";
 import { isConfigured } from "@/lib/config";
 import { friendlyError } from "@/lib/supabase/errors";
 import { firstName, linkLabel, wishCodeFrom, wrapFor } from "@/lib/domain/presents";
-import { claimShared, loadShared, unclaimShared, type SharedIdea, type SharedList } from "@/lib/presents";
+import { claimShared, loadShared, unclaimShared, wishPictureUrl, type SharedIdea, type SharedList } from "@/lib/presents";
 import { SetupNeeded } from "@/components/SetupNeeded";
 import { Splash } from "@/components/ui/Screen";
 import { Notice } from "@/components/ui/Notice";
@@ -213,6 +213,10 @@ export default function SharedWishPage() {
                       <span aria-hidden="true" className="relative w-3.5 shrink-0" style={{ background: wrap.paper }}>
                         <span className="absolute top-4 left-1/2 size-[7px] -translate-x-1/2 rounded-full bg-card ring-1 ring-black/10" />
                       </span>
+                      {i.imagePath ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={wishPictureUrl(i.imagePath)} alt="" loading="lazy" className="my-3.5 ml-3.5 size-20 shrink-0 rounded-xl bg-white object-contain ring-1 ring-line" />
+                      ) : null}
                       <div className="flex min-w-0 flex-1 flex-col gap-1 py-3.5 pr-3 pl-3.5">
                         <p className="flex items-start gap-1.5">
                           {i.favourite ? <IconStar className="mt-[3px] size-4 shrink-0 fill-[#e9b949]! stroke-[#c8962a]!" /> : null}
