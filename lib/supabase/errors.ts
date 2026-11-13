@@ -16,6 +16,8 @@ const messages: Record<string, string> = {
   delete_failed: "We couldn't finish deleting your account. Please try again.",
   no_place: "Choose a place for it to go first.",
   already_on_list: "That's already on the shopping list.",
+  already_taken: "Someone else has just said they're getting that one.",
+  name_needed: "Add your first name, so others know who's getting it.",
   last_owner: "You're the only owner. Make someone else an owner before you leave.",
 };
 

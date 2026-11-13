@@ -83,3 +83,11 @@ export const IconMore = ({ className }: P) =>
   svg(<><circle cx="5.5" cy="12" r="1.3" fill="currentColor" /><circle cx="12" cy="12" r="1.3" fill="currentColor" /><circle cx="18.5" cy="12" r="1.3" fill="currentColor" /></>, className);
 export const IconBasket = ({ className }: P) =>
   svg(<><path d="M3.5 9.5h17l-1.6 8.6a2 2 0 0 1-2 1.6H7.1a2 2 0 0 1-2-1.6z" /><path d="m8 9.5 3-5.5M16 9.5l-3-5.5M9.5 13v3.5M14.5 13v3.5" /></>, className);
+export const IconGift = ({ className }: P) =>
+  svg(<><rect x="3.5" y="8.5" width="17" height="4" rx="1" /><path d="M5 12.5V20h14v-7.5M12 8.5V20M12 8.5C10.5 5 7 4.5 7 6.5c0 1.6 2.8 2 5 2zM12 8.5c1.5-3.5 5-4 5-2 0 1.6-2.8 2-5 2z" /></>, className);
+export const IconStar = ({ className }: P) =>
+  svg(<path d="m12 3.8 2.5 5.1 5.6.8-4 4 .9 5.6-5-2.7-5 2.7.9-5.6-4-4 5.6-.8z" />, className);
+export const IconShare = ({ className }: P) =>
+  svg(<path d="M12 15V3.5M7.5 8 12 3.5 16.5 8M5.5 12v6.5a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2V12" />, className);
+export const IconLink = ({ className }: P) =>
+  svg(<path d="M10 14a4.2 4.2 0 0 0 6 0l3-3a4.2 4.2 0 0 0-6-6l-1 1M14 10a4.2 4.2 0 0 0-6 0l-3 3a4.2 4.2 0 0 0 6 6l1-1" />, className);
