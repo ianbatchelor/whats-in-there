@@ -7,14 +7,15 @@ import { Button } from "@/components/ui/Button";
 import { Notice } from "@/components/ui/Notice";
 import { IconLink, IconStar } from "@/components/ui/icons";
 import { friendlyError } from "@/lib/supabase/errors";
-import { cleanLink, cleanPrice, firstName, linkLabel, type WishIdea } from "@/lib/domain/presents";
-import { updateIdea } from "@/lib/presents";
+import { cleanLink, cleanPrice, firstName, linkLabel, linkProblem, looksLikeLink, type WishIdea } from "@/lib/domain/presents";
+import { readLink, updateIdea, wishPictureUrl } from "@/lib/presents";
 
 /** The details of one idea: a note (size, colour), a shop link, a rough price, and top of the list. */
 export function IdeaSheet({
   idea,
   mine,
   personName,
+  householdId,
   onClose,
   onSaved,
   onRemove,
@@ -22,6 +23,7 @@ export function IdeaSheet({
   idea: WishIdea | null;
   mine: boolean;
   personName: string;
+  householdId: string;
   onClose: () => void;
   onSaved: () => void;
   onRemove: (idea: WishIdea) => void;
@@ -31,6 +33,9 @@ export function IdeaSheet({
   const [link, setLink] = useState("");
   const [price, setPrice] = useState("");
   const [favourite, setFavourite] = useState(false);
+  const [imagePath, setImagePath] = useState<string | null>(null);
+  const [reading, setReading] = useState(false);
+  const [readNote, setReadNote] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [linkError, setLinkError] = useState<string | undefined>();
@@ -43,6 +48,8 @@ export function IdeaSheet({
     setLink(idea.link ?? "");
     setPrice(idea.price ?? "");
     setFavourite(idea.favourite);
+    setImagePath(idea.imagePath);
+    setReadNote(null);
     setError(null);
     setLinkError(undefined);
     /* eslint-enable react-hooks/set-state-in-effect */
@@ -60,7 +67,7 @@ export function IdeaSheet({
     setBusy(true);
     setError(null);
     try {
-      await updateIdea(idea.id, { title: title.trim(), note: note.trim() || null, link: l, price: cleanPrice(price), favourite });
+      await updateIdea(idea.id, { title: title.trim(), note: note.trim() || null, link: l, price: cleanPrice(price), favourite, imagePath });
       onSaved();
     } catch (err) {
       setError(friendlyError(err));
@@ -69,9 +76,47 @@ export function IdeaSheet({
     }
   }
 
+  // Fill in from the shop link: always the picture and price; the name only if it's still the
+  // placeholder or a pasted link, so a name someone typed is never overwritten.
+  async function fillFromLink() {
+    const l = cleanLink(link);
+    if (!l || l === "bad") {
+      setLinkError("Paste the link from the shop's page first.");
+      return;
+    }
+    setLinkError(undefined);
+    setReading(true);
+    setReadNote(null);
+    const got = await readLink(householdId, l);
+    setReading(false);
+    if (!got.ok) {
+      setReadNote(linkProblem(got.code, got.shop ?? linkLabel(l)));
+      return;
+    }
+    const r = got.reading;
+    setLink(l);
+    const placeholder = !title.trim() || looksLikeLink(title) || /^Something from /.test(title);
+    if (r.title && placeholder) setTitle(r.title);
+    if (r.price) setPrice(r.price);
+    if (r.imagePath) setImagePath(r.imagePath);
+    const missing = [!r.title && "name", !r.price && "price", !r.imagePath && "picture"].filter(Boolean);
+    setReadNote(
+      missing.length ? `Filled in what ${r.shop} showed. No ${missing.join(" or ")} found, so add ${missing.length > 1 ? "those" : "that"} yourself.` : `Filled in from ${r.shop}. Prices change, so check before buying.`,
+    );
+  }
+
   return (
     <Sheet open={!!idea} onClose={onClose} title={mine ? "Your idea" : `Idea for ${firstName(personName)}`}>
       <form onSubmit={save} className="-mx-1 flex max-h-[78dvh] flex-col gap-4 overflow-y-auto px-1 pb-1">
+        {imagePath ? (
+          <div className="flex items-center gap-3">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={wishPictureUrl(imagePath)} alt="" className="size-20 shrink-0 rounded-xl bg-white object-contain ring-1 ring-line" />
+            <button type="button" onClick={() => setImagePath(null)} className="min-h-10 text-[14px] font-semibold text-mute hover:text-fg">
+              Remove picture
+            </button>
+          </div>
+        ) : null}
         <Field label="What is it?" value={title} onChange={(e) => setTitle(e.target.value)} maxLength={120} required />
         <div className="flex flex-col gap-1.5">
           <label htmlFor="idea-note" className="font-display text-sm font-bold">
@@ -97,6 +142,18 @@ export function IdeaSheet({
           placeholder="Paste a link to where it's sold"
           error={linkError}
         />
+        {link.trim() ? (
+          <div className="-mt-2 flex flex-col gap-1">
+            <Button type="button" variant="ghost" onClick={fillFromLink} busy={reading} className="min-h-10 self-start rounded-xl px-3.5 text-[14px]">
+              {reading ? "Reading the shop page…" : "Fill in from link"}
+            </Button>
+            {readNote ? (
+              <p role="status" className="text-[13.5px] text-mute">
+                {readNote}
+              </p>
+            ) : null}
+          </div>
+        ) : null}
         <Field label="Rough price (optional)" value={price} onChange={(e) => setPrice(e.target.value)} maxLength={30} placeholder="About £25" />
         <button
           type="button"

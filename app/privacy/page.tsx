@@ -45,10 +45,16 @@ export default function PrivacyPage() {
 
       <h2>Present lists you share</h2>
       <p>
-        If you share a present list, anyone with its link can see who the list is for and the ideas on it (titles, notes, links
-        and prices), without an account. Nothing else from your household is shown. Someone using the link can mark an idea
+        If you share a present list, anyone with its link can see who the list is for and the ideas on it (titles, notes, links,
+        prices and pictures), without an account. Nothing else from your household is shown. Someone using the link can mark an idea
         &ldquo;I&apos;m getting this&rdquo; and type a first name; we store that name and when it was marked, and the person the
         list is for never sees who is getting what. You can stop sharing at any time, and the old link stops working.
+      </p>
+      <p>
+        If you paste a shop link into a present idea, our server opens that page to fill in the name, price and picture, and may
+        send the page&apos;s text to <b>Claude (Anthropic)</b> to read them. The product picture is saved so the idea can show it.
+        These shop pictures are kept apart from your household&apos;s own photos, and anyone who has the address of a picture can
+        open it.
       </p>
 
       <h2>Reading photos with AI</h2>

@@ -3,6 +3,7 @@ import {
   cleanLink,
   cleanPrice,
   ideaCountCaption,
+  looksLikeLink,
   linkLabel,
   people,
   shareMessage,
@@ -25,6 +26,7 @@ const idea = (id: string, addedAt: string, favourite = false): WishIdea => ({
   link: null,
   price: null,
   favourite,
+  imagePath: null,
   addedBy: null,
   addedAt,
 });
@@ -97,5 +99,16 @@ describe("looks", () => {
     expect(ideaCountCaption(0)).toBe("start a list");
     expect(ideaCountCaption(1)).toBe("present idea");
     expect(ideaCountCaption(5)).toBe("present ideas");
+  });
+});
+
+describe("pasting a link into the add box", () => {
+  it("treats shop links as links and names as names", () => {
+    expect(looksLikeLink("https://www.amazon.co.uk/dp/B0TEST")).toBe(true);
+    expect(looksLikeLink("amzn.eu/d/abc123")).toBe(true);
+    expect(looksLikeLink("www.argos.co.uk/product/123")).toBe(true);
+    expect(looksLikeLink("Cashmere jumper")).toBe(false);
+    expect(looksLikeLink("Book.")).toBe(false);
+    expect(looksLikeLink("Mr.Men")).toBe(false);
   });
 });

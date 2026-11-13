@@ -8,8 +8,8 @@ import { HouseholdLoading, PageHeader } from "@/components/common/PageHeader";
 import { useHousehold } from "@/lib/hooks/useHousehold";
 import { supabase } from "@/lib/supabase/client";
 import { friendlyError } from "@/lib/supabase/errors";
-import { addIdea, addNamedList, claimIdea, ensureList, loadPresents, removeIdea, unclaimIdea, type Presents } from "@/lib/presents";
-import { firstName, people, sortIdeas, wouldLove, wrapFor, type Person, type WishIdea } from "@/lib/domain/presents";
+import { addIdea, addNamedList, claimIdea, ensureList, loadPresents, readLink, removeIdea, unclaimIdea, type Presents } from "@/lib/presents";
+import { cleanLink, firstName, linkLabel, linkProblem, looksLikeLink, people, sortIdeas, wouldLove, wrapFor, type Person, type WishIdea } from "@/lib/domain/presents";
 import { Button } from "@/components/ui/Button";
 import { Notice } from "@/components/ui/Notice";
 import { Toast, type ToastData } from "@/components/ui/Toast";
@@ -114,9 +114,37 @@ function PresentIdeas({ session }: { session: Session }) {
     e.preventDefault();
     const t = title.trim();
     if (!t || !current || !person) return;
+    if (looksLikeLink(t)) return addFromLink(t);
     await run("add", async () => {
       await addIdea(current.householdId, await listId(), { title: t, note: null, link: null, price: null, favourite: false });
       setTitle("");
+    });
+  }
+
+  // A pasted shop link: read the page for its name, price and picture, then add it.
+  async function addFromLink(raw: string) {
+    const link = cleanLink(raw);
+    if (!link || link === "bad") {
+      setError(linkProblem("bad_link"));
+      return;
+    }
+    await run("add", async () => {
+      const id = await listId();
+      const got = await readLink(current!.householdId, link);
+      const shop = got.ok ? got.reading.shop : (got.shop ?? linkLabel(link));
+      const r = got.ok ? got.reading : null;
+      await addIdea(current!.householdId, id, {
+        title: r?.title ?? `Something from ${shop}`,
+        note: null,
+        link,
+        price: r?.price ?? null,
+        favourite: false,
+        imagePath: r?.imagePath ?? null,
+      });
+      setTitle("");
+      if (!got.ok) say(linkProblem(got.code, shop));
+      else if (!r!.title || r!.titleFromLink || !r!.price) say(`Added from ${shop}. Tap it to check the name and add a price.`);
+      else say(`Added from ${shop}. Tap it to check the details.`);
     });
   }
 
@@ -133,7 +161,9 @@ function PresentIdeas({ session }: { session: Session }) {
       await removeIdea(idea.id);
       setEditing(null);
       say(`Took ${idea.title} off the list`, () =>
-        run(idea.id, () => addIdea(current!.householdId, idea.listId, { title: idea.title, note: idea.note, link: idea.link, price: idea.price, favourite: idea.favourite })),
+        run(idea.id, () =>
+          addIdea(current!.householdId, idea.listId, { title: idea.title, note: idea.note, link: idea.link, price: idea.price, favourite: idea.favourite, imagePath: idea.imagePath }),
+        ),
       );
     });
 
@@ -236,7 +266,7 @@ function PresentIdeas({ session }: { session: Session }) {
                   id="idea-add"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder={mine ? "Add something you'd love" : `Add an idea for ${firstName(person.name)}`}
+                  placeholder="Add an idea or paste a link"
                   maxLength={120}
                   autoComplete="off"
                   enterKeyHint="done"
@@ -246,6 +276,11 @@ function PresentIdeas({ session }: { session: Session }) {
                   <IconPlus className="size-[18px]" /> Add
                 </Button>
               </form>
+              {busy === "add" && looksLikeLink(title) ? (
+                <p role="status" className="-mt-2 text-[14px] text-mute">
+                  Reading the shop page for the name, price and picture…
+                </p>
+              ) : null}
 
               {ideas.length === 0 ? (
                 <div className="flex items-center gap-3.5 rounded-[var(--radius-card)] border-2 border-dashed border-line bg-sunk/40 p-5">
@@ -300,6 +335,7 @@ function PresentIdeas({ session }: { session: Session }) {
         idea={editing}
         mine={mine}
         personName={person?.name ?? ""}
+        householdId={current?.householdId ?? ""}
         onClose={() => setEditing(null)}
         onSaved={() => {
           setEditing(null);

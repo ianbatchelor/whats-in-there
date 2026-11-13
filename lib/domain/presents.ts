@@ -16,6 +16,8 @@ export type WishIdea = {
   link: string | null;
   price: string | null;
   favourite: boolean;
+  /** A copy of the shop's picture, in the public wish-pictures bucket. */
+  imagePath: string | null;
   addedBy: string | null;
   addedAt: string;
 };
@@ -129,4 +131,33 @@ export function shareMessage(name: string, url: string, mine: boolean): string {
 /** For the Home card: how many ideas there are across the household. */
 export function ideaCountCaption(n: number): string {
   return n === 0 ? "start a list" : n === 1 ? "present idea" : "present ideas";
+}
+
+/**
+ * Whether what was typed in the add box is a shop link rather than a name: no spaces, and either
+ * starts like a web address or has a dot and a slash (amzn.eu/d/abc).
+ */
+export function looksLikeLink(text: string): boolean {
+  const t = text.trim();
+  if (!t || /\s/.test(t)) return false;
+  return /^(https?:\/\/|www\.)/i.test(t) || (/^[a-z0-9-]+(\.[a-z0-9-]+)+\//i.test(t) && cleanLink(t) !== "bad");
+}
+
+/** Why a link couldn't be read, in plain words. */
+export function linkProblem(code: string, shop?: string): string {
+  const where = shop ? shop : "the shop";
+  switch (code) {
+    case "shop_blocked":
+      return `${where} didn't let us read the page this time. Add the name and price yourself, or try again later.`;
+    case "too_many_links":
+      return "You've filled in 100 links this month. Add the details yourself for now.";
+    case "too_many_now":
+      return "That's a lot of links at once. Wait a minute and try again.";
+    case "bad_link":
+      return "That doesn't look like a shop link. Copy it from the shop's page and paste it again.";
+    case "not_configured":
+      return "Filling in from links needs a quick update first. Add the details yourself for now.";
+    default:
+      return `Couldn't read ${where}'s page. Add the name and price yourself.`;
+  }
 }
