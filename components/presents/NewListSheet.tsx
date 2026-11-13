@@ -8,7 +8,17 @@ import { Notice } from "@/components/ui/Notice";
 import { friendlyError } from "@/lib/supabase/errors";
 
 /** A list for someone without an account here, such as a child or a grandparent. */
-export function NewListSheet({ open, onClose, onAdd }: { open: boolean; onClose: () => void; onAdd: (name: string) => Promise<void> }) {
+export function NewListSheet({
+  open,
+  onClose,
+  onAdd,
+  books = false,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onAdd: (name: string) => Promise<void>;
+  books?: boolean;
+}) {
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -32,7 +42,7 @@ export function NewListSheet({ open, onClose, onAdd }: { open: boolean; onClose:
     <Sheet open={open} onClose={onClose} title="A list for someone else">
       <form onSubmit={save} className="flex flex-col gap-4">
         <p className="text-[15px] text-mute">
-          For someone who doesn&apos;t use the app, such as a child. Everyone in your household can add ideas to it and share it.
+          For someone who doesn&apos;t use the app, such as a child. Everyone in your household can add {books ? "books" : "ideas"} to it and share it.
           People in your household already have a list each.
         </p>
         <Field label="Who's it for?" value={name} onChange={(e) => setName(e.target.value)} maxLength={60} placeholder="Ollie" autoFocus required />

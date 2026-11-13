@@ -8,6 +8,7 @@ import { IconCopy, IconShare } from "@/components/ui/icons";
 import { publicOrigin } from "@/lib/config";
 import { friendlyError } from "@/lib/supabase/errors";
 import { firstName, shareMessage, wishShareUrl, type WishList } from "@/lib/domain/presents";
+import { bookShareMessage } from "@/lib/domain/books";
 import { removeList, shareList, unshareList } from "@/lib/presents";
 
 /**
@@ -49,6 +50,7 @@ export function ShareSheet({
 
   const url = code ? wishShareUrl(publicOrigin(), code) : null;
   const first = firstName(name);
+  const books = list.kind === "books";
 
   async function work(key: string, fn: () => Promise<void>) {
     setBusy(key);
@@ -70,7 +72,7 @@ export function ShareSheet({
 
   async function send() {
     if (!url) return;
-    const text = shareMessage(name, url, mine);
+    const text = books ? bookShareMessage(name, url, mine) : shareMessage(name, url, mine);
     try {
       if (navigator.share) {
         await navigator.share({ text });
@@ -111,8 +113,9 @@ export function ShareSheet({
     <Sheet open={open} onClose={onClose} title={mine ? "Share your list" : `Share ${first}'s list`}>
       <div className="flex flex-col gap-4">
         <p className="text-[15px] text-mute">
-          Send a private link to grandparents, aunts and uncles, anyone who asks what to get. They don&apos;t need the app. They can see the ideas and
-          tap &ldquo;I&apos;m getting this&rdquo; so nobody buys the same thing twice.
+          {books
+            ? "Send a private link to friends and family, anyone who might lend or buy you a book. They don't need the app. They can see the books and tap “I'll get this” so nobody buys the same one twice."
+            : "Send a private link to grandparents, aunts and uncles, anyone who asks what to get. They don't need the app. They can see the ideas and tap “I'm getting this” so nobody buys the same thing twice."}
           {mine ? " The page asks first whether it's you, so you don't spoil the surprise." : ` ${first} won't see who's getting what.`}
         </p>
 
@@ -147,7 +150,9 @@ export function ShareSheet({
           <div className="border-t border-line pt-4">
             {confirmRemove ? (
               <div className="flex flex-col gap-2">
-                <p className="text-[14.5px]">Remove {first}&apos;s list and all its ideas? This can&apos;t be undone.</p>
+                <p className="text-[14.5px]">
+                  Remove {first}&apos;s list and all its {books ? "books" : "ideas"}? This can&apos;t be undone.
+                </p>
                 <div className="flex gap-2">
                   <Button variant="danger" onClick={remove} busy={busy === "remove"} className="ring-1 ring-warn/40 ring-inset">
                     Remove the list

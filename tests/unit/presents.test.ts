@@ -17,7 +17,7 @@ import {
   type WishList,
 } from "@/lib/domain/presents";
 
-const list = (id: string, forUser: string | null, name: string | null = null): WishList => ({ id, forUser, name, shareCode: null, createdAt: "2026-11-13" });
+const list = (id: string, forUser: string | null, name: string | null = null): WishList => ({ id, kind: "presents", forUser, name, shareCode: null, createdAt: "2026-11-13" });
 const idea = (id: string, addedAt: string, favourite = false): WishIdea => ({
   id,
   listId: "l",
@@ -27,6 +27,9 @@ const idea = (id: string, addedAt: string, favourite = false): WishIdea => ({
   price: null,
   favourite,
   imagePath: null,
+  author: null,
+  isbn: null,
+  coverId: null,
   addedBy: null,
   addedAt,
 });

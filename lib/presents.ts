@@ -1,10 +1,14 @@
 import { supabase } from "@/lib/supabase/client";
 import { config } from "@/lib/config";
-import type { WishClaim, WishIdea, WishList } from "@/lib/domain/presents";
+import type { WishClaim, WishIdea, WishKind, WishList } from "@/lib/domain/presents";
+
+const LIST_COLUMNS = "id, kind, for_user, name, share_code, created_at";
+const IDEA_COLUMNS = "id, list_id, title, note, link, price, favourite, image_path, author, isbn, cover_id, added_by, added_at";
 
 function toList(r: Record<string, unknown>): WishList {
   return {
     id: r.id as string,
+    kind: r.kind === "books" ? "books" : "presents",
     forUser: (r.for_user as string | null) ?? null,
     name: (r.name as string | null) ?? null,
     shareCode: (r.share_code as string | null) ?? null,
@@ -22,6 +26,9 @@ function toIdea(r: Record<string, unknown>): WishIdea {
     price: (r.price as string | null) ?? null,
     favourite: Boolean(r.favourite),
     imagePath: (r.image_path as string | null) ?? null,
+    author: (r.author as string | null) ?? null,
+    isbn: (r.isbn as string | null) ?? null,
+    coverId: typeof r.cover_id === "number" ? r.cover_id : null,
     addedBy: (r.added_by as string | null) ?? null,
     addedAt: r.added_at as string,
   };
@@ -29,52 +36,64 @@ function toIdea(r: Record<string, unknown>): WishIdea {
 
 export type Presents = { lists: WishList[]; ideas: WishIdea[]; claims: WishClaim[] };
 
-/** Everything for the household. Claims on your own list never come back: the database hides them. */
-export async function loadPresents(householdId: string): Promise<Presents> {
+/**
+ * Everything for the household of one kind: present lists or book wish lists. Claims on your own
+ * list never come back: the database hides them.
+ */
+export async function loadPresents(householdId: string, kind: WishKind = "presents"): Promise<Presents> {
   const db = supabase();
   const [l, i, c] = await Promise.all([
-    db.from("wish_lists").select("id, for_user, name, share_code, created_at").eq("household_id", householdId),
-    db.from("wish_ideas").select("id, list_id, title, note, link, price, favourite, image_path, added_by, added_at").eq("household_id", householdId).order("added_at"),
-    db.from("wish_claims").select("idea_id, claimed_by, claimed_name").eq("household_id", householdId),
+    db.from("wish_lists").select(LIST_COLUMNS).eq("household_id", householdId).eq("kind", kind),
+    db.from("wish_ideas").select(IDEA_COLUMNS).eq("household_id", householdId).order("added_at"),
+    db.from("wish_claims").select("idea_id, list_id, claimed_by, claimed_name").eq("household_id", householdId),
   ]);
   if (l.error) throw l.error;
   if (i.error) throw i.error;
   if (c.error) throw c.error;
+  const lists = (l.data ?? []).map(toList);
+  const ids = new Set(lists.map((x) => x.id));
   return {
-    lists: (l.data ?? []).map(toList),
-    ideas: (i.data ?? []).map(toIdea),
-    claims: (c.data ?? []).map((r) => ({ ideaId: r.idea_id as string, claimedBy: (r.claimed_by as string | null) ?? null, claimedName: (r.claimed_name as string | null) ?? null })),
+    lists,
+    ideas: (i.data ?? []).map(toIdea).filter((x) => ids.has(x.listId)),
+    claims: (c.data ?? [])
+      .filter((r) => ids.has(r.list_id as string))
+      .map((r) => ({ ideaId: r.idea_id as string, claimedBy: (r.claimed_by as string | null) ?? null, claimedName: (r.claimed_name as string | null) ?? null })),
   };
 }
 
-/** How many ideas there are, for the Home card. */
-export async function countIdeas(householdId: string): Promise<number> {
-  const { count, error } = await supabase().from("wish_ideas").select("id", { count: "exact", head: true }).eq("household_id", householdId);
+/** How many ideas (or books) there are, for the Home card. */
+export async function countIdeas(householdId: string, kind: WishKind = "presents"): Promise<number> {
+  const db = supabase();
+  const l = await db.from("wish_lists").select("id").eq("household_id", householdId).eq("kind", kind);
+  if (l.error) throw l.error;
+  const ids = (l.data ?? []).map((r) => r.id as string);
+  if (ids.length === 0) return 0;
+  const { count, error } = await db.from("wish_ideas").select("id", { count: "exact", head: true }).eq("household_id", householdId).in("list_id", ids);
   if (error) throw error;
   return count ?? 0;
 }
 
 /** A household member's list, made the first time something goes on it. */
-export async function ensureList(householdId: string, forUser: string): Promise<WishList> {
+export async function ensureList(householdId: string, forUser: string, kind: WishKind = "presents"): Promise<WishList> {
   const db = supabase();
-  const found = await db.from("wish_lists").select("id, for_user, name, share_code, created_at").eq("household_id", householdId).eq("for_user", forUser).maybeSingle();
+  const found = await db.from("wish_lists").select(LIST_COLUMNS).eq("household_id", householdId).eq("kind", kind).eq("for_user", forUser).maybeSingle();
   if (found.error) throw found.error;
   if (found.data) return toList(found.data);
-  const { data, error } = await db.from("wish_lists").insert({ household_id: householdId, for_user: forUser }).select("id, for_user, name, share_code, created_at").single();
+  const { data, error } = await db.from("wish_lists").insert({ household_id: householdId, for_user: forUser, kind }).select(LIST_COLUMNS).single();
   if (error) {
     // Someone else made it a moment ago.
-    if ((error as { code?: string }).code === "23505") return ensureList(householdId, forUser);
+    if ((error as { code?: string }).code === "23505") return ensureList(householdId, forUser, kind);
     throw error;
   }
   return toList(data);
 }
 
 /** A list for someone without an account, such as a child. */
-export async function addNamedList(householdId: string, name: string): Promise<WishList> {
+export async function addNamedList(householdId: string, name: string, kind: WishKind = "presents"): Promise<WishList> {
   const { data, error } = await supabase()
     .from("wish_lists")
-    .insert({ household_id: householdId, name: name.trim().slice(0, 60) })
-    .select("id, for_user, name, share_code, created_at")
+    .insert({ household_id: householdId, name: name.trim().slice(0, 60), kind })
+    .select(LIST_COLUMNS)
     .single();
   if (error) throw error;
   return toList(data);
@@ -90,11 +109,28 @@ export async function removeList(id: string): Promise<void> {
   if (error) throw error;
 }
 
-export type IdeaInput = { title: string; note: string | null; link: string | null; price: string | null; favourite: boolean; imagePath?: string | null };
+export type IdeaInput = {
+  title: string;
+  note: string | null;
+  link: string | null;
+  price: string | null;
+  favourite: boolean;
+  imagePath?: string | null;
+  /** Books only. */
+  author?: string | null;
+  isbn?: string | null;
+  coverId?: number | null;
+};
 
 function ideaRow(input: Partial<IdeaInput>) {
-  const { imagePath, ...rest } = input;
-  return imagePath === undefined ? rest : { ...rest, image_path: imagePath };
+  const { imagePath, author, isbn, coverId, ...rest } = input;
+  return {
+    ...rest,
+    ...(imagePath === undefined ? {} : { image_path: imagePath }),
+    ...(author === undefined ? {} : { author: author?.trim().slice(0, 120) || null }),
+    ...(isbn === undefined ? {} : { isbn }),
+    ...(coverId === undefined ? {} : { cover_id: coverId }),
+  };
 }
 
 export async function addIdea(householdId: string, listId: string, input: IdeaInput): Promise<void> {
@@ -179,8 +215,20 @@ export async function unshareList(listId: string): Promise<void> {
 
 // ---------- The shared page, for people without an account ----------
 
-export type SharedIdea = { id: string; title: string; note: string | null; link: string | null; price: string | null; favourite: boolean; imagePath?: string | null; taken: boolean; takenBy: string | null };
-export type SharedList = { name: string; ideas: SharedIdea[] };
+export type SharedIdea = {
+  id: string;
+  title: string;
+  note: string | null;
+  link: string | null;
+  price: string | null;
+  favourite: boolean;
+  imagePath?: string | null;
+  author?: string | null;
+  coverId?: number | null;
+  taken: boolean;
+  takenBy: string | null;
+};
+export type SharedList = { name: string; kind?: WishKind; ideas: SharedIdea[] };
 
 export async function loadShared(code: string): Promise<SharedList | null> {
   const { data, error } = await supabase().rpc("shared_wish_list", { p_code: code });
