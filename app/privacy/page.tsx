@@ -43,10 +43,10 @@ export default function PrivacyPage() {
         itself, not just by the app.
       </p>
 
-      <h2>Present lists you share</h2>
+      <h2>Present and book lists you share</h2>
       <p>
-        If you share a present list, anyone with its link can see who the list is for and the ideas on it (titles, notes, links,
-        prices and pictures), without an account. Nothing else from your household is shown. Someone using the link can mark an idea
+        If you share a present list or a book wish list, anyone with its link can see who the list is for and what&apos;s on it (titles, authors, notes,
+        links, prices and pictures), without an account. Nothing else from your household is shown. Someone using the link can mark an idea
         &ldquo;I&apos;m getting this&rdquo; and type a first name; we store that name and when it was marked, and the person the
         list is for never sees who is getting what. You can stop sharing at any time, and the old link stops working.
       </p>
@@ -80,12 +80,16 @@ export default function PrivacyPage() {
         To show book covers, your device asks <b>Open Library</b> for the cover of each book on your list, using only the book&apos;s
         title and author, and then loads the cover picture from Open Library. Nothing about you or your household is sent with it.
       </p>
+      <p>
+        When you add a book to a wish list, your device sends the title you type, or the ISBN read from a book&apos;s barcode, to{" "}
+        <b>Open Library</b> to find the book. Barcodes are read on your device, so these photos are not sent anywhere.
+      </p>
 
       <h2>Companies that help run the app</h2>
       <ul>
         <li><b>Supabase</b> stores your account, households and photos, in Europe.</li>
         <li><b>Anthropic</b> reads photos you choose to scan, as above.</li>
-        <li><b>Open Library</b> and <b>Open Food Facts</b> are asked what a scanned barcode is, and Open Library for book covers, as above.</li>
+        <li><b>Open Library</b> and <b>Open Food Facts</b> are asked what a scanned barcode is, and Open Library for book covers and book searches, as above.</li>
         <li><b>Resend</b> sends the sign-in code emails.</li>
         <li><b>Vercel</b> hosts the website.</li>
         <li><b>Cloudflare</b> may check that sign-ins come from a person and not a bot.</li>
