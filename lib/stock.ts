@@ -5,9 +5,10 @@ import { todayIso } from "@/lib/domain/dates";
 import type { StockUnit } from "@/lib/domain/quantity";
 import { loadPlaces, type LocationType } from "@/lib/household";
 import { pickPeeks, type Peek } from "@/lib/domain/boxLook";
+import { isWineColour, type WineDetails } from "@/lib/domain/wine";
 
 const COLUMNS =
-  "id, location_id, product_name, brand, category, quantity, unit, weight_value, weight_unit, use_by_date, best_before_date, frozen_at, added_at, added_by, notes, image_path, version, lent_to, lent_on";
+  "id, location_id, product_name, brand, category, quantity, unit, weight_value, weight_unit, use_by_date, best_before_date, frozen_at, added_at, added_by, notes, image_path, version, lent_to, lent_on, vintage, wine_colour, grape, region, drink_from, drink_until, saved_for";
 
 type Row = Record<string, unknown>;
 
@@ -32,7 +33,34 @@ function toItem(r: Row): StockItem {
     lentTo: (r.lent_to as string | null | undefined) ?? null,
     lentOn: (r.lent_on as string | null | undefined) ?? null,
     version: r.version as number,
+    vintage: (r.vintage as number | null | undefined) ?? null,
+    wineColour: isWineColour(r.wine_colour) ? r.wine_colour : null,
+    grape: (r.grape as string | null | undefined) ?? null,
+    region: (r.region as string | null | undefined) ?? null,
+    drinkFrom: (r.drink_from as number | null | undefined) ?? null,
+    drinkUntil: (r.drink_until as number | null | undefined) ?? null,
+    savedFor: (r.saved_for as string | null | undefined) ?? null,
   };
+}
+
+function hasWine(w: Partial<WineDetails> | undefined): w is Partial<WineDetails> {
+  return !!w && Object.values(w).some((v) => v !== null && v !== undefined && v !== "");
+}
+
+/** Saves a bottle's wine details. Clearing them all is a save too, so an edit can remove them. */
+export async function setWine(itemId: string, w: Partial<WineDetails>): Promise<StockItem> {
+  const { data, error } = await supabase().rpc("set_wine_details", {
+    p_item: itemId,
+    p_vintage: w.vintage ?? null,
+    p_colour: w.wineColour ?? null,
+    p_grape: w.grape ?? null,
+    p_region: w.region ?? null,
+    p_drink_from: w.drinkFrom ?? null,
+    p_drink_until: w.drinkUntil ?? null,
+    p_saved_for: w.savedFor ?? null,
+  });
+  if (error) throw error;
+  return toItem(data as Row);
 }
 
 export async function loadItems(locationId: string): Promise<StockItem[]> {
@@ -82,6 +110,8 @@ export type NewItem = {
   notes?: string;
   /** Storage path of the label photo, when the item was read from one. */
   imagePath?: string | null;
+  /** For bottles in a wine rack. */
+  wine?: Partial<WineDetails>;
 };
 
 async function latestMovementId(itemId: string, action: "add" | "remove" | "move"): Promise<string | null> {
@@ -114,7 +144,8 @@ export async function addItem(input: NewItem): Promise<{ item: StockItem; moveme
     p_source: input.imagePath ? "photo" : "manual",
   });
   if (error) throw error;
-  const item = toItem(data as Row);
+  let item = toItem(data as Row);
+  if (hasWine(input.wine)) item = await setWine(item.id, input.wine);
   return { item, movementId: await latestMovementId(item.id, "add") };
 }
 
@@ -166,6 +197,8 @@ export type ItemEdit = {
   bestBeforeDate: string | null;
   frozenAt: string | null;
   notes: string | null;
+  /** Given for bottles in a wine rack; saved alongside the other details. */
+  wine?: Partial<WineDetails>;
 };
 
 export async function updateItem(item: StockItem, edit: ItemEdit): Promise<StockItem> {
@@ -185,7 +218,8 @@ export async function updateItem(item: StockItem, edit: ItemEdit): Promise<Stock
     p_notes: edit.notes || null,
   });
   if (error) throw error;
-  return toItem(data as Row);
+  const updated = toItem(data as Row);
+  return edit.wine ? setWine(updated.id, edit.wine) : updated;
 }
 
 /** Moves the whole thing to another place in the household. The move can be undone with its movement id. */
@@ -370,15 +404,16 @@ export async function loadPlaceLastActivity(locationId: string): Promise<{ actor
   return data ? { actor: (data.actor_user_id as string | null) ?? null, at: data.created_at as string } : null;
 }
 
-/** Things with a printed date inside the "use soon" window or past it, soonest first. */
+/** Things with a printed date inside the "use soon" window or past it, and wine to drink this year, soonest first. */
 export async function loadAttention(householdId: string): Promise<StockItem[]> {
-  const cutoff = addDays(todayIso(), SOON_DAYS);
+  const today = todayIso();
+  const cutoff = addDays(today, SOON_DAYS);
   const { data, error } = await supabase()
     .from("stock_items")
     .select(COLUMNS)
     .eq("household_id", householdId)
     .eq("status", "in_stock")
-    .or(`use_by_date.lte.${cutoff},best_before_date.lte.${cutoff}`)
+    .or(`use_by_date.lte.${cutoff},best_before_date.lte.${cutoff},drink_until.lte.${today.slice(0, 4)}`)
     .limit(500);
   if (error) throw error;
   return sortUseFirst((data ?? []).map(toItem));

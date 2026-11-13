@@ -50,7 +50,8 @@ const CORS = {
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-const FIELDS = ["product_name", "brand", "quantity", "weight", "use_by_date", "best_before_date"];
+const FIELDS = ["product_name", "brand", "quantity", "weight", "use_by_date", "best_before_date", "vintage", "grape", "region"];
+const WINE_COLOURS = ["red", "white", "rose", "sparkling", "sweet", "fortified"];
 const nullable = (schema: Record<string, unknown>) => ({ anyOf: [schema, { type: "null" }] });
 
 const SCHEMA = {
@@ -68,6 +69,7 @@ const SCHEMA = {
     "best_before_date",
     "uncertain",
     "barcode",
+    "wine",
   ],
   properties: {
     readable: { type: "boolean", description: "False if the photo shows no product or label you can read." },
@@ -81,10 +83,23 @@ const SCHEMA = {
     best_before_date: nullable({ type: "string", description: "YYYY-MM-DD" }),
     uncertain: { type: "array", items: { type: "string", enum: FIELDS } },
     barcode: nullable({ type: "string", description: "The digits printed under the barcode, digits only, else null." }),
+    wine: nullable({
+      type: "object",
+      additionalProperties: false,
+      required: ["vintage", "colour", "grape", "region", "drink_from", "drink_until"],
+      properties: {
+        vintage: nullable({ type: "integer", description: "The year printed on the label, else null (non-vintage)." }),
+        colour: { type: "string", enum: WINE_COLOURS },
+        grape: nullable({ type: "string", description: "Grape or blend, e.g. 'Tempranillo' or 'Cabernet Sauvignon, Merlot'." }),
+        region: nullable({ type: "string", description: "Region and country, e.g. 'Rioja, Spain'." }),
+        drink_from: nullable({ type: "integer", description: "First year it is likely to be good to drink." }),
+        drink_until: nullable({ type: "integer", description: "Last year it is likely to be at its best." }),
+      },
+    }),
   },
 } as const;
 
-const SYSTEM = `You read photos of food and household product labels, and of books, for a UK home inventory app.
+const SYSTEM = `You read photos of food and household product labels, wine labels and books, for a UK home inventory app.
 Return only what is printed or clearly visible. Never guess a date that isn't printed, and never decide whether food is safe.
 You may get several photos of the same pack, for example the front and the back. Combine them into one reading: the name usually comes from the front, while dates and weights are often on the back, the side or the lid.
 
@@ -95,6 +110,7 @@ You may get several photos of the same pack, for example the front and the back.
 - Dates are en-GB: 03/04 means 3 April. "Use by" goes in use_by_date. "Best before", "BB", "BBE" and "Best before end" go in best_before_date. If no year is printed, use the next date on or after today's date minus 30 days. If only a month and year are printed, use the last day of that month. Use YYYY-MM-DD.
 - barcode: if a barcode is visible, the 8 to 14 digits printed under it, digits only. On a book this is the ISBN, usually 13 digits starting 978 or 979. Null if there is no barcode or you can't read every digit clearly.
 - For a book, product_name is the title and brand is the author, and the unit is "item". If you can only see the back cover, write the title if it is printed there, otherwise leave product_name empty and list it in uncertain, but still read the barcode and set readable to true.
+- Wine (and port, sherry, champagne and other bottled wine): product_name is the wine as a person would say it, without the vintage year, e.g. "Château Musar", "Rioja Reserva", "Picpoul de Pinet". brand is the producer or château if it differs from the name, else null. The unit is "item" (bottles) and quantity is 1 unless you can see more bottles. Fill in wine: vintage only if a year is printed; colour (rose for rosé, sparkling for champagne, prosecco, cava and other fizz, sweet for dessert wines, fortified for port, sherry and madeira); grape and region from the label, or from what you reliably know about this wine; drink_from and drink_until as a sensible drinking window in years for this wine and vintage, using what you know about the style (most everyday wines are best within two or three years of the vintage; good reds and sweet wines keep longer). The drinking window is always an estimate. For anything that isn't wine, wine is null. Spirits, beer and cider are not wine.
 - uncertain: list every field you inferred, guessed or read from blurry or partly hidden print, including any date where you had to supply the year or day.
 - If there is no readable product or label, set readable to false, product_name to "" and everything else to null or the defaults.`;
 

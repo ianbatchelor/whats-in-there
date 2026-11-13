@@ -26,6 +26,8 @@ import { placeType } from "@/components/home/placeTypes";
 import { ItemList, ItemListSkeleton, ItemRow } from "@/components/stock/ItemRow";
 import { ItemGrid } from "@/components/stock/ItemGrid";
 import { tookOutMessage } from "@/components/stock/useQuickTake";
+import { WineSummary } from "@/components/place/WineSummary";
+import { drinkSoon, sortRack, type WineColour } from "@/lib/domain/wine";
 import { usePlaceView } from "@/components/stock/usePlaceView";
 import { useUndoToast } from "@/components/stock/useUndoToast";
 import { useQuickTake } from "@/components/stock/useQuickTake";
@@ -66,6 +68,8 @@ function Place() {
   const [sticker, setSticker] = useState(false);
   const [open, setOpen] = useState<StockItem | null>(null);
   const [category, setCategory] = useState<string | null>(null);
+  /** In a wine rack: show one colour only. "none" is bottles with no colour set. */
+  const [colour, setColour] = useState<WineColour | "none" | null>(null);
   const [last, setLast] = useState<{ actor: string | null; at: string } | null>(null);
   /** Every place in the household, for the boxes inside this one and the place this one is in. */
   const [family, setFamily] = useState<PlaceRow[] | null>(null);
@@ -153,10 +157,14 @@ function Place() {
   const shown = useMemo(() => {
     if (!items) return null;
     const q = filter.trim().toLowerCase();
-    return items.filter(
-      (i) => (!category || i.category?.trim() === category) && (!q || [i.productName, i.brand, i.category, i.notes].some((v) => v?.toLowerCase().includes(q))),
+    const list = place?.type === "wine" ? sortRack(items, new Date().getFullYear()) : items;
+    return list.filter(
+      (i) =>
+        (!category || i.category?.trim() === category) &&
+        (!colour || (i.wineColour ?? "none") === colour) &&
+        (!q || [i.productName, i.brand, i.category, i.notes, i.grape, i.region, i.vintage ? String(i.vintage) : null].some((v) => v?.toLowerCase().includes(q))),
     );
-  }, [items, filter, category]);
+  }, [items, filter, category, colour, place?.type]);
 
   // Shelves, rails and boxes read best in sections (Fiction, Coats…) in A to Z order; food stays
   // in use-first order. Sections show only when nothing is being searched or filtered.
@@ -229,7 +237,11 @@ function Place() {
   const grid = keep && view === "grid";
   const lentHere = (items ?? []).filter((i) => i.lentTo).length;
   const count = items?.length ?? 0;
-  const filtering = filter.trim() !== "" || category !== null;
+  const filtering = filter.trim() !== "" || category !== null || colour !== null;
+  const isWineRack = place.type === "wine";
+  const year = new Date().getFullYear();
+  const bottleCount = (items ?? []).reduce((n, i) => n + i.quantity, 0);
+  const toDrink = isWineRack ? (items ?? []).filter((i) => drinkSoon(i, year)).length : 0;
   const due = (items ?? []).filter((i) => needsAttention(i));
   const lateHere = due.filter((i) => itemStatus(i)?.tone === "late").length;
   const soonHere = due.length - lateHere;
@@ -238,9 +250,15 @@ function Place() {
     // "Kitchen fridge · Fridge" says it twice, and "Something else" says nothing, so the kind is left out then.
     parent ? `In ${parent.name}` : place.type === "other" || place.name.toLowerCase().includes(info.label.toLowerCase()) ? null : info.label,
     // The same total as on Home, so a shed with things in boxes doesn't look emptier from inside.
-    items ? (boxed > 0 ? `${countThings(count + boxed)}, ${boxed} in boxes` : countThings(count)) : null,
-    lateHere > 0 ? `${lateHere} past ${lateHere === 1 ? "its date" : "a date"}` : null,
-    soonHere > 0 ? `${soonHere} to use soon` : null,
+    items
+      ? isWineRack
+        ? `${bottleCount} ${bottleCount === 1 ? "bottle" : "bottles"}`
+        : boxed > 0
+          ? `${countThings(count + boxed)}, ${boxed} in boxes`
+          : countThings(count)
+      : null,
+    isWineRack ? (toDrink > 0 ? `${toDrink} to drink this year` : null) : lateHere > 0 ? `${lateHere} past ${lateHere === 1 ? "its date" : "a date"}` : null,
+    isWineRack ? null : soonHere > 0 ? `${soonHere} to use soon` : null,
     lentHere > 0 ? `${lentHere} lent out` : null,
   ].filter(Boolean);
   // "updated…" is the first thing to go when the line would be cut off on a phone.
@@ -361,7 +379,8 @@ function Place() {
               <IconPlus /> Add<span className="sr-only"> something here</span>
             </Button>
           </div>
-          {categories.length > 1 ? (
+          {isWineRack ? <WineSummary items={items} colour={colour} onColour={setColour} /> : null}
+          {categories.length > 1 && !isWineRack ? (
             <div className="-mx-4 flex gap-1.5 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0" role="group" aria-label="Filter by category">
               {[null, ...categories].map((c) => {
                 const on = category === c;
@@ -428,7 +447,8 @@ function Place() {
       ) : shown.length === 0 ? (
         <p className="text-mute">
           Nothing matches{filter.trim() ? <> &ldquo;{filter.trim()}&rdquo;</> : null}
-          {category ? ` in ${category}` : ""}.
+          {category ? ` in ${category}` : ""}
+          {colour ? ` in ${colour === "none" ? "bottles with no colour" : colour === "rose" ? "rosé" : colour}` : ""}.
         </p>
       ) : sections ? (
         sections.map((sec, n) => (
@@ -464,7 +484,9 @@ function Place() {
               ? countThings(shown.length)
               : boxes.length > 0
                 ? "Not in a box"
-                : ["freezer", "fridge", "pantry"].includes(place.type)
+                : isWineRack
+                  ? "Drink these first"
+                  : ["freezer", "fridge", "pantry"].includes(place.type)
                   ? "Use first"
                   : "In here"}
           </SectionLabel>
@@ -511,7 +533,7 @@ function Place() {
         place={place}
         onAdded={(item, movementId) => {
           refresh(place.id);
-          announce(`Added ${item.productName}`, movementId);
+          announce(isWineRack ? `Added ${item.quantity === 1 ? "a bottle" : `${item.quantity} bottles`} of ${item.productName}` : `Added ${item.productName}`, movementId);
         }}
         onMany={() => setMany(true)}
       />
@@ -546,12 +568,13 @@ function Place() {
       <TakeOutSheet
         item={open}
         keep={keep}
+        wine={isWineRack}
         householdId={place.householdId}
         names={names}
         onClose={() => setOpen(null)}
         onTaken={(before, after, amount, movementId) => {
           refresh(place.id);
-          announce(tookOutMessage(before, after, amount, keep), movementId);
+          announce(tookOutMessage(before, after, amount, keep, isWineRack), movementId);
         }}
         onChanged={(message, movementId) => {
           refresh(place.id);

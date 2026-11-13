@@ -132,7 +132,7 @@ function Home({ session }: { session: Session }) {
     return !!type && isUseUpPlace(type);
   };
   // Only things without a printed date: their label says how long they have been stored, so the rows read alike.
-  const oldest = useFirst.filter((i) => !dueIds.has(i.id) && !i.useByDate && !i.bestBeforeDate && itemStatus(i) !== null && inUseUpPlace(i)).slice(0, 4);
+  const oldest = useFirst.filter((i) => !dueIds.has(i.id) && !i.useByDate && !i.bestBeforeDate && !i.drinkFrom && !i.drinkUntil && !i.savedFor && itemStatus(i) !== null && inUseUpPlace(i)).slice(0, 4);
   const keptIn = (i: StockItem) => {
     const type = placeById.get(i.locationId)?.type;
     return !!type && isKeepPlace(type);

@@ -33,6 +33,35 @@ import { isBook } from "@/lib/domain/covers";
 import type { LocationType } from "@/lib/household";
 import { useFadeIn } from "@/components/ui/useFadeIn";
 import { isLongLent, lentFor } from "@/lib/domain/lending";
+import { colourInfo, wineLine, wineTitle, type WineColour } from "@/lib/domain/wine";
+
+/** A bottle in a wine rack, or anything with wine details. */
+export function isWine(item: StockItem, placeType?: LocationType): boolean {
+  return placeType === "wine" || !!item.wineColour || !!item.vintage;
+}
+
+/** "Château Musar 2016" for wine; everything else by its name. */
+export function itemTitle(item: StockItem, placeType?: LocationType): string {
+  return isWine(item, placeType) ? wineTitle(item.productName, item.vintage) : item.productName;
+}
+
+/** "1 bottle", "3 bottles". */
+export function bottles(n: number): string {
+  return `${n} ${n === 1 ? "bottle" : "bottles"}`;
+}
+
+/** A small bottle drawn in the wine's colour, for bottles with no photo. */
+export function BottleTile({ colour, size = 44 }: { colour: WineColour | null | undefined; size?: number }) {
+  const fill = colourInfo(colour)?.dot ?? "#8a3c55";
+  return (
+    <span aria-hidden="true" className="inline-grid shrink-0 place-items-center rounded-xl bg-[#f3e6ea] dark:bg-[#35202a]" style={{ width: size, height: size }}>
+      <svg viewBox="0 0 22 30" style={{ width: size * 0.42, height: size * 0.6 }}>
+        <path d="M8 1h6v8c4 2 5 5 5 9v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V18c0-4 1-7 5-9z" fill={fill} />
+        <rect x="5" y="17" width="12" height="7" rx="1" fill="#f7f1e3" />
+      </svg>
+    </span>
+  );
+}
 
 /**
  * The quiet line under a name: where it is and what it is. The date lives in the status label,
@@ -79,10 +108,11 @@ const TONES: Record<StatusTone, string> = {
 export function StatusPill({ item, className = "" }: { item: StockItem; className?: string }) {
   const status = itemStatus(item);
   if (!status) return null;
+  const tone = item.savedFor ? "bg-[#f3e6ea] text-[#7a2e45] dark:bg-[#35202a] dark:text-[#e3a0b6]" : TONES[status.tone];
   return (
     <span
       title={status.detail}
-      className={`shrink-0 rounded-full px-2 py-[3px] text-[12.5px] leading-tight font-semibold whitespace-nowrap ${TONES[status.tone]} ${className}`}
+      className={`shrink-0 rounded-full px-2 py-[3px] text-[12.5px] leading-tight font-semibold whitespace-nowrap ${tone} ${className}`}
     >
       {status.label}
     </span>
@@ -190,31 +220,38 @@ export function ItemRow({
 }) {
   const qty = roundQty(item.quantity);
   const status = itemStatus(item);
+  const wine = isWine(item, placeType);
+  const title = itemTitle(item, placeType);
   const back = !!onReturn && !!item.lentTo;
   const quick = !back && !keep && onTakeOne && isCounted(item.unit) && qty >= 1;
   // "1 item" under a single thing says nothing; packs and portions still show, since "1 pack" is news.
-  const showQty = !(qty === 1 && (item.unit === "item" || (keep && isCounted(item.unit))));
-  const unitWord = formatQuantity(1, item.unit).replace(/^[\d.]+ /, "");
+  const showQty = wine || !(qty === 1 && (item.unit === "item" || (keep && isCounted(item.unit))));
+  const unitWord = wine ? "bottle" : formatQuantity(1, item.unit).replace(/^[\d.]+ /, "");
   // Found by its brand ("Cathedral City" for the cheddar): show the brand first so the reason is visible.
   const q = highlight?.trim().toLowerCase();
   const brandFirst = !!q && !item.productName.toLowerCase().includes(q) && !!item.brand?.toLowerCase().includes(q);
+  const context = wine && !brandFirst ? [wineLine(item), place].filter(Boolean).join(" · ") : itemContext(item, place, brandFirst);
   return (
     <li className="rise flex items-center" style={{ animationDelay: `${Math.min(index, 8) * 30}ms` }}>
       <button
         onClick={() => onOpen(item)}
         className="flex min-w-0 flex-1 items-center gap-3 py-2.5 pr-2 pl-3.5 text-left transition hover:bg-sunk/70 active:bg-sunk"
-        aria-label={`${item.productName}${showQty ? `, ${formatQuantity(item.quantity, item.unit)}` : ""}${place ? `, in ${place}` : ""}${item.lentTo ? `, lent to ${item.lentTo}` : ""}${status ? `. ${status.detail}` : ""}. See details`}
+        aria-label={`${title}${showQty ? `, ${wine ? bottles(qty) : formatQuantity(item.quantity, item.unit)}` : ""}${place ? `, in ${place}` : ""}${item.lentTo ? `, lent to ${item.lentTo}` : ""}${status ? `. ${status.detail}` : ""}. See details`}
       >
-        <ItemTile name={item.productName} category={item.category} imagePath={item.imagePath} book={bookOf(item, placeType)} />
+        {wine && !item.imagePath ? (
+          <BottleTile colour={item.wineColour} />
+        ) : (
+          <ItemTile name={item.productName} category={item.category} imagePath={item.imagePath} book={bookOf(item, placeType)} />
+        )}
         <span className="min-w-0 flex-1">
           <span className="block truncate text-[15px] font-semibold">
-            <Highlight text={item.productName} match={highlight} />
+            <Highlight text={title} match={highlight} />
           </span>
           <span className="mt-0.5 flex items-center gap-2">
             <StatusPill item={item} className="lg:hidden" />
             {item.lentTo ? <LentPill item={item} className={place ? "max-w-[60%]" : "max-w-full"} /> : null}
             <span className="min-w-0 truncate text-[13px] text-mute">
-              <Highlight text={itemContext(item, place, brandFirst)} match={brandFirst ? highlight : undefined} />
+              <Highlight text={context} match={brandFirst ? highlight : undefined} />
             </span>
           </span>
         </span>
@@ -227,7 +264,11 @@ export function ItemRow({
         {showQty ? (
           <span className="min-w-9 shrink-0 text-right leading-tight lg:w-20">
             <span className="block text-[15px] font-semibold tabular-nums">{isCounted(item.unit) ? qty : formatQuantity(qty, item.unit)}</span>
-            {isCounted(item.unit) ? <span className="block text-[12px] text-mute">{formatQuantity(qty, item.unit).replace(/^[\d.]+ /, "")}</span> : null}
+            {wine ? (
+              <span className="block text-[12px] text-mute">{qty === 1 ? "bottle" : "bottles"}</span>
+            ) : isCounted(item.unit) ? (
+              <span className="block text-[12px] text-mute">{formatQuantity(qty, item.unit).replace(/^[\d.]+ /, "")}</span>
+            ) : null}
           </span>
         ) : (
           // Keeps the columns lined up on wide screens when a row has no amount to show.

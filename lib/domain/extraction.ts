@@ -1,7 +1,8 @@
 import type { StockUnit } from "./quantity";
+import { readWine, type WineDetails } from "./wine";
 
 /** Fields the label reader can fill in. Names match the Edge Function's JSON output. */
-export const EXTRACT_FIELDS = ["product_name", "brand", "quantity", "weight", "use_by_date", "best_before_date"] as const;
+export const EXTRACT_FIELDS = ["product_name", "brand", "quantity", "weight", "use_by_date", "best_before_date", "vintage", "grape", "region"] as const;
 export type ExtractField = (typeof EXTRACT_FIELDS)[number];
 
 const UNITS: readonly StockUnit[] = ["item", "portion", "pack", "g", "kg", "ml", "l"];
@@ -18,6 +19,8 @@ export type LabelReading = {
   useByDate: string | null;
   bestBeforeDate: string | null;
   check: ExtractField[];
+  /** For a bottle of wine. `guessed` says the drinking window is the reader's estimate. */
+  wine: (WineDetails & { guessed: boolean }) | null;
 };
 
 function text(v: unknown, max: number): string {
@@ -83,6 +86,7 @@ export function readLabel(raw: unknown, today: string): LabelReading | null {
     useByDate,
     bestBeforeDate,
     check: EXTRACT_FIELDS.filter((f) => check.has(f)),
+    wine: readWine(r.wine, Number(today.slice(0, 4))),
   };
 }
 

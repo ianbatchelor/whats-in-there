@@ -30,6 +30,7 @@ describe("readLabel", () => {
       useByDate: null,
       bestBeforeDate: "2027-09-30",
       check: [],
+      wine: null,
     });
   });
 
