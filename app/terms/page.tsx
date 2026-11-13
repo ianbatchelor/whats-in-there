@@ -15,7 +15,7 @@ export default function TermsPage() {
 
       <h2>The app</h2>
       <p>
-        See What&apos;s in Here is free. It&apos;s run by Ian Batchelor, a FindTheCool project, in the United Kingdom. We work to keep it
+        See What&apos;s in Here is free. It&apos;s run by FindTheCool in the United Kingdom. We work to keep it
         running and your data safe, but it&apos;s provided as it is, and features may change.
       </p>
 
