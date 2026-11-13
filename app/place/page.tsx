@@ -358,7 +358,7 @@ function Place() {
               </button>
             ) : null}
             <Button className="min-h-12 shrink-0 px-4" onClick={() => setAdding(true)}>
-              <IconPlus /> Add{keep ? <span className="max-sm:sr-only"> item</span> : " item"}
+              <IconPlus /> Add<span className="sr-only"> something here</span>
             </Button>
           </div>
           {categories.length > 1 ? (

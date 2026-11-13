@@ -12,7 +12,9 @@ import {
   IconBread,
   IconBulb,
   IconChevronRight,
+  IconCheese,
   IconCup,
+  IconEgg,
   IconFish,
   IconHanger,
   IconLeaf,
@@ -45,7 +47,8 @@ export function itemContext(item: StockItem, place?: string, brandFirst = false)
   if (item.weightValue && item.weightUnit) parts.push(formatQuantity(item.weightValue, item.weightUnit));
   if (parts.length > 0) return parts.join(" · ");
   if (item.notes) parts.push(item.notes);
-  else if (item.frozenAt) parts.push(`Frozen ${formatDay(item.frozenAt, { year: false })}`);
+  // The status label already says how long it has been frozen ("3 months in").
+  else if (item.frozenAt) return "";
   // A printed date already shows in the status label; "Added 7 Nov" beside it only crowds the row.
   else if (!item.useByDate && !item.bestBeforeDate) parts.push(`Added ${formatDay(item.addedAt, { year: false })}`);
   return parts.join(" · ");
@@ -89,6 +92,8 @@ export function StatusPill({ item, className = "" }: { item: StockItem; classNam
 export const KINDS: Record<ItemKind, { Icon: (p: { className?: string }) => React.ReactNode; tint: string }> = {
   meat: { Icon: IconMeat, tint: "bg-[#f6e7e2] text-[#97452f] dark:bg-[#3a221c] dark:text-[#eba58f]" },
   fish: { Icon: IconFish, tint: "bg-[#e4eef3] text-[#3b6781] dark:bg-[#1c2c36] dark:text-[#9cc4da]" },
+  egg: { Icon: IconEgg, tint: "bg-[#f7efdf] text-[#8a6a34] dark:bg-[#332a1b] dark:text-[#e0c48e]" },
+  cheese: { Icon: IconCheese, tint: "bg-[#f8efd4] text-[#8a6410] dark:bg-[#33290f] dark:text-[#e5c36c]" },
   dairy: { Icon: IconMilk, tint: "bg-[#eaeff5] text-[#4a6384] dark:bg-[#20283a] dark:text-[#a9bcd8]" },
   veg: { Icon: IconLeaf, tint: "bg-[#e5f0e4] text-[#3c6e40] dark:bg-[#1c2e1e] dark:text-[#9fd0a3]" },
   bakery: { Icon: IconBread, tint: "bg-[#f5ebd9] text-[#8a6226] dark:bg-[#33281a] dark:text-[#deb97c]" },
@@ -187,7 +192,8 @@ export function ItemRow({
   const status = itemStatus(item);
   const back = !!onReturn && !!item.lentTo;
   const quick = !back && !keep && onTakeOne && isCounted(item.unit) && qty >= 1;
-  const showQty = !(keep && isCounted(item.unit) && qty === 1);
+  // "1 item" under a single thing says nothing; packs and portions still show, since "1 pack" is news.
+  const showQty = !(qty === 1 && (item.unit === "item" || (keep && isCounted(item.unit))));
   const unitWord = formatQuantity(1, item.unit).replace(/^[\d.]+ /, "");
   // Found by its brand ("Cathedral City" for the cheddar): show the brand first so the reason is visible.
   const q = highlight?.trim().toLowerCase();
@@ -212,7 +218,9 @@ export function ItemRow({
             </span>
           </span>
         </span>
-        {addedBy !== undefined ? <span className="hidden w-28 shrink-0 truncate text-[13px] text-mute xl:block">{addedBy}</span> : null}
+        {addedBy !== undefined ? (
+          <span className="hidden w-32 shrink-0 truncate text-[13px] text-mute xl:block">{addedBy ? `Added by ${addedBy === "You" ? "you" : addedBy}` : ""}</span>
+        ) : null}
         <span className="hidden w-36 shrink-0 justify-start lg:flex">
           <StatusPill item={item} />
         </span>

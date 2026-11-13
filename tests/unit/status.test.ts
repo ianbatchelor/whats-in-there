@@ -47,7 +47,9 @@ describe("needsAttention", () => {
 describe("itemKind", () => {
   it("guesses a kind from everyday names", () => {
     expect(itemKind("Beef mince")).toBe("meat");
-    expect(itemKind("Mature cheddar")).toBe("dairy");
+    expect(itemKind("Mature cheddar")).toBe("cheese");
+    expect(itemKind("Free-range eggs")).toBe("egg");
+    expect(itemKind("Greek yoghurt")).toBe("dairy");
     expect(itemKind("Garden peas")).toBe("veg");
     expect(itemKind("Vanilla ice cream")).toBe("frozen");
     expect(itemKind("Rioja Reserva 2018")).toBe("wine");

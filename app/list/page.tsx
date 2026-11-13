@@ -214,7 +214,8 @@ function ShoppingList({ session }: { session: Session }) {
                     onTick={tick}
                     onRemove={remove}
                     onPlace={(id) => run(i.id, () => setPlace(i.id, id))}
-                    onPutAway={i.locationId && placeById.has(i.locationId) ? () => putOne(i) : undefined}
+                    // With only one to put away, the big button below does it; a second button on the row would repeat it.
+                    onPutAway={placed > 1 && i.locationId && placeById.has(i.locationId) ? () => putOne(i) : undefined}
                   />
                 ))}
               </ul>

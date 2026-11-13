@@ -41,7 +41,7 @@ export function StarterPlaces({ householdId, onAdded, onOwn }: { householdId: st
         <h3 id="starter-h" className="font-serif text-[1.75rem] leading-tight font-semibold">
           Which of these do you have?
         </h3>
-        <p className="mt-1 text-mute">Pick the places you want to keep track of. You can rename them, or add others, any time.</p>
+        <p className="mt-1 text-mute">Pick the places you want to keep track of. You can rename them, or add others, any time. The shopping list and wish lists for presents and books are under Lists.</p>
       </div>
       <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4" role="group" aria-label="Places to add">
         {STARTERS.map((t) => {

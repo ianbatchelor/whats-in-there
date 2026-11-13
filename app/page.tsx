@@ -131,7 +131,8 @@ function Home({ session }: { session: Session }) {
     const type = placeById.get(i.locationId)?.type;
     return !!type && isUseUpPlace(type);
   };
-  const oldest = useFirst.filter((i) => !dueIds.has(i.id) && inUseUpPlace(i)).slice(0, 4);
+  // Only things without a printed date: their label says how long they have been stored, so the rows read alike.
+  const oldest = useFirst.filter((i) => !dueIds.has(i.id) && !i.useByDate && !i.bestBeforeDate && itemStatus(i) !== null && inUseUpPlace(i)).slice(0, 4);
   const keptIn = (i: StockItem) => {
     const type = placeById.get(i.locationId)?.type;
     return !!type && isKeepPlace(type);
