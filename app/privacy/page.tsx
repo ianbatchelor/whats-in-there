@@ -13,7 +13,7 @@ export default function PrivacyPage() {
         websites, and nothing is ever sold.
       </p>
       <p>
-        The app is run by Ian Batchelor, a FindTheCool project, in the United Kingdom. If you have a question about your data,
+        The app is run by FindTheCool (Ian Batchelor) in the United Kingdom, and is responsible for your data. If you have a question about your data,
         email <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>.
       </p>
 
