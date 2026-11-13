@@ -2,7 +2,7 @@ import Link from "next/link";
 import { LegalLinks } from "@/components/common/LegalLinks";
 import { BrandMark, Wordmark } from "@/components/brand/BrandMark";
 import { PlacePhoto } from "@/components/art/PlacePhoto";
-import { IconPeople, IconSearch, IconUndo } from "@/components/ui/icons";
+import { IconBasket, IconGift, IconHandOver, IconLeaf, IconScan, IconSearch } from "@/components/ui/icons";
 import type { LocationType } from "@/lib/household";
 
 const EXAMPLES: { type: LocationType; title: string; text: string }[] = [
@@ -80,11 +80,14 @@ export function Landing() {
           ))}
         </ul>
 
-        <div className="mt-16 grid gap-8 border-t border-line pt-12 md:grid-cols-3">
+        <div className="mt-16 grid gap-8 border-t border-line pt-12 sm:grid-cols-2 lg:grid-cols-3">
           {[
-            { t: "Find anything", d: "Search every place at once. Each result tells you exactly where it is.", Icon: IconSearch },
-            { t: "Share with your household", d: "Invite the people you live with. Everyone sees the same list, updated live.", Icon: IconPeople },
-            { t: "Mistakes are easy to fix", d: "Took out the wrong thing? Undo it straight away. Nothing is lost.", Icon: IconUndo },
+            { t: "Scan a label", d: "Photograph a pack and the name, size and dates are filled in for you.", Icon: IconScan },
+            { t: "Use it before it goes", d: "Things close to their date come to the top, so less gets thrown away.", Icon: IconLeaf },
+            { t: "Find anything", d: "Search every place and box at once. Everyone at home sees the same, updated live.", Icon: IconSearch },
+            { t: "One shopping list", d: "Shared with the whole house. Tick things off in the shop, then put them away in one tap.", Icon: IconBasket },
+            { t: "Wish lists that keep the surprise", d: "Present and book lists for everyone. Family can say they're getting something; you never see what.", Icon: IconGift },
+            { t: "Know who borrowed what", d: "Note who has the drill or your favourite book, and get a nudge after a month.", Icon: IconHandOver },
           ].map(({ t, d, Icon }) => (
             <div key={t} className="flex gap-4">
               <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-sunk text-leaf">

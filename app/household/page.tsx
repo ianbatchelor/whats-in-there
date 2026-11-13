@@ -19,7 +19,8 @@ import { Button } from "@/components/ui/Button";
 import { Notice } from "@/components/ui/Notice";
 import { Field } from "@/components/ui/Field";
 import { Sheet } from "@/components/ui/Sheet";
-import { IconCheck, IconCopy, IconMore } from "@/components/ui/icons";
+import { IconCheck, IconChevronRight, IconCopy, IconMore } from "@/components/ui/icons";
+import Link from "next/link";
 import { DeleteAccountSheet } from "@/components/account/DeleteAccountSheet";
 import { LegalLinks } from "@/components/common/LegalLinks";
 
@@ -175,6 +176,20 @@ function Household({ session }: { session: Session }) {
       />
 
       {error ? <Notice>{error}</Notice> : null}
+
+      <Link
+        href="/help/"
+        className="flex min-h-12 items-center gap-3 rounded-2xl border border-line bg-card px-4 text-[14.5px] transition hover:bg-sunk/50"
+      >
+        <span className="grid size-7 shrink-0 place-items-center rounded-full bg-sunk font-display text-[14px] font-bold text-leaf" aria-hidden="true">
+          ?
+        </span>
+        <span className="min-w-0 flex-1">
+          <b className="font-semibold">Help</b>
+          <span className="text-mute"> · how everything works, and how to reach us</span>
+        </span>
+        <IconChevronRight className="size-4 shrink-0 text-mute/70" />
+      </Link>
 
       <section aria-labelledby="people-h" className="flex flex-col gap-2.5">
         <SectionLabel id="people-h">People</SectionLabel>

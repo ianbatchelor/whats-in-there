@@ -141,6 +141,9 @@ function Lists({ session }: { session: Session }) {
           ))}
         </ul>
       )}
+      <Link href="/help/#lists" className="flex min-h-11 items-center gap-1.5 self-start text-[14px] font-semibold text-leaf">
+        How lists work <IconChevronRight className="size-4" />
+      </Link>
     </AppShell>
   );
 }

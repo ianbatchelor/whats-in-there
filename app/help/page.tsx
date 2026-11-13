@@ -32,6 +32,46 @@ export default function HelpPage() {
       </ul>
       <p>Photo scans have a monthly limit per person, which resets over 30 days.</p>
 
+      <h2>Boxes and shelves inside a place</h2>
+      <p>
+        Open a place, such as the Garage, and tap <b>Add a box or shelf</b>. Each box gets its own page, and its cover shows a few
+        of the things inside, so you can tell boxes apart at a glance. Search finds things in boxes too.
+      </p>
+
+      <h2>Using things up</h2>
+      <p>
+        <b>Needs attention</b> on Home lists anything close to or past a printed date. Tap the minus button to take one out, or
+        open a thing to take out part of it, move it, or edit it. Took out the wrong thing? Tap <b>Undo</b> straight away.
+      </p>
+
+      <h2 id="lists">Lists</h2>
+      <p>The <b>Lists</b> tab holds everything you keep track of together, rather than in a place:</p>
+      <ul>
+        <li>
+          <b>Shopping list</b>: shared with everyone at home. Add things by typing, or from a thing&apos;s details with{" "}
+          <b>Add to shopping list</b>. Tick things off as you shop, choose where each one goes, then tap <b>Put it away</b> to add
+          them to their places.
+        </li>
+        <li>
+          <b>Present ideas</b>: a wish list for each person, including children without an account. Paste a shop link and the
+          name, price and picture are filled in for you. Others can say they&apos;re getting something; the person it&apos;s for never
+          sees what. <b>Share my list</b> sends a link family can open without signing up.
+        </li>
+        <li>
+          <b>Book wish lists</b>: add books by scanning the barcode, searching for a title or pasting a shop link. If you already
+          own one, it says which shelf it&apos;s on. Share your list and friends can suggest a book, or start their own list with
+          just a first name.
+        </li>
+        <li>
+          <b>Lent out</b>: open a thing and tap <b>Lend…</b> to note who has it. After a month it shows on Home, with{" "}
+          <b>Ask for it back</b> to send a friendly message. Tap <b>It&apos;s back</b> when it returns.
+        </li>
+        <li>
+          <b>Seasonal jobs</b>: a few jobs that come round each year, such as swapping to winter clothes, for the places you have.
+          Tick one off and it&apos;s done for everyone, or tap the cross to hide it for a week.
+        </li>
+      </ul>
+
       <h2>Stickers and QR labels</h2>
       <p>
         Every place can have its own sticker. Open a place, tap the sticker button, and either write it to an NFC sticker (hold
