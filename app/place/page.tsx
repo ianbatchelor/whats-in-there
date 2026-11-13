@@ -32,6 +32,7 @@ import { useQuickTake } from "@/components/stock/useQuickTake";
 import { AddItemSheet } from "@/components/stock/AddItemSheet";
 import { StarterThings } from "@/components/place/StarterThings";
 import { QuickSheet } from "@/components/place/QuickSheet";
+import { KindHint } from "@/components/place/KindHint";
 import { AddManySheet } from "@/components/stock/AddManySheet";
 import { groupByCategory, looksLikeBooks } from "@/lib/domain/manyItems";
 import { TakeOutSheet } from "@/components/stock/TakeOutSheet";
@@ -61,7 +62,7 @@ function Place() {
   const [filter, setFilter] = useState("");
   const [adding, setAdding] = useState(false);
   const [many, setMany] = useState(false);
-  const [editing, setEditing] = useState(false);
+  const [editing, setEditing] = useState<false | "edit" | "remove">(false);
   const [sticker, setSticker] = useState(false);
   const [open, setOpen] = useState<StockItem | null>(null);
   const [category, setCategory] = useState<string | null>(null);
@@ -309,7 +310,7 @@ function Place() {
               <IconSticker className="size-5" />
             </button>
             <button
-              onClick={() => setEditing(true)}
+              onClick={() => setEditing("edit")}
               aria-label={`Edit ${place.name}`}
               className="grid size-11 place-items-center rounded-full bg-[#fffdf8]/92 text-[#17242a] shadow-[var(--shadow-card)] backdrop-blur transition hover:bg-[#fffdf8]"
             >
@@ -328,6 +329,8 @@ function Place() {
       </div>
 
       {error ? <Notice>{error}</Notice> : null}
+
+      <KindHint key={place.id} place={place} onSwitched={(type) => setPlace({ ...place, type })} />
 
       {items && (items.length > 0 || boxes.length > 0) ? (
         // On phones the search and Add row stays just under the shrunken header, so Add is always in reach.
@@ -490,6 +493,18 @@ function Place() {
 
       {items && items.length > 0 && items.length < 3 && !filtering && boxes.length === 0 ? starters : null}
 
+      {/* Changing or removing the place, at the end of its page where people look for it. */}
+      {items ? (
+        <div className="mt-2 flex flex-wrap items-center justify-center gap-x-6 gap-y-1 border-t border-line pt-4 text-[15px] font-semibold">
+          <button onClick={() => setEditing("edit")} className="flex min-h-11 items-center gap-1.5 text-leaf">
+            <IconPencil className="size-4" /> Edit {place.parentId ? "this box" : "this place"}
+          </button>
+          <button onClick={() => setEditing("remove")} className="min-h-11 text-warn">
+            Remove {place.parentId ? "this box" : "this place"}…
+          </button>
+        </div>
+      ) : null}
+
       <AddItemSheet
         open={adding}
         onClose={() => setAdding(false)}
@@ -545,7 +560,8 @@ function Place() {
       />
       {editing ? (
         <EditPlaceSheet
-          open={editing}
+          open={!!editing}
+          removeOnly={editing === "remove"}
           onClose={() => setEditing(false)}
           place={place}
           itemCount={count}

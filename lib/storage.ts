@@ -27,4 +27,5 @@ export const KEYS = {
   placeView: "wit.placeView",
   seasonDone: "wit.seasonDone",
   seasonSnooze: "wit.seasonSnooze",
+  kindHint: "wit.kindHint",
 } as const;
