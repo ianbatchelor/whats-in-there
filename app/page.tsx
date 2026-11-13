@@ -36,15 +36,11 @@ import { Avatar } from "@/components/ui/Avatar";
 import { Notice } from "@/components/ui/Notice";
 import { Button } from "@/components/ui/Button";
 import { Toast } from "@/components/ui/Toast";
-import { IconBasket, IconBook, IconCheck, IconGift, IconHandOver, IconLeaf, IconScan, IconSearch } from "@/components/ui/icons";
-import { loadToBuy } from "@/lib/shopping";
-import { countIdeas } from "@/lib/presents";
-import { ideaCountCaption } from "@/lib/domain/presents";
-import { bookCountCaption } from "@/lib/domain/books";
+import { IconCheck, IconChevronRight, IconHandOver, IconLeaf, IconScan, IconSearch } from "@/components/ui/icons";
 import { AddPlaceSheet } from "@/components/home/AddPlaceSheet";
 import { AddPlaceTile, GroupCard } from "@/components/home/PlaceCard";
 import { FirstThingsTip, StarterPlaces } from "@/components/home/StarterPlaces";
-import { useSeasonal } from "@/components/home/SeasonalReminders";
+import { useSeasonal, type Seasonal } from "@/components/home/SeasonalReminders";
 import { ItemList, ItemRow } from "@/components/stock/ItemRow";
 import { TakeOutSheet } from "@/components/stock/TakeOutSheet";
 import { useUndoToast } from "@/components/stock/useUndoToast";
@@ -66,9 +62,6 @@ function Home({ session }: { session: Session }) {
   const [activity, setActivity] = useState<Activity[]>([]);
   const [attention, setAttention] = useState<StockItem[]>([]);
   const [lent, setLent] = useState<StockItem[]>([]);
-  const [toBuy, setToBuy] = useState<string[] | null>(null);
-  const [ideas, setIdeas] = useState<number | null>(null);
-  const [bookCount, setBookCount] = useState<number | null>(null);
   const [showAll, setShowAll] = useState(false);
   const [section, setSection] = useState<PlaceSection | "all">("all");
   const [open, setOpen] = useState<StockItem | null>(null);
@@ -77,18 +70,12 @@ function Home({ session }: { session: Session }) {
   const loadExtras = useCallback(async () => {
     if (!current) return;
     try {
-      const [first, acts, due, out, list, wishes, wanted] = await Promise.all([
+      const [first, acts, due, out] = await Promise.all([
         loadUseFirst(current.householdId, 60),
         loadActivity(current.householdId, 40),
         loadAttention(current.householdId),
         loadLent(current.householdId).catch(() => []),
-        loadToBuy(current.householdId).catch(() => null),
-        countIdeas(current.householdId).catch(() => null),
-        countIdeas(current.householdId, "books").catch(() => null),
       ]);
-      setToBuy(list);
-      setIdeas(wishes);
-      setBookCount(wanted);
       setUseFirst(first);
       setLent(out);
       setActivity(acts);
@@ -149,7 +136,7 @@ function Home({ session }: { session: Session }) {
     const type = placeById.get(i.locationId)?.type;
     return !!type && isKeepPlace(type);
   };
-  const shownAttention = showAll ? attention : attention.slice(0, 4);
+  const shownAttention = showAll ? attention : attention.slice(0, 3);
   const firstName = hh.me?.displayName.trim().split(/\s+/)[0];
 
   // Lent things that have been away a month or more come up near the top, so they get asked for back.
@@ -273,7 +260,7 @@ function Home({ session }: { session: Session }) {
             </span>
           </div>
           <ItemList>{shownAttention.map(row)}</ItemList>
-          {attention.length > 4 ? (
+          {attention.length > 3 ? (
             <button onClick={() => setShowAll((v) => !v)} className="min-h-10 self-start text-[14px] font-semibold text-leaf">
               {showAll ? "Show fewer" : `Show all ${attention.length}`}
             </button>
@@ -290,60 +277,7 @@ function Home({ session }: { session: Session }) {
         </p>
       ) : null}
 
-      {places && places.length > 0 ? (
-        <Glance
-          tiles={[
-            {
-              href: "/list/",
-              Icon: IconBasket,
-              label: "Shopping",
-              n: toBuy?.length ?? null,
-              caption: toBuy && toBuy.length === 0 ? "nothing to buy" : "to buy",
-              tone: "",
-            },
-            {
-              href: "/presents/",
-              Icon: IconGift,
-              label: "Presents",
-              n: ideas,
-              caption: ideaCountCaption(ideas ?? 1),
-              tone: "",
-            },
-            {
-              href: "/books/",
-              Icon: IconBook,
-              label: "Books",
-              n: bookCount,
-              caption: bookCountCaption(bookCount ?? 1),
-              tone: "",
-            },
-            ...(lent.length > 0
-              ? [
-                  {
-                    href: "/lent/",
-                    Icon: IconHandOver,
-                    label: "Lent out",
-                    n: longLent > 0 ? longLent : lent.length,
-                    caption: longLent > 0 ? "away over a month" : lent.length === 1 ? "thing lent" : "things lent",
-                    tone: longLent > 0 ? "text-late" : "",
-                  },
-                ]
-              : []),
-            ...(seasonal.shown && seasonal.shown.length > 0
-              ? [
-                  {
-                    href: "/season/",
-                    Icon: IconLeaf,
-                    label: seasonal.season,
-                    n: seasonal.shown.length,
-                    caption: seasonal.shown.length === 1 ? "job to do" : "jobs to do",
-                    tone: "",
-                  },
-                ]
-              : []),
-          ]}
-        />
-      ) : null}
+      {places && places.length > 0 ? <Reminders lent={lent} longLent={longLent} seasonal={seasonal} /> : null}
 
       <section className="flex flex-col gap-3" aria-labelledby="places-h">
         <h2 id="places-h" className="sr-only">
@@ -420,27 +354,41 @@ function greeting(now: Date = new Date()): string {
   return h < 5 ? "Good evening" : h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
 }
 
-type Tile = { href: string; Icon: (p: { className?: string }) => React.ReactNode; label: string; n: number | null; caption: string; tone: string };
-
-/** The shopping list, present ideas, lent things and seasonal jobs at a glance, so Home stays short and the places stay near the top. */
-function Glance({ tiles }: { tiles: Tile[] }) {
+/**
+ * One slim line each for things that have been lent a long time and this season's jobs, so Home stays
+ * short and the places stay near the top. The full lists are under the Lists tab.
+ */
+function Reminders({ lent, longLent, seasonal }: { lent: StockItem[]; longLent: number; seasonal: Seasonal }) {
+  const lines: { href: string; Icon: (p: { className?: string }) => React.ReactNode; text: string; late?: boolean }[] = [];
+  if (longLent > 0) {
+    const first = lent.find((i) => isLongLent(i));
+    lines.push({
+      href: "/lent/",
+      Icon: IconHandOver,
+      late: true,
+      text:
+        longLent === 1 && first
+          ? `${first.productName}: with ${first.lentTo} over a month`
+          : `${longLent} things have been lent over a month`,
+    });
+  }
+  const jobs = seasonal.shown ?? [];
+  if (jobs.length > 0) {
+    lines.push({
+      href: "/season/",
+      Icon: IconLeaf,
+      text: jobs.length === 1 ? `${seasonal.season} job: ${jobs[0]!.title.charAt(0).toLowerCase()}${jobs[0]!.title.slice(1)}` : `${jobs.length} ${seasonal.season.toLowerCase()} jobs to do`,
+    });
+  }
+  if (lines.length === 0) return null;
   return (
-    <ul
-      className={`grid gap-2.5 ${tiles.length === 4 ? "grid-cols-2 sm:grid-cols-4" : tiles.length >= 3 ? "grid-cols-3" : tiles.length === 2 ? "grid-cols-2" : "grid-cols-1"}`}
-    >
-      {tiles.map((t) => (
-        <li key={t.href} className="min-w-0">
-          <Link
-            href={t.href}
-            className="lift flex h-full min-h-[104px] flex-col gap-1 rounded-2xl border border-line bg-card p-3 shadow-[var(--shadow-card)]"
-            aria-label={`${t.label}: ${t.n ?? ""} ${t.caption}`}
-          >
-            <span className="flex min-w-0 items-center gap-1.5 text-[13px] font-semibold text-mute">
-              <t.Icon className="size-4 shrink-0 text-leaf" />
-              <span className="truncate">{t.label}</span>
-            </span>
-            <span className={`mt-auto font-display text-[1.6rem] leading-none font-bold tabular-nums ${t.tone}`}>{t.n ?? "–"}</span>
-            <span className={`text-[13px] leading-tight ${t.tone || "text-mute"}`}>{t.caption}</span>
+    <ul className="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-card">
+      {lines.map((l) => (
+        <li key={l.href}>
+          <Link href={l.href} className="flex min-h-12 items-center gap-3 px-4 py-2.5 text-[14.5px] transition hover:bg-sunk/50">
+            <l.Icon className={`size-5 shrink-0 ${l.late ? "text-late" : "text-leaf"}`} />
+            <span className="min-w-0 flex-1 truncate">{l.text}</span>
+            <IconChevronRight className="size-4 shrink-0 text-mute/70" />
           </Link>
         </li>
       ))}

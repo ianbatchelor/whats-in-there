@@ -71,7 +71,7 @@ function Lent({ session }: { session: Session }) {
 
   return (
     <AppShell>
-      <PageHeader title="Lent out" back={{ href: "/", label: "Home" }} sub={sub} />
+      <PageHeader title="Lent out" back={{ href: "/lists/", label: "Lists" }} sub={sub} />
       {error ? <Notice>{error}</Notice> : null}
       {!lent ? (
         <HouseholdLoading />

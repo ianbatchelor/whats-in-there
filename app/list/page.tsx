@@ -135,7 +135,7 @@ function ShoppingList({ session }: { session: Session }) {
     <AppShell>
       <PageHeader
         title="Shopping list"
-        back={{ href: "/", label: "Home" }}
+        back={{ href: "/lists/", label: "Lists" }}
         sub={current ? `Shared with everyone in ${current.name}. Tick things off as you shop.` : "Tick things off as you shop."}
       />
 

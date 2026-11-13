@@ -187,7 +187,7 @@ function PresentIdeas({ session }: { session: Session }) {
     <AppShell>
       <PageHeader
         title="Present ideas"
-        back={{ href: "/", label: "Home" }}
+        back={{ href: "/lists/", label: "Lists" }}
         sub="Everyone's wish list in one place. Share one with family when they ask what to get."
       />
 

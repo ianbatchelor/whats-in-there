@@ -3,11 +3,26 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { BrandMark, Wordmark } from "@/components/brand/BrandMark";
-import { IconActivity, IconHome, IconPeople, IconScan, IconSearch } from "@/components/ui/icons";
+import { IconActivity, IconHome, IconList, IconPeople, IconScan, IconSearch } from "@/components/ui/icons";
 
-const NAV: { href: string; label: string; Icon: (p: { className?: string }) => React.ReactNode; primary?: boolean; match: (p: string) => boolean }[] = [
+/** Pages reached from the Lists tab, so the tab stays lit while you're on one of them. */
+const LIST_PAGES = ["lists", "list", "presents", "books", "lent", "season"];
+
+type NavItem = {
+  href: string;
+  label: string;
+  Icon: (p: { className?: string }) => React.ReactNode;
+  primary?: boolean;
+  /** Where it shows: the phone's bottom bar, the desktop sidebar, or both (the default). */
+  only?: "phone" | "desktop";
+  match: (p: string) => boolean;
+};
+
+// On phones Search lives in the box at the top of Home and of every place, so its tab goes to Lists.
+const NAV: NavItem[] = [
   { href: "/", label: "Home", Icon: IconHome, match: (p: string) => p === "/" || p.startsWith("/place") },
-  { href: "/search/", label: "Search", Icon: IconSearch, match: (p: string) => p.startsWith("/search") },
+  { href: "/lists/", label: "Lists", Icon: IconList, match: (p: string) => LIST_PAGES.includes(p.split("/")[1] ?? "") },
+  { href: "/search/", label: "Search", Icon: IconSearch, only: "desktop", match: (p: string) => p.startsWith("/search") },
   { href: "/add/", label: "Add", Icon: IconScan, primary: true, match: (p: string) => p.startsWith("/add") },
   { href: "/activity/", label: "Activity", Icon: IconActivity, match: (p: string) => p.startsWith("/activity") },
   { href: "/household/", label: "Household", Icon: IconPeople, match: (p: string) => p.startsWith("/household") },
@@ -27,7 +42,7 @@ export function AppShell({ children, wide = false, rail }: { children: React.Rea
           <Wordmark className="text-[15.5px]" />
         </Link>
         <nav aria-label="Main" className="flex flex-col gap-1">
-          {NAV.filter((n) => !n.primary).map(({ href, label, Icon, match }) => {
+          {NAV.filter((n) => !n.primary && n.only !== "phone").map(({ href, label, Icon, match }) => {
             const active = match(path);
             return (
               <Link
@@ -71,7 +86,7 @@ export function AppShell({ children, wide = false, rail }: { children: React.Rea
         className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-card/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md lg:hidden"
       >
         <ul className="mx-auto grid max-w-lg grid-cols-5">
-          {NAV.map(({ href, label, Icon, match, primary }) => {
+          {NAV.filter((n) => n.only !== "desktop").map(({ href, label, Icon, match, primary }) => {
             const active = match(path);
             return (
               <li key={href}>
