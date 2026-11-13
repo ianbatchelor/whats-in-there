@@ -36,8 +36,10 @@ import { Avatar } from "@/components/ui/Avatar";
 import { Notice } from "@/components/ui/Notice";
 import { Button } from "@/components/ui/Button";
 import { Toast } from "@/components/ui/Toast";
-import { IconBasket, IconCheck, IconHandOver, IconLeaf, IconScan, IconSearch } from "@/components/ui/icons";
+import { IconBasket, IconCheck, IconGift, IconHandOver, IconLeaf, IconScan, IconSearch } from "@/components/ui/icons";
 import { loadToBuy } from "@/lib/shopping";
+import { countIdeas } from "@/lib/presents";
+import { ideaCountCaption } from "@/lib/domain/presents";
 import { AddPlaceSheet } from "@/components/home/AddPlaceSheet";
 import { AddPlaceTile, GroupCard } from "@/components/home/PlaceCard";
 import { FirstThingsTip, StarterPlaces } from "@/components/home/StarterPlaces";
@@ -64,6 +66,7 @@ function Home({ session }: { session: Session }) {
   const [attention, setAttention] = useState<StockItem[]>([]);
   const [lent, setLent] = useState<StockItem[]>([]);
   const [toBuy, setToBuy] = useState<string[] | null>(null);
+  const [ideas, setIdeas] = useState<number | null>(null);
   const [showAll, setShowAll] = useState(false);
   const [section, setSection] = useState<PlaceSection | "all">("all");
   const [open, setOpen] = useState<StockItem | null>(null);
@@ -72,14 +75,16 @@ function Home({ session }: { session: Session }) {
   const loadExtras = useCallback(async () => {
     if (!current) return;
     try {
-      const [first, acts, due, out, list] = await Promise.all([
+      const [first, acts, due, out, list, wishes] = await Promise.all([
         loadUseFirst(current.householdId, 60),
         loadActivity(current.householdId, 40),
         loadAttention(current.householdId),
         loadLent(current.householdId).catch(() => []),
         loadToBuy(current.householdId).catch(() => null),
+        countIdeas(current.householdId).catch(() => null),
       ]);
       setToBuy(list);
+      setIdeas(wishes);
       setUseFirst(first);
       setLent(out);
       setActivity(acts);
@@ -292,6 +297,14 @@ function Home({ session }: { session: Session }) {
               caption: toBuy && toBuy.length === 0 ? "nothing to buy" : "to buy",
               tone: "",
             },
+            {
+              href: "/presents/",
+              Icon: IconGift,
+              label: "Presents",
+              n: ideas,
+              caption: ideaCountCaption(ideas ?? 1),
+              tone: "",
+            },
             ...(lent.length > 0
               ? [
                   {
@@ -397,10 +410,10 @@ function greeting(now: Date = new Date()): string {
 
 type Tile = { href: string; Icon: (p: { className?: string }) => React.ReactNode; label: string; n: number | null; caption: string; tone: string };
 
-/** The shopping list, lent things and seasonal jobs at a glance, so Home stays short and the places stay near the top. */
+/** The shopping list, present ideas, lent things and seasonal jobs at a glance, so Home stays short and the places stay near the top. */
 function Glance({ tiles }: { tiles: Tile[] }) {
   return (
-    <ul className={`grid gap-2.5 ${tiles.length === 3 ? "grid-cols-3" : tiles.length === 2 ? "grid-cols-2" : "grid-cols-1"}`}>
+    <ul className={`grid gap-2.5 ${tiles.length === 4 ? "grid-cols-2 sm:grid-cols-4" : tiles.length === 3 ? "grid-cols-3" : tiles.length === 2 ? "grid-cols-2" : "grid-cols-1"}`}>
       {tiles.map((t) => (
         <li key={t.href} className="min-w-0">
           <Link
