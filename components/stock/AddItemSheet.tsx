@@ -230,7 +230,7 @@ export function AddItemSheet({
       keptPaths.current = shots.map((s) => s.path);
       fill(result.reading);
       const r = result.reading;
-      setPhoto({ state: "read", shots, check: r.check, hasDate: !!(r.useByDate || r.bestBeforeDate || (isWine && r.wine)) });
+      setPhoto({ state: "read", shots, check: r.check, hasDate: isWine && r.wine ? !!r.wine.vintage : !!(r.useByDate || r.bestBeforeDate) });
     } catch (err) {
       if (mine !== attempt.current) return;
       fail(err instanceof Error && err.message === "photo_failed" ? "That photo couldn't be opened. Try another one." : friendlyError(err));
@@ -343,7 +343,9 @@ export function AddItemSheet({
                     {photo.note
                       ? photo.note
                       : !photo.hasDate && photo.shots.length < MAX_SHOTS
-                        ? "No date found. If it's on the back or the lid, add a photo of that."
+                        ? isWine
+                          ? "No year found. If it's on the neck or the back label, add a photo of that."
+                          : "No date found. If it's on the back or the lid, add a photo of that."
                         : photo.check.length
                           ? "Check the highlighted fields, then add it."
                           : "Have a quick look, then add it."}
