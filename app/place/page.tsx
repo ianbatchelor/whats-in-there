@@ -7,7 +7,10 @@ import { AuthGate } from "@/components/AuthGate";
 import { supabase } from "@/lib/supabase/client";
 import { friendlyError } from "@/lib/supabase/errors";
 import { useQueryParam } from "@/lib/hooks/useQueryParam";
-import { loadMembers, loadPlace, loadPlaces, type LocationType, type Place as PlaceRow } from "@/lib/household";
+import { loadMembers, loadPlace, loadPlaces, type LocationType, type Member, type Place as PlaceRow } from "@/lib/household";
+import { livesIn, loadNames, loadPlacePeople, loadSharedWithMe, type PlacePerson } from "@/lib/sharedPlaces";
+import { usersLine } from "@/lib/domain/sharedPlaces";
+import { WhoUsesSheet } from "@/components/place/WhoUsesSheet";
 import type { StockItem } from "@/lib/domain/stock";
 import { loadItems, loadPeeks, loadPlaceLastActivity } from "@/lib/stock";
 import { boxesIn, countThings, isKeepPlace, isUseUpPlace } from "@/lib/domain/places";
@@ -17,7 +20,7 @@ import { Screen, Splash } from "@/components/ui/Screen";
 import { Button } from "@/components/ui/Button";
 import { Notice } from "@/components/ui/Notice";
 import { Toast } from "@/components/ui/Toast";
-import { IconChevronLeft, IconGrid, IconList, IconPencil, IconPlus, IconSearch, IconStack, IconSticker } from "@/components/ui/icons";
+import { IconChevronLeft, IconChevronRight, IconGrid, IconList, IconLock, IconPencil, IconPeople, IconPlus, IconSearch, IconStack, IconSticker } from "@/components/ui/icons";
 import { PlacePhoto } from "@/components/art/PlacePhoto";
 import { BoxCover } from "@/components/place/BoxCover";
 import { pickPeeks, toPeek, type Peek } from "@/lib/domain/boxLook";
@@ -47,10 +50,10 @@ import { AddPlaceSheet } from "@/components/home/AddPlaceSheet";
 type PlaceInfo = { id: string; name: string; type: LocationType; householdId: string; imagePath?: string | null; parentId?: string | null };
 
 export default function PlacePage() {
-  return <AuthGate>{() => <Place />}</AuthGate>;
+  return <AuthGate>{(session) => <Place me={session.user.id} />}</AuthGate>;
 }
 
-function Place() {
+function Place({ me }: { me: string }) {
   const id = useQueryParam("id");
   // Arrived from the place's sticker or QR label: start with the quick choices.
   const fromSticker = useQueryParam("quick") === "1";
@@ -76,6 +79,15 @@ function Place() {
   const [addingBox, setAddingBox] = useState(false);
   /** A few things from each box inside this place, for their covers. */
   const [peeks, setPeeks] = useState<Map<string, Peek[]> | null>(null);
+  /** True when you were let into this place and don't live in its household. */
+  const [guest, setGuest] = useState(false);
+  /** Everyone in the household, for ticking family in. */
+  const [members, setMembers] = useState<Member[]>([]);
+  /** People let into this place (or the place this box is in). */
+  const [people, setPeople] = useState<PlacePerson[]>([]);
+  /** The household's name, for guests (they can't read the household itself). */
+  const [sharedBy, setSharedBy] = useState<string | null>(null);
+  const [sharing, setSharing] = useState(false);
   // Pictures first on a bookshelf, or wherever most things have a photo.
   const pictures = place?.type === "bookshelf" || (!!items && items.length > 0 && items.filter((i) => i.imagePath).length * 2 >= items.length);
   const [view, setView] = usePlaceView(place?.id ?? null, pictures);
@@ -109,8 +121,24 @@ function Place() {
         if (!active) return;
         if (!p) return setMissing(true);
         setPlace(p);
-        const [members] = await Promise.all([loadMembers(p.householdId), refresh(p.id, p.householdId)]);
-        if (active) setNames(new Map(members.map((m) => [m.userId, m.displayName])));
+        const shareRoot = p.parentId ?? p.id;
+        const [all, home, ppl] = await Promise.all([
+          loadMembers(p.householdId),
+          livesIn(p.householdId).catch(() => true),
+          loadPlacePeople(shareRoot).catch(() => [] as PlacePerson[]),
+          refresh(p.id, p.householdId),
+        ]);
+        if (!active) return;
+        setMembers(all);
+        setGuest(!home);
+        setPeople(ppl);
+        const known = new Map(all.map((m) => [m.userId, m.displayName]));
+        for (const x of ppl) known.set(x.userId, x.name);
+        setNames(known);
+        if (!home) {
+          const shared = await loadSharedWithMe().catch(() => []);
+          if (active) setSharedBy(shared.find((s) => s.id === shareRoot)?.household ?? null);
+        }
       } catch (e) {
         if (active) setError(friendlyError(e));
       }
@@ -196,6 +224,26 @@ function Place() {
       live = false;
     };
   }, [boxKey]);
+
+  // Guests don't see the household's member list, so names for "added by" come from the things themselves.
+  const unknownAdders = guest && items ? [...new Set(items.map((i) => i.addedBy).filter((a): a is string => !!a && !names.has(a)))].join(",") : "";
+  useEffect(() => {
+    if (!unknownAdders) return;
+    let live = true;
+    loadNames(unknownAdders.split(","))
+      .then((found) => live && found.size > 0 && setNames((n) => new Map([...n, ...found])))
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, [unknownAdders]);
+
+  const reloadPeople = useCallback(() => {
+    if (!place) return;
+    loadPlacePeople(place.parentId ?? place.id)
+      .then(setPeople)
+      .catch(() => {});
+  }, [place]);
 
   const { toast, clear, announce } = useUndoToast(() => {
     if (place) refresh(place.id);
@@ -319,7 +367,7 @@ function Place() {
           <span ref={heroSmall} aria-hidden="true" className="min-w-0 flex-1 truncate font-serif text-[18px] font-semibold text-[#fffdf8] opacity-0 sm:hidden">
             {place.name}
           </span>
-          <div className="flex shrink-0 gap-2">
+          <div className={`flex shrink-0 gap-2 ${guest ? "hidden" : ""}`}>
             <button
               onClick={() => setSticker(true)}
               aria-label={`Sticker and QR label for ${place.name}`}
@@ -348,7 +396,30 @@ function Place() {
 
       {error ? <Notice>{error}</Notice> : null}
 
-      <KindHint key={place.id} place={place} onSwitched={(type) => setPlace({ ...place, type })} />
+      {guest ? (
+        <button
+          onClick={() => setSharing(true)}
+          className="flex min-h-12 items-center gap-3 rounded-2xl border border-line bg-card px-4 py-2.5 text-left text-[14.5px] transition hover:bg-sunk/50"
+        >
+          <IconLock className="size-5 shrink-0 text-leaf" />
+          <span className="min-w-0 flex-1">
+            <span className="font-semibold">Shared with you{sharedBy ? ` by ${sharedBy}` : ""}.</span>{" "}
+            <span className="text-mute">You see {parent ? parent.name : "this place"} only.</span>
+          </span>
+          <IconChevronRight className="size-4 shrink-0 text-mute/70" />
+        </button>
+      ) : usersLine(people.map((p) => p.name)) ? (
+        <button
+          onClick={() => setSharing(true)}
+          className="flex min-h-12 items-center gap-3 rounded-2xl border border-line bg-card px-4 py-2.5 text-left text-[14.5px] transition hover:bg-sunk/50"
+        >
+          <IconPeople className="size-5 shrink-0 text-leaf" />
+          <span className="min-w-0 flex-1 truncate font-semibold">{usersLine(people.map((p) => p.name))}</span>
+          <IconChevronRight className="size-4 shrink-0 text-mute/70" />
+        </button>
+      ) : null}
+
+      {guest ? null : <KindHint key={place.id} place={place} onSwitched={(type) => setPlace({ ...place, type })} />}
 
       {items && (items.length > 0 || boxes.length > 0) ? (
         // On phones the search and Add row stays just under the shrunken header, so Add is always in reach.
@@ -416,7 +487,7 @@ function Place() {
                 cover={<BoxCover id={b.id} type={b.type} imagePath={b.imagePath} peeks={peeks ? (peeks.get(b.id) ?? []) : null} total={b.itemCount} />}
               />
             ))}
-            <AddPlaceTile onClick={() => setAddingBox(true)} label="Add a box or shelf" />
+            {guest ? null : <AddPlaceTile onClick={() => setAddingBox(true)} label="Add a box or shelf" />}
           </ul>
         </section>
       ) : null}
@@ -437,7 +508,7 @@ function Place() {
               <IconStack /> Snap a whole shelf
             </Button>
           </div>
-          {canHoldBoxes ? (
+          {canHoldBoxes && !guest ? (
             <button onClick={() => setAddingBox(true)} className="min-h-11 text-[15px] font-semibold text-leaf">
               Or add a box or shelf inside it
             </button>
@@ -516,8 +587,19 @@ function Place() {
       {items && items.length > 0 && items.length < 3 && !filtering && boxes.length === 0 ? starters : null}
 
       {/* Changing or removing the place, at the end of its page where people look for it. */}
-      {items ? (
+      {items && guest ? (
+        <div className="mt-2 flex justify-center border-t border-line pt-4 text-[15px] font-semibold">
+          <button onClick={() => setSharing(true)} className="min-h-11 text-leaf">
+            Who else uses this?
+          </button>
+        </div>
+      ) : items ? (
         <div className="mt-2 flex flex-wrap items-center justify-center gap-x-6 gap-y-1 border-t border-line pt-4 text-[15px] font-semibold">
+          {place.parentId ? null : (
+            <button onClick={() => setSharing(true)} className="flex min-h-11 items-center gap-1.5 text-leaf">
+              <IconPeople className="size-4" /> Who else uses this?
+            </button>
+          )}
           <button onClick={() => setEditing("edit")} className="flex min-h-11 items-center gap-1.5 text-leaf">
             <IconPencil className="size-4" /> Edit {place.parentId ? "this box" : "this place"}
           </button>
@@ -569,7 +651,7 @@ function Place() {
         item={open}
         keep={keep}
         wine={isWineRack}
-        householdId={place.householdId}
+        householdId={guest ? undefined : place.householdId}
         names={names}
         onClose={() => setOpen(null)}
         onTaken={(before, after, amount, movementId) => {
@@ -605,6 +687,20 @@ function Place() {
           householdId={place.householdId}
           inside={{ id: place.id, name: place.name }}
           onAdded={() => refresh(place.id, place.householdId)}
+        />
+      ) : null}
+      {sharing ? (
+        <WhoUsesSheet
+          open={sharing}
+          onClose={() => setSharing(false)}
+          place={parent && guest ? { id: parent.id, name: parent.name } : place}
+          guest={guest}
+          household={sharedBy ?? undefined}
+          me={me}
+          family={members.filter((m) => m.role === "family")}
+          people={people}
+          onChanged={reloadPeople}
+          onLeft={() => router.replace("/")}
         />
       ) : null}
       {sticker ? <StickerSheet open={sticker} onClose={() => setSticker(false)} place={place} /> : null}

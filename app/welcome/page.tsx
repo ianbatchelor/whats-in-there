@@ -9,6 +9,7 @@ import { friendlyError } from "@/lib/supabase/errors";
 import { familiesOf, loadMemberships, rememberHousehold } from "@/lib/household";
 import { KEYS, readLocal } from "@/lib/storage";
 import { loadLists } from "@/lib/ownLists";
+import { loadSharedWithMe, type SharedPlace } from "@/lib/sharedPlaces";
 import { AuthFrame } from "@/components/AuthFrame";
 import { Field } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
@@ -28,6 +29,8 @@ function Welcome({ session }: { session: Session }) {
   const [hasLists, setHasLists] = useState(false);
   // Someone who's family in another household (presents only) before they have a home of their own.
   const [family, setFamily] = useState<string | null>(null);
+  // Someone let into a single place (a parent's garage freezer) before they have a home of their own.
+  const [shared, setShared] = useState<SharedPlace[]>([]);
 
   useEffect(() => {
     const pending = readLocal(KEYS.pendingInvite);
@@ -46,6 +49,9 @@ function Welcome({ session }: { session: Session }) {
       .catch(() => {});
     loadLists()
       .then((l) => setHasLists(l.length > 0))
+      .catch(() => {});
+    loadSharedWithMe()
+      .then(setShared)
       .catch(() => {});
   }, [router, session.user.id]);
 
@@ -73,6 +79,19 @@ function Welcome({ session }: { session: Session }) {
         <h1 className="font-display text-[2.2rem] leading-none font-bold tracking-[-0.03em]">Welcome in</h1>
         <p className="text-mute">Set up your household. You can invite everyone else in a moment.</p>
       </div>
+      {shared.length > 0 ? (
+        <div className="flex flex-col gap-2 rounded-[var(--radius-card)] border border-line bg-card p-4">
+          <p className="text-[15px]">
+            <strong>Shared with you:</strong> {shared.map((p) => `${p.name} at ${p.household}`).join(", ")}. Set up a household below only if you want to keep track
+            of your own home too.
+          </p>
+          {shared.map((p) => (
+            <Button key={p.id} variant="ghost" onClick={() => router.push(`/place/?id=${p.id}`)} className="w-full">
+              Open {p.name}
+            </Button>
+          ))}
+        </div>
+      ) : null}
       {family ? (
         <div className="flex flex-col gap-2 rounded-[var(--radius-card)] border border-line bg-card p-4">
           <p className="text-[15px]">

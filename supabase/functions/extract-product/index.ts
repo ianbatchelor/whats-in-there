@@ -232,7 +232,10 @@ Deno.serve(async (req) => {
   }
   const imagePath = imagePaths[0];
 
-  const { data: member } = await asUser.rpc("is_member", { hid: householdId });
+  // People at home, and people let into one of the household's places (a shared garage freezer).
+  // Falls back to is_member if the database doesn't have uses_a_place_in yet.
+  let { data: member, error: memberError } = await asUser.rpc("uses_a_place_in", { hid: householdId });
+  if (memberError) ({ data: member } = await asUser.rpc("is_member", { hid: householdId }));
   if (member !== true) return reply(403, { error: "not_member" });
 
   // Usage limits. reserve_scan checks them and records this scan in one step, under a lock, so scans

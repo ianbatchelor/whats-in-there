@@ -107,11 +107,14 @@ export function PlaceCard({
   soon = 0,
   index = 0,
   cover,
+  sub,
 }: {
   place: { id: string; name: string; type: LocationType; itemCount: number; imagePath?: string | null };
   soon?: number;
   index?: number;
   cover?: React.ReactNode;
+  /** Replaces the count under the name. */
+  sub?: string;
 }) {
   return (
     <Tile
@@ -119,7 +122,7 @@ export function PlaceCard({
       type={place.type}
       imagePath={place.imagePath}
       title={place.name}
-      sub={countThings(place.itemCount)}
+      sub={sub ?? countThings(place.itemCount)}
       soon={soon}
       index={index}
       cover={cover}
