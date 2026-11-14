@@ -40,6 +40,7 @@ import { IconCheck, IconChevronRight, IconHandOver, IconLeaf, IconScan, IconSear
 import { AddPlaceSheet } from "@/components/home/AddPlaceSheet";
 import { AddPlaceTile, GroupCard } from "@/components/home/PlaceCard";
 import { FirstThingsTip, StarterPlaces } from "@/components/home/StarterPlaces";
+import { SharedPlaces } from "@/components/home/SharedPlaces";
 import { useSeasonal, type Seasonal } from "@/components/home/SeasonalReminders";
 import { ItemList, ItemRow } from "@/components/stock/ItemRow";
 import { TakeOutSheet } from "@/components/stock/TakeOutSheet";
@@ -320,6 +321,8 @@ function Home({ session }: { session: Session }) {
           </ul>
         )}
       </section>
+
+      <SharedPlaces version={version} />
 
       {oldest.length > 0 ? (
         <section aria-labelledby="first-h" className="flex flex-col gap-2.5">

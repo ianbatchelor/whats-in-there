@@ -29,6 +29,15 @@ export default function HelpPage() {
         <b> Is this you?</b> on it to make it theirs.
       </p>
 
+      <h2>Sharing one place</h2>
+      <p>
+        To let someone who doesn&apos;t live with you use one place, such as a daughter who keeps food in your garage freezer, open the
+        place and tap <b>Who else uses this?</b> at the bottom. Tap <b>Let in</b> next to family, or make an invitation link for anyone
+        else. They see that place, the boxes inside it and what&apos;s in them, and can add and take things out. They don&apos;t see your
+        other places, and you don&apos;t see their home. It shows under <b>Shared with you</b> on their Home. Tap <b>Take out</b> to
+        stop sharing; they can leave whenever they like.
+      </p>
+
       <h2>Adding things</h2>
       <ul>
         <li><b>Scan a label</b>: take a photo of the front of a pack, and the back if the dates are there. Check what was read, then save.</li>

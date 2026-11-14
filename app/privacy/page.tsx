@@ -52,6 +52,16 @@ export default function PrivacyPage() {
         or be removed, at any time.
       </p>
 
+      <h2>Sharing one place</h2>
+      <p>
+        Anyone who lives in a household can let someone else into a single place, by ticking family or sending an invitation link that
+        works once, for 7 days. Before joining, anyone holding the link can see the place&apos;s name, the household&apos;s name, who
+        sent it and how many things are in it. Once in, they can see that place, the boxes inside it, the things in them with their
+        photos and history, the names of the people who changed them, and the names of others let in. They can add, change, move and
+        take things out there, and their photos are stored with the household&apos;s. They see nothing else of the household, and the
+        household sees nothing of theirs. Anyone in the household can take them out, and they can leave, at any time.
+      </p>
+
       <h2>Your own lists and group lists</h2>
       <p>
         A list you make can be <b>Just me</b>, which nobody else can see, not even people in your household; shared with your household;
