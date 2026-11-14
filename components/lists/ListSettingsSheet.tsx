@@ -5,10 +5,12 @@ import { Sheet } from "@/components/ui/Sheet";
 import { Field } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 import { Notice } from "@/components/ui/Notice";
-import { IconHouse, IconLock } from "@/components/ui/icons";
+import { IconHouse, IconLock, IconPeople } from "@/components/ui/icons";
 import { friendlyError } from "@/lib/supabase/errors";
 import { KINDS, type ListKind, type ListVisibility, type OwnList } from "@/lib/domain/ownLists";
 import type { ListSettings } from "@/lib/ownLists";
+
+type Option = { value: ListVisibility; title: string; body: string; Icon: (p: { className?: string }) => React.ReactNode; group?: boolean };
 
 /**
  * Making a list, or changing one you made: its name, what kind it is and who can see it.
@@ -26,8 +28,9 @@ export function ListSettingsSheet({
 }: {
   open: boolean;
   onClose: () => void;
-  householdId: string;
-  householdName: string;
+  /** Null for someone with no household of their own: then there's no "everyone at home" choice. */
+  householdId: string | null;
+  householdName: string | null;
   /** First names of the other people at home, for "You, Michele and…". */
   others: string[];
   list?: OwnList | null;
@@ -80,23 +83,15 @@ export function ListSettingsSheet({
   }
 
   const home = others.length === 0 ? "You and anyone who joins your household." : `You, ${joinNames(others)}.`;
-  const options: {
-    value: ListVisibility;
-    title: string;
-    body: string;
-    Icon: (p: { className?: string }) => React.ReactNode;
-  }[] = [
+  const options: Option[] = [
+    { value: "me", title: "Just me", body: householdId ? "Nobody else sees it, not even people at home." : "Nobody else sees it.", Icon: IconLock },
+    ...(householdId ? [{ value: "household" as const, title: `Everyone in ${householdName ?? "your household"}`, body: home, Icon: IconHouse }] : []),
     {
-      value: "me",
-      title: "Just me",
-      body: "Nobody else sees it, not even people at home.",
-      Icon: IconLock,
-    },
-    {
-      value: "household",
-      title: `Everyone in ${householdName}`,
-      body: home,
-      Icon: IconHouse,
+      value: "group",
+      title: "A group I invite",
+      body: "Friends or family elsewhere join with a link. They see this list only, never your home.",
+      Icon: IconPeople,
+      group: true,
     },
   ];
 
@@ -138,7 +133,10 @@ export function ListSettingsSheet({
                 className={`flex cursor-pointer items-start gap-3 rounded-2xl border-[1.5px] p-3 transition has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-leaf/50 ${on ? "border-go bg-ok-bg/50" : "border-line bg-card"}`}
               >
                 <input type="radio" name="list-visibility" value={o.value} checked={on} onChange={() => setVisibility(o.value)} className="sr-only" />
-                <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-sunk text-leaf" aria-hidden="true">
+                <span
+                  className={`grid size-10 shrink-0 place-items-center rounded-xl ${o.group ? "bg-plum-bg text-plum" : "bg-sunk text-leaf"}`}
+                  aria-hidden="true"
+                >
                   <o.Icon className="size-5" />
                 </span>
                 <span className="min-w-0 flex-1">
@@ -152,8 +150,10 @@ export function ListSettingsSheet({
               </label>
             );
           })}
-          {list && list.visibility === "household" && visibility === "me" ? (
-            <p className="text-[13.5px] text-mute">Everyone else will stop seeing it straight away, including anything they added.</p>
+          {list && list.visibility !== "me" && visibility !== list.visibility ? (
+            <p className="text-[13.5px] text-mute">
+              {list.visibility === "group" ? "The group" : "Everyone at home"} will stop seeing it straight away, including anything they added.
+            </p>
           ) : null}
         </fieldset>
 

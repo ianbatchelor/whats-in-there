@@ -43,6 +43,15 @@ export default function PrivacyPage() {
         itself, not just by the app.
       </p>
 
+      <h2>Your own lists and group lists</h2>
+      <p>
+        A list you make can be <b>Just me</b>, which nobody else can see, not even people in your household; shared with your household;
+        or a <b>group list</b>. If you invite people to a group list, anyone with the invitation link can see the list&apos;s name, your
+        name and how many things and people are on it. People who join sign in with their email and can then see the list, everything on
+        it, and the names of everyone in the group. They see nothing else of your household, and you see nothing of theirs. Invitation
+        links last 7 days; you can stop one or remove someone at any time, and anyone can leave.
+      </p>
+
       <h2>Present and book lists you share</h2>
       <p>
         If you share a present list or a book wish list, anyone with its link can see who the list is for and what&apos;s on it (titles, authors, notes,

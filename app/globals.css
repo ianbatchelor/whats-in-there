@@ -27,6 +27,10 @@
   --color-ok: #2c6a4c;
   --color-ok-bg: #e4f0e8;
 
+  /* Group lists: people outside the household. */
+  --color-plum: #5b3f6b;
+  --color-plum-bg: #efe8f3;
+
   --font-display: var(--font-jakarta), "Avenir Next", system-ui, sans-serif;
   --font-sans: var(--font-inter), "Segoe UI", system-ui, sans-serif;
   --font-serif: var(--font-fraunces), Georgia, serif;
@@ -61,6 +65,8 @@
     --color-soon-bg: #33280f;
     --color-ok: #8cc7a5;
     --color-ok-bg: #17301f;
+    --color-plum: #d2b6e2;
+    --color-plum-bg: #2b2033;
     color-scheme: dark;
   }
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { kindInfo, listCaption, listsForTab, splitEntries, visibilityLine, type ListEntry, type OwnList } from "@/lib/domain/ownLists";
+import { groupNames, joinUrl, kindInfo, listCaption, listsForTab, readJoinToken, splitEntries, visibilityLine, type ListEntry, type OwnList } from "@/lib/domain/ownLists";
 
 const list = (o: Partial<OwnList>): OwnList => ({
   id: "l",
@@ -79,4 +79,22 @@ describe("visibilityLine", () => {
       "Michele's list, shared with everyone in The Riverside House.",
     ));
   it("falls back for an unknown kind", () => expect(kindInfo("nope" as never).kind).toBe("todo"));
+});
+
+describe("group lists", () => {
+  it("go in their own section, with or without a household", () => {
+    const lists = [list({ id: "g", visibility: "group", owner: "tom" }), list({ id: "m" })];
+    expect(listsForTab(lists, "me", null)).toEqual({ mine: [lists[1]], home: [], groups: [lists[0]] });
+  });
+  it("name you first, then the owner", () => {
+    const p = (userId: string, name: string, isOwner = false) => ({ listId: "g", userId, name, isOwner });
+    expect(groupNames([p("s", "Sarah"), p("tom", "Tom", true), p("me", "Ian")], "me")).toBe("You, Tom and Sarah");
+    expect(groupNames([p("me", "Ian", true)], "me")).toBe("Just you so far");
+  });
+  it("make and read join links", () => {
+    const url = joinUrl("https://seewhatsinhere.com/", "abcdefghijklmnopqrstuvwxyz12");
+    expect(url).toBe("https://seewhatsinhere.com/join/?t=abcdefghijklmnopqrstuvwxyz12");
+    expect(readJoinToken(new URL(url).search)).toBe("abcdefghijklmnopqrstuvwxyz12");
+    expect(readJoinToken("?t=bad token")).toBeNull();
+  });
 });

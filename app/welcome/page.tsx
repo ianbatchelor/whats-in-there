@@ -8,6 +8,7 @@ import { supabase } from "@/lib/supabase/client";
 import { friendlyError } from "@/lib/supabase/errors";
 import { rememberHousehold } from "@/lib/household";
 import { KEYS, readLocal } from "@/lib/storage";
+import { loadLists } from "@/lib/ownLists";
 import { AuthFrame } from "@/components/AuthFrame";
 import { Field } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
@@ -23,6 +24,8 @@ function Welcome({ session }: { session: Session }) {
   const [household, setHousehold] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Someone who joined a friend's group list has lists before they have a home.
+  const [hasLists, setHasLists] = useState(false);
 
   useEffect(() => {
     const pending = readLocal(KEYS.pendingInvite);
@@ -36,6 +39,9 @@ function Welcome({ session }: { session: Session }) {
       .eq("user_id", session.user.id)
       .maybeSingle()
       .then(({ data }) => data && setName((n) => n || (data.display_name as string)));
+    loadLists()
+      .then((l) => setHasLists(l.length > 0))
+      .catch(() => {});
   }, [router, session.user.id]);
 
   async function create(e: React.FormEvent) {
@@ -62,6 +68,16 @@ function Welcome({ session }: { session: Session }) {
         <h1 className="font-display text-[2.2rem] leading-none font-bold tracking-[-0.03em]">Welcome in</h1>
         <p className="text-mute">Set up your household. You can invite everyone else in a moment.</p>
       </div>
+      {hasLists ? (
+        <div className="flex flex-col gap-2 rounded-[var(--radius-card)] border border-line bg-card p-4">
+          <p className="text-[15px]">
+            <strong>Here for a shared list?</strong> You don&apos;t need a household for that.
+          </p>
+          <Button variant="ghost" onClick={() => router.push("/lists/")} className="w-full">
+            Go to my lists
+          </Button>
+        </div>
+      ) : null}
       <form onSubmit={create} className="flex flex-col gap-4">
         <Field label="Your name" autoComplete="given-name" value={name} onChange={(e) => setName(e.target.value)} maxLength={60} />
         <Field

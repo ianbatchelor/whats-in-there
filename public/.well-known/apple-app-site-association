@@ -5,7 +5,8 @@
         "appIDs": ["GS73N238CQ.com.seewhatsinhere.app"],
         "components": [
           { "/": "/l/*", "comment": "Sticker and QR label links open the place in the app" },
-          { "/": "/invite/*", "comment": "Household invitations open in the app" }
+          { "/": "/invite/*", "comment": "Household invitations open in the app" },
+          { "/": "/join/*", "comment": "Group list invitations open in the app" }
         ]
       }
     ]

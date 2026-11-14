@@ -10,15 +10,18 @@ import { placeLabel } from "@/lib/domain/places";
 
 /**
  * The signed-in person's current household, its members and places, kept live.
- * Sends people with no household to /welcome/.
+ * Sends people with no household to /welcome/, unless `optional` (screens that also work without one,
+ * such as group lists for friends who only joined a list).
  */
-export function useHousehold(session: Session) {
+export function useHousehold(session: Session, { optional = false }: { optional?: boolean } = {}) {
   const router = useRouter();
   const [current, setCurrent] = useState<Membership | null>(null);
   const [members, setMembers] = useState<Member[]>([]);
   const [places, setPlaces] = useState<Place[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [version, setVersion] = useState(0);
+  /** True once we know whether there's a household (current is then set, or null for none). */
+  const [ready, setReady] = useState(false);
 
   const refreshPlaces = useCallback(async (householdId: string) => {
     try {
@@ -36,10 +39,16 @@ export function useHousehold(session: Session) {
         const memberships = await loadMemberships(session.user.id);
         if (!active) return;
         const chosen = pickCurrent(memberships);
-        if (!chosen) return router.replace("/welcome/");
+        if (!chosen) {
+          if (optional) return setReady(true);
+          return router.replace("/welcome/");
+        }
         setCurrent(chosen);
         const [m] = await Promise.all([loadMembers(chosen.householdId), refreshPlaces(chosen.householdId)]);
-        if (active) setMembers(m);
+        if (active) {
+          setMembers(m);
+          setReady(true);
+        }
       } catch (e) {
         if (active) setError(friendlyError(e));
       }
@@ -47,7 +56,7 @@ export function useHousehold(session: Session) {
     return () => {
       active = false;
     };
-  }, [session.user.id, router, refreshPlaces]);
+  }, [session.user.id, router, refreshPlaces, optional]);
 
   // Live updates: another household member adds a place or changes stock.
   useEffect(() => {
@@ -76,6 +85,7 @@ export function useHousehold(session: Session) {
 
   return {
     current,
+    ready,
     members,
     places,
     names,

@@ -1,7 +1,7 @@
 /** Your own lists: any number of lists a person makes, each with its own say over who can see it. */
 
 export type ListKind = "todo" | "ideas" | "buy";
-export type ListVisibility = "me" | "household";
+export type ListVisibility = "me" | "household" | "group";
 
 export type OwnList = {
   id: string;
@@ -66,11 +66,40 @@ export function splitEntries(entries: ListEntry[]): {
  * Which lists show on the Lists tab while in a household: everything you made, wherever you were, and
  * the lists others share with this household. Private lists first, then shared, each newest first.
  */
-export function listsForTab(lists: OwnList[], me: string, householdId: string): { mine: OwnList[]; home: OwnList[] } {
+export function listsForTab(lists: OwnList[], me: string, householdId: string | null): { mine: OwnList[]; home: OwnList[]; groups: OwnList[] } {
   const newest = (a: OwnList, b: OwnList) => b.createdAt.localeCompare(a.createdAt);
   const mine = lists.filter((l) => l.owner === me && l.visibility === "me").sort(newest);
-  const home = lists.filter((l) => l.visibility === "household" && l.householdId === householdId).sort(newest);
-  return { mine, home };
+  const home = householdId ? lists.filter((l) => l.visibility === "household" && l.householdId === householdId).sort(newest) : [];
+  // Group lists go with you whichever household you're looking at: yours and the ones you joined.
+  const groups = lists.filter((l) => l.visibility === "group").sort(newest);
+  return { mine, home, groups };
+}
+
+export type ListPerson = { listId: string; userId: string; name: string; isOwner: boolean };
+
+/** "You, Tom, Sarah and Raj": you first, then the owner, then everyone else in the order they joined. */
+export function groupNames(people: ListPerson[], me: string): string {
+  const sorted = [...people].sort((a, b) => Number(b.userId === me) - Number(a.userId === me) || Number(b.isOwner) - Number(a.isOwner));
+  const names = sorted.map((p) => (p.userId === me ? "You" : p.name));
+  if (names.length <= 1) return names[0] === "You" ? "Just you so far" : (names[0] ?? "");
+  return `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
+}
+
+/** Group list invitation links: /join/?t=<token>. */
+export function joinUrl(origin: string, token: string): string {
+  return `${origin.replace(/\/+$/, "")}/join/?t=${encodeURIComponent(token)}`;
+}
+
+const JOIN_TOKEN = /^[A-Za-z0-9_-]{24,64}$/;
+
+export function readJoinToken(search: string): string | null {
+  const t = new URLSearchParams(search).get("t");
+  return t && JOIN_TOKEN.test(t) ? t : null;
+}
+
+/** The message that goes with a group list link. */
+export function joinMessage(title: string, url: string): string {
+  return `I've started a shared list, "${title}", on See What's in Here. Join it here and we can add to it and tick things off together: ${url}`;
 }
 
 /** What a list's row says under its name: what's left on it, or that it's empty or all done. */
@@ -82,6 +111,10 @@ export function listCaption(open: string[], doneCount: number): string {
 /** Who can see it, said plainly for the list page. */
 export function visibilityLine(visibility: ListVisibility, householdName: string | null, isOwner: boolean, ownerName: string | null): string {
   if (visibility === "me") return "Just you. Nobody else can see this list.";
+  if (visibility === "group")
+    return isOwner
+      ? "Shared with the people you invite. Nobody else sees it, including people at home."
+      : `${ownerName ?? "Someone"}'s list, shared with you and the group. You see this list only.`;
   const home = householdName ? `everyone in ${householdName}` : "everyone at home";
   return isOwner ? `Shared with ${home}.` : `${ownerName ?? "Someone"}'s list, shared with ${home}.`;
 }

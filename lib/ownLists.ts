@@ -1,5 +1,5 @@
 import { supabase } from "@/lib/supabase/client";
-import type { ListEntry, ListKind, ListVisibility, OwnList } from "@/lib/domain/ownLists";
+import type { ListEntry, ListKind, ListPerson, ListVisibility, OwnList } from "@/lib/domain/ownLists";
 
 const LIST_COLUMNS = "id, owner, household_id, title, kind, visibility, created_at";
 const ENTRY_COLUMNS = "id, list_id, text, note, added_by, added_at, done_at, done_by";
@@ -54,7 +54,7 @@ export type ListSettings = {
   title: string;
   kind: ListKind;
   visibility: ListVisibility;
-  householdId: string;
+  householdId: string | null;
 };
 
 const settingsRow = (s: ListSettings) => ({
@@ -102,5 +102,59 @@ export async function updateEntry(id: string, text: string, note: string | null)
 export async function removeEntries(ids: string[]): Promise<void> {
   if (ids.length === 0) return;
   const { error } = await supabase().from("list_entries").delete().in("id", ids);
+  if (error) throw error;
+}
+
+/** Names of everyone on the group lists you can see, owner included. */
+export async function loadPeople(): Promise<ListPerson[]> {
+  const { data, error } = await supabase().rpc("list_people");
+  if (error) throw error;
+  return ((data ?? []) as Record<string, unknown>[]).map((r) => ({
+    listId: r.list_id as string,
+    userId: r.user_id as string,
+    name: r.display_name as string,
+    isOwner: r.is_owner as boolean,
+  }));
+}
+
+/** Makes it a group list with a fresh invitation link. Any earlier link stops working. */
+export async function makeLink(listId: string): Promise<{ token: string; expiresAt: string }> {
+  const { data, error } = await supabase().rpc("make_list_link", { p_list: listId });
+  if (error) throw error;
+  const row = (Array.isArray(data) ? data[0] : data) as { token: string; expires_at: string };
+  return { token: row.token, expiresAt: row.expires_at };
+}
+
+export async function stopLink(listId: string): Promise<void> {
+  const { error } = await supabase().rpc("stop_list_link", { p_list: listId });
+  if (error) throw error;
+}
+
+/** When the list's link runs out, or null if there isn't one. Owner only. */
+export async function linkExpiry(listId: string): Promise<string | null> {
+  const { data, error } = await supabase().rpc("list_link_status", { p_list: listId });
+  if (error) throw error;
+  return (data as string | null) ?? null;
+}
+
+export type InvitePreview = { title: string; ownerName: string; things: number; people: number };
+
+/** What the invite page shows, signed in or not. Null for a wrong, stopped or expired link. */
+export async function previewInvite(token: string): Promise<InvitePreview | null> {
+  const { data, error } = await supabase().rpc("list_invite_preview", { p_token: token });
+  if (error) throw error;
+  const row = (Array.isArray(data) ? data[0] : data) as Record<string, unknown> | undefined;
+  return row ? { title: row.title as string, ownerName: row.owner_name as string, things: row.things as number, people: row.people as number } : null;
+}
+
+export async function joinList(token: string): Promise<string> {
+  const { data, error } = await supabase().rpc("join_list", { p_token: token });
+  if (error) throw error;
+  return data as string;
+}
+
+/** Leave a group list, or (as its owner) take someone out of it. */
+export async function removeMember(listId: string, userId: string): Promise<void> {
+  const { error } = await supabase().from("list_members").delete().eq("list_id", listId).eq("user_id", userId);
   if (error) throw error;
 }
