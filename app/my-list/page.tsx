@@ -17,7 +17,8 @@ import { groupNames, kindInfo, splitEntries, visibilityLine, type ListEntry, typ
 import { Button } from "@/components/ui/Button";
 import { Notice } from "@/components/ui/Notice";
 import { Toast, type ToastData } from "@/components/ui/Toast";
-import { IconCheck, IconHouse, IconLink, IconLock, IconPeople, IconPlus, IconX } from "@/components/ui/icons";
+import { IconCheck, IconGift, IconHouse, IconLink, IconLock, IconPeople, IconPlus, IconX } from "@/components/ui/icons";
+import { loadMembers } from "@/lib/household";
 
 export default function MyListPage() {
   return <AuthGate>{(session) => <MyList session={session} />}</AuthGate>;
@@ -35,6 +36,8 @@ function MyList({ session }: { session: Session }) {
   const [settings, setSettings] = useState(false);
   const [people, setPeople] = useState<ListPerson[]>([]);
   const [group, setGroup] = useState(false);
+  /** A family list from a home you don't live in (Dad's, seen by his daughter): its name and people. */
+  const [away, setAway] = useState<{ name: string | null; names: Map<string, string> } | null>(null);
   const [toast, setToast] = useState<ToastData | null>(null);
   const say = (message: string, undo?: () => void) =>
     setToast((t) => ({
@@ -127,12 +130,31 @@ function MyList({ session }: { session: Session }) {
       say(done.length === 1 ? "Cleared 1 thing" : `Cleared ${done.length} things`);
     });
 
+  // A family list belongs to a home that may not be yours: show its name and its people's names.
+  const awayHousehold = list?.visibility === "family" && list.householdId && list.householdId !== current?.householdId ? list.householdId : null;
+  useEffect(() => {
+    if (!awayHousehold) return;
+    let live = true;
+    Promise.all([
+      supabase().from("households").select("name").eq("id", awayHousehold).maybeSingle(),
+      loadMembers(awayHousehold).catch(() => []),
+    ]).then(([h, m]) => {
+      if (live) setAway({ name: (h.data?.name as string | undefined) ?? null, names: new Map(m.map((x) => [x.userId, x.displayName])) });
+    });
+    return () => {
+      live = false;
+    };
+  }, [awayHousehold]);
+
   const isOwner = list?.owner === session.user.id;
   const isGroup = list?.visibility === "group";
-  const shared = list?.visibility === "household" || isGroup;
+  const isFamily = list?.visibility === "family";
+  const shared = list?.visibility === "household" || isGroup || isFamily;
   const groupName = (uid: string) => people.find((p) => p.userId === uid)?.name;
-  const who = (uid: string | null) => (uid === session.user.id ? "you" : (uid && (groupName(uid) ?? names.get(uid))) || null);
-  const others = members.filter((m) => m.userId !== session.user.id).map((m) => m.displayName);
+  const who = (uid: string | null) =>
+    uid === session.user.id ? "you" : (uid && (groupName(uid) ?? names.get(uid) ?? (awayHousehold ? away?.names.get(uid) : undefined))) || null;
+  const others = members.filter((m) => m.userId !== session.user.id && m.role !== "family").map((m) => m.displayName);
+  const family = members.filter((m) => m.role === "family").map((m) => m.displayName);
   const { open, done } = splitEntries(entries);
 
   if (list === null) {
@@ -154,12 +176,14 @@ function MyList({ session }: { session: Session }) {
             <span>
               {isGroup ? (
                 <IconPeople className="mr-1.5 inline size-4 -translate-y-px align-middle text-plum" />
+              ) : isFamily ? (
+                <IconGift className="mr-1.5 inline size-4 -translate-y-px align-middle text-leaf" />
               ) : shared ? (
                 <IconHouse className="mr-1.5 inline size-4 -translate-y-px align-middle text-leaf" />
               ) : (
                 <IconLock className="mr-1.5 inline size-4 -translate-y-px align-middle text-leaf" />
               )}
-              {visibilityLine(list.visibility, current?.name ?? null, isOwner, who(list.owner))}
+              {visibilityLine(list.visibility, awayHousehold ? (away?.name ?? null) : (current?.name ?? null), isOwner, who(list.owner))}
               {isOwner ? (
                 <>
                   {" "}
@@ -292,6 +316,7 @@ function MyList({ session }: { session: Session }) {
           householdId={current?.householdId ?? null}
           householdName={current?.name ?? null}
           others={others}
+          family={family}
           list={list}
           onSave={async (s) => {
             await updateList(list.id, s);
@@ -301,7 +326,9 @@ function MyList({ session }: { session: Session }) {
                 ? "Saved. Only you can see it."
                 : s.visibility === "group"
                   ? "Saved. Now invite people with a link."
-                  : `Saved. Shared with everyone in ${current?.name ?? "your household"}.`,
+                  : s.visibility === "family"
+                    ? "Saved. Shared with everyone at home and family."
+                    : `Saved. Shared with everyone in ${current?.name ?? "your household"}.`,
             );
             await refresh();
             if (s.visibility === "group" && list.visibility !== "group") setGroup(true);

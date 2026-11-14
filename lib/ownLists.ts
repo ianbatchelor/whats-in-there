@@ -62,7 +62,7 @@ const settingsRow = (s: ListSettings) => ({
   kind: s.kind,
   visibility: s.visibility,
   // Only a shared list belongs to a household, so a private one goes with you everywhere.
-  household_id: s.visibility === "household" ? s.householdId : null,
+  household_id: s.visibility === "household" || s.visibility === "family" ? s.householdId : null,
 });
 
 export async function createList(s: ListSettings): Promise<string> {

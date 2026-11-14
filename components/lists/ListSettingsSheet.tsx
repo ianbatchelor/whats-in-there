@@ -5,7 +5,7 @@ import { Sheet } from "@/components/ui/Sheet";
 import { Field } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 import { Notice } from "@/components/ui/Notice";
-import { IconHouse, IconLock, IconPeople } from "@/components/ui/icons";
+import { IconGift, IconHouse, IconLock, IconPeople } from "@/components/ui/icons";
 import { friendlyError } from "@/lib/supabase/errors";
 import { KINDS, type ListKind, type ListVisibility, type OwnList } from "@/lib/domain/ownLists";
 import type { ListSettings } from "@/lib/ownLists";
@@ -22,6 +22,7 @@ export function ListSettingsSheet({
   householdId,
   householdName,
   others,
+  family = [],
   list,
   onSave,
   onDelete,
@@ -33,6 +34,8 @@ export function ListSettingsSheet({
   householdName: string | null;
   /** First names of the other people at home, for "You, Michele and…". */
   others: string[];
+  /** First names of family with their own homes (presents only), for "…plus Molly and Carol". */
+  family?: string[];
   list?: OwnList | null;
   onSave: (s: ListSettings) => Promise<void>;
   onDelete?: () => Promise<void>;
@@ -86,6 +89,19 @@ export function ListSettingsSheet({
   const options: Option[] = [
     { value: "me", title: "Just me", body: householdId ? "Nobody else sees it, not even people at home." : "Nobody else sees it.", Icon: IconLock },
     ...(householdId ? [{ value: "household" as const, title: `Everyone in ${householdName ?? "your household"}`, body: home, Icon: IconHouse }] : []),
+    ...(householdId
+      ? [
+          {
+            value: "family" as const,
+            title: "Everyone at home and family",
+            body:
+              family.length > 0
+                ? `Plus ${joinNames(family)}, who have their own homes. They see this list only.`
+                : "Plus family with their own homes, once you add them on the Household page. They see this list only.",
+            Icon: IconGift,
+          },
+        ]
+      : []),
     {
       value: "group",
       title: "A group I invite",
@@ -150,10 +166,8 @@ export function ListSettingsSheet({
               </label>
             );
           })}
-          {list && list.visibility !== "me" && visibility !== list.visibility ? (
-            <p className="text-[13.5px] text-mute">
-              {list.visibility === "group" ? "The group" : "Everyone at home"} will stop seeing it straight away, including anything they added.
-            </p>
+          {list && stopping(list.visibility, visibility) ? (
+            <p className="text-[13.5px] text-mute">{stopping(list.visibility, visibility)} will stop seeing it straight away, including anything they added.</p>
           ) : null}
         </fieldset>
 
@@ -184,6 +198,14 @@ export function ListSettingsSheet({
       </form>
     </Sheet>
   );
+}
+
+/** Who loses sight of a list when it changes from one choice to another, or null if nobody does. */
+export function stopping(from: ListVisibility, to: ListVisibility): string | null {
+  if (from === to || from === "me") return null;
+  if (from === "group") return "The group";
+  if (from === "family") return to === "household" ? "Family" : "Everyone at home and family";
+  return to === "family" ? null : "Everyone at home";
 }
 
 /** "Michele", "Michele and Carol", "Michele, Carol and Ollie". */

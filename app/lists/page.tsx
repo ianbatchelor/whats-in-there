@@ -20,6 +20,7 @@ import { ListSettingsSheet } from "@/components/lists/ListSettingsSheet";
 import { createList, loadEntries, loadLists, loadPeople } from "@/lib/ownLists";
 import { listCaption, listsForTab, splitEntries, type ListEntry, type ListPerson, type OwnList } from "@/lib/domain/ownLists";
 import { supabase } from "@/lib/supabase/client";
+import { loadNames } from "@/lib/sharedPlaces";
 import {
   IconBasket,
   IconBook,
@@ -60,6 +61,8 @@ function Lists({ session }: { session: Session }) {
   const [own, setOwn] = useState<OwnList[] | null>(null);
   const [ownEntries, setOwnEntries] = useState<ListEntry[]>([]);
   const [people, setPeople] = useState<ListPerson[]>([]);
+  /** Names of people who own family lists in other homes (Dad's list, seen from Molly's flat). */
+  const [ownerNames, setOwnerNames] = useState<Map<string, string>>(new Map());
   const [making, setMaking] = useState(false);
   const [toBuy, setToBuy] = useState<string[] | null>(null);
   const [ideas, setIdeas] = useState<number | null>(null);
@@ -97,6 +100,8 @@ function Lists({ session }: { session: Session }) {
       setOwnEntries(await loadEntries(mine.map((l) => l.id)).catch(() => []));
       setPeople(who);
       setOwn(mine);
+      const owners = mine.filter((l) => l.visibility === "family").map((l) => l.owner);
+      if (owners.length > 0) setOwnerNames(await loadNames(owners).catch(() => new Map()));
     } catch (e) {
       setError(friendlyError(e));
     }
@@ -172,10 +177,10 @@ function Lists({ session }: { session: Session }) {
     },
   ];
 
-  const tab = own ? listsForTab(own, session.user.id, current?.householdId ?? null) : { mine: [], home: [], groups: [] };
+  const tab = own ? listsForTab(own, session.user.id, current?.householdId ?? null) : { mine: [], home: [], groups: [], family: [] };
   const toRow = (l: OwnList, privateList: boolean): Row => {
     const { open, done } = splitEntries(ownEntries.filter((e) => e.listId === l.id));
-    const ownerName = names.get(l.owner) ?? people.find((p) => p.listId === l.id && p.isOwner)?.name;
+    const ownerName = names.get(l.owner) ?? ownerNames.get(l.owner) ?? people.find((p) => p.listId === l.id && p.isOwner)?.name;
     const by = !privateList && l.owner !== session.user.id ? ownerName : null;
     return {
       href: `/my-list/?id=${l.id}`,
@@ -192,7 +197,10 @@ function Lists({ session }: { session: Session }) {
     const n = people.filter((p) => p.listId === l.id).length;
     return { ...row, Icon: IconPeople, group: true, caption: `${n === 1 ? "Just you so far" : `${n} people`} · ${row.caption}` };
   });
-  const others = members.filter((m) => m.userId !== session.user.id).map((m) => m.displayName);
+  const familyRows = tab.family.map((l) => ({ ...toRow(l, false), Icon: IconGift }));
+  // People who live here, and family with homes of their own, for the "who can see it" choices.
+  const others = members.filter((m) => m.userId !== session.user.id && m.role !== "family").map((m) => m.displayName);
+  const family = members.filter((m) => m.role === "family").map((m) => m.displayName);
 
   return (
     <AppShell>
@@ -203,6 +211,7 @@ function Lists({ session }: { session: Session }) {
       ) : (
         <>
           {current ? <Section id="home-h" label={`Everyone in ${current.name}`} Icon={IconHouse} rows={homeRows} /> : null}
+          {familyRows.length > 0 ? <Section id="family-h" label="With family" Icon={IconGift} rows={familyRows} /> : null}
           {groupRows.length > 0 ? <Section id="groups-h" label="Groups" Icon={IconPeople} rows={groupRows} /> : null}
           {mineRows.length > 0 ? <Section id="mine-h" label="Just you" Icon={IconLock} rows={mineRows} /> : null}
           <button
@@ -211,7 +220,7 @@ function Lists({ session }: { session: Session }) {
           >
             <IconPlus className="size-[18px]" /> New list
           </button>
-          {mineRows.length === 0 && groupRows.length === 0 ? (
+          {mineRows.length === 0 && groupRows.length === 0 && familyRows.length === 0 ? (
             <p className="-mt-2 text-center text-[13.5px] text-mute">Make a list just for you, for everyone at home, or for friends you invite.</p>
           ) : null}
           {!current ? (
@@ -225,6 +234,7 @@ function Lists({ session }: { session: Session }) {
             householdId={current?.householdId ?? null}
             householdName={current?.name ?? null}
             others={others}
+            family={family}
             onSave={async (s) => {
               const id = await createList(s);
               setMaking(false);

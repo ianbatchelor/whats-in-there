@@ -1,7 +1,8 @@
 /** Your own lists: any number of lists a person makes, each with its own say over who can see it. */
 
 export type ListKind = "todo" | "ideas" | "buy";
-export type ListVisibility = "me" | "household" | "group";
+/** "family": everyone at home plus family with homes of their own (presents-only members). */
+export type ListVisibility = "me" | "household" | "group" | "family";
 
 export type OwnList = {
   id: string;
@@ -66,13 +67,19 @@ export function splitEntries(entries: ListEntry[]): {
  * Which lists show on the Lists tab while in a household: everything you made, wherever you were, and
  * the lists others share with this household. Private lists first, then shared, each newest first.
  */
-export function listsForTab(lists: OwnList[], me: string, householdId: string | null): { mine: OwnList[]; home: OwnList[]; groups: OwnList[] } {
+export function listsForTab(
+  lists: OwnList[],
+  me: string,
+  householdId: string | null,
+): { mine: OwnList[]; home: OwnList[]; groups: OwnList[]; family: OwnList[] } {
   const newest = (a: OwnList, b: OwnList) => b.createdAt.localeCompare(a.createdAt);
   const mine = lists.filter((l) => l.owner === me && l.visibility === "me").sort(newest);
   const home = householdId ? lists.filter((l) => l.visibility === "household" && l.householdId === householdId).sort(newest) : [];
   // Group lists go with you whichever household you're looking at: yours and the ones you joined.
   const groups = lists.filter((l) => l.visibility === "group").sort(newest);
-  return { mine, home, groups };
+  // Family lists too: your own home's, and those of homes where you're family.
+  const family = lists.filter((l) => l.visibility === "family").sort(newest);
+  return { mine, home, groups, family };
 }
 
 export type ListPerson = { listId: string; userId: string; name: string; isOwner: boolean };
@@ -116,5 +123,7 @@ export function visibilityLine(visibility: ListVisibility, householdName: string
       ? "Shared with the people you invite. Nobody else sees it, including people at home."
       : `${ownerName ?? "Someone"}'s list, shared with you and the group. You see this list only.`;
   const home = householdName ? `everyone in ${householdName}` : "everyone at home";
+  if (visibility === "family")
+    return isOwner ? `Shared with ${home} and family.` : `${ownerName ?? "Someone"}'s list, shared with ${home} and family.`;
   return isOwner ? `Shared with ${home}.` : `${ownerName ?? "Someone"}'s list, shared with ${home}.`;
 }

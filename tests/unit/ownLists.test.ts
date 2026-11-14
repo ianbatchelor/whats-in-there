@@ -84,7 +84,7 @@ describe("visibilityLine", () => {
 describe("group lists", () => {
   it("go in their own section, with or without a household", () => {
     const lists = [list({ id: "g", visibility: "group", owner: "tom" }), list({ id: "m" })];
-    expect(listsForTab(lists, "me", null)).toEqual({ mine: [lists[1]], home: [], groups: [lists[0]] });
+    expect(listsForTab(lists, "me", null)).toEqual({ mine: [lists[1]], home: [], groups: [lists[0]], family: [] });
   });
   it("name you first, then the owner", () => {
     const p = (userId: string, name: string, isOwner = false) => ({ listId: "g", userId, name, isOwner });
@@ -96,5 +96,28 @@ describe("group lists", () => {
     expect(url).toBe("https://seewhatsinhere.com/join/?t=abcdefghijklmnopqrstuvwxyz12");
     expect(readJoinToken(new URL(url).search)).toBe("abcdefghijklmnopqrstuvwxyz12");
     expect(readJoinToken("?t=bad token")).toBeNull();
+  });
+});
+
+describe("family lists", () => {
+  it("go in their own section, from any home", () => {
+    const l = (id: string, householdId: string) => ({ id, owner: "dad", householdId, title: id, kind: "todo" as const, visibility: "family" as const, createdAt: "2026-11-14" });
+    expect(listsForTab([l("x", "dads"), l("y", "mine")], "me", "mine").family.map((x) => x.id)).toEqual(["x", "y"]);
+    expect(listsForTab([l("x", "dads")], "me", "mine").home).toEqual([]);
+  });
+  it("say who sees them", () => {
+    expect(visibilityLine("family", "Batchelor House", false, "Ian")).toBe("Ian's list, shared with everyone in Batchelor House and family.");
+    expect(visibilityLine("family", "Batchelor House", true, null)).toBe("Shared with everyone in Batchelor House and family.");
+  });
+});
+
+describe("stopping", () => {
+  it("says who loses sight of a list", async () => {
+    const { stopping } = await import("@/components/lists/ListSettingsSheet");
+    expect(stopping("family", "household")).toBe("Family");
+    expect(stopping("family", "me")).toBe("Everyone at home and family");
+    expect(stopping("household", "family")).toBeNull();
+    expect(stopping("household", "me")).toBe("Everyone at home");
+    expect(stopping("me", "family")).toBeNull();
   });
 });
