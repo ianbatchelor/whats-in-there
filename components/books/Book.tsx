@@ -33,9 +33,9 @@ export function Ribbon({ className = "", style }: { className?: string; style?: 
 /** The wide cloth band at the top of someone's list, with a ribbon bookmark. */
 export function ClothBand({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return (
-    <div className={`relative isolate overflow-hidden rounded-[22px] shadow-[0_18px_38px_-24px_rgba(21,33,28,0.75)] ${className}`} style={clothStyle()}>
-      <Ribbon className="right-[14%] h-[62%] -z-10" />
-      <div className="relative px-5 pt-5 pb-5 pr-[24%] sm:px-7 sm:pt-7">{children}</div>
+    <div className={`relative isolate overflow-hidden rounded-[20px] shadow-[0_14px_30px_-22px_rgba(21,33,28,0.75)] ${className}`} style={clothStyle()}>
+      <Ribbon className="right-[12%] h-[62%] -z-10" />
+      <div className="relative px-4 py-4 pr-[22%] sm:px-6 sm:py-5">{children}</div>
     </div>
   );
 }

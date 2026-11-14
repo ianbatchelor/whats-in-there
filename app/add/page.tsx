@@ -124,7 +124,7 @@ function Add({ session }: { session: Session }) {
               <li key={key}>
                 <button
                   onClick={() => choose(key)}
-                  className={`lift flex h-full min-h-[148px] w-full flex-col justify-between gap-4 rounded-[20px] p-4 text-left ${
+                  className={`lift flex h-full min-h-[148px] w-full flex-col justify-between gap-4 rounded-[var(--radius-card)] p-4 text-left ${
                     primary ? "bg-go text-on-go shadow-[0_14px_28px_-16px_rgba(24,63,50,0.9)]" : "border border-line bg-card shadow-[var(--shadow-card)]"
                   }`}
                 >

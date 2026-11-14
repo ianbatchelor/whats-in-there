@@ -13,6 +13,7 @@ import { addIdea, addNamedList, claimIdea, claimList, ensureList, loadPresents, 
 import { cleanLink, firstName, linkLabel, linkProblem, looksLikeLink, people, sortIdeas, wouldLove, wrapFor, type Person, type WishIdea } from "@/lib/domain/presents";
 import { Button } from "@/components/ui/Button";
 import { Notice } from "@/components/ui/Notice";
+import { EmptyNote } from "@/components/ui/EmptyNote";
 import { Toast, type ToastData } from "@/components/ui/Toast";
 import { IconGift, IconPlus, IconShare } from "@/components/ui/icons";
 import { GiftBox, WrappedBand } from "@/components/presents/Gift";
@@ -211,7 +212,7 @@ function PresentIdeas({ session }: { session: Session }) {
 
   return (
     <AppShell>
-      <PageHeader
+      <PageHeader serif
         title="Present ideas"
         back={{ href: "/lists/", label: "Lists" }}
         sub={
@@ -291,24 +292,22 @@ function PresentIdeas({ session }: { session: Session }) {
                 <p className="font-display text-[12.5px] font-bold tracking-[0.08em] uppercase opacity-80">
                   {mine ? "Your wish list" : `For ${firstName(person.name)}`}
                 </p>
-                <h2 id="list-h" className="mt-1 font-serif text-[1.7rem] leading-[1.05] font-semibold tracking-[-0.015em] sm:text-[2.4rem]">
+                <h2 id="list-h" className="mt-0.5 font-serif text-[1.45rem] leading-[1.1] font-semibold tracking-[-0.015em] sm:text-[1.9rem]">
                   {wouldLove(person.name, mine)}
                 </h2>
-                {mine && person.list?.shareCode ? (
-                  <p className="mt-1.5 text-[13.5px] leading-snug opacity-80">Shared. Anyone with the link can see it.</p>
-                ) : (
-                  <p className="mt-2 max-w-[34ch] text-[14.5px] leading-snug opacity-85">
-                    {mine
-                      ? "Others can say they're getting something. You won't see what, so it stays a surprise."
-                      : `Say you're getting something so nobody doubles up. ${firstName(person.name)} won't see.`}
-                  </p>
-                )}
+                <p className="mt-1 text-[13.5px] leading-snug opacity-85">
+                  {mine
+                    ? person.list?.shareCode
+                      ? "Shared. Anyone with the link can see it."
+                      : "Others can say they're getting something. You won't see what."
+                    : `${firstName(person.name)} won't see who's getting what.`}
+                </p>
                 <button
                   onClick={startShare}
-                  className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-btn)] px-4 font-display text-[14.5px] font-bold shadow-[0_6px_16px_-10px_rgba(0,0,0,0.6)] transition active:scale-[0.98]"
+                  className="mt-3 inline-flex min-h-10 items-center gap-2 rounded-[var(--radius-btn)] px-3.5 font-display text-[14px] font-bold shadow-[0_6px_16px_-10px_rgba(0,0,0,0.6)] transition active:scale-[0.98]"
                   style={{ background: wrap.ink, color: wrap.paper }}
                 >
-                  <IconShare className="size-[18px]" /> {mine ? "Share my list" : `Share ${firstName(person.name)}'s list`}
+                  <IconShare className="size-[17px]" /> {mine ? "Share my list" : `Share ${firstName(person.name)}'s list`}
                 </button>
                 {canClaim ? (
                   claiming === person.key ? (
@@ -356,14 +355,11 @@ function PresentIdeas({ session }: { session: Session }) {
               ) : null}
 
               {ideas.length === 0 ? (
-                <div className="flex items-center gap-3.5 rounded-[var(--radius-card)] border-2 border-dashed border-line bg-sunk/40 p-5">
-                  <IconGift className="size-8 shrink-0" />
-                  <p className="text-[15px] text-mute">
+                <EmptyNote Icon={IconGift}>
                     {mine
-                      ? "Nothing on your list yet. Add things you'd love, then tap one to add a shop link, a rough price or a size."
-                      : `${firstName(person.name)} hasn't added anything yet. You can add ideas for them too.`}
-                  </p>
-                </div>
+                      ? "Nothing yet. Type something you'd love above, or paste a shop link."
+                      : `Nothing yet. You can add ideas for ${firstName(person.name)} too.`}
+                </EmptyNote>
               ) : (
                 <>
                   <SectionLabel>

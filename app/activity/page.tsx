@@ -12,6 +12,8 @@ import { loadActivity, type Activity } from "@/lib/stock";
 import { activitySentence, groupByDay } from "@/lib/domain/activity";
 import { Avatar } from "@/components/ui/Avatar";
 import { Notice } from "@/components/ui/Notice";
+import { EmptyNote } from "@/components/ui/EmptyNote";
+import { IconActivity } from "@/components/ui/icons";
 
 export default function ActivityPage() {
   return <AuthGate>{(session) => <ActivityFeed session={session} />}</AuthGate>;
@@ -46,10 +48,7 @@ function ActivityFeed({ session }: { session: Session }) {
       {rows === null ? (
         <HouseholdLoading />
       ) : rows.length === 0 ? (
-        <div className="rounded-[var(--radius-card)] border-2 border-dashed border-line bg-sunk/40 p-5">
-          <h2 className="font-display text-xl font-bold">Nothing yet</h2>
-          <p className="mt-1 text-sm text-mute">When anyone in the household adds or takes something out, it shows up here.</p>
-        </div>
+        <EmptyNote Icon={IconActivity}>Nothing yet. When anyone at home adds or takes something out, it shows here.</EmptyNote>
       ) : (
         groupByDay(rows).map(({ label, rows: day }) => (
           <section key={label} className="flex flex-col gap-2.5" aria-label={label}>

@@ -2,7 +2,20 @@ import Link from "next/link";
 import { IconChevronLeft } from "@/components/ui/icons";
 
 /** Title block for the tab screens. */
-export function PageHeader({ title, sub, back, action }: { title: string; sub?: React.ReactNode; back?: { href: string; label: string }; action?: React.ReactNode }) {
+export function PageHeader({
+  title,
+  sub,
+  back,
+  action,
+  serif = false,
+}: {
+  title: string;
+  sub?: React.ReactNode;
+  back?: { href: string; label: string };
+  action?: React.ReactNode;
+  /** Collections (presents, books, Christmas) take the serif, like the Wine Rack's heading. */
+  serif?: boolean;
+}) {
   return (
     <header className="flex flex-col gap-2">
       {back ? (
@@ -12,7 +25,15 @@ export function PageHeader({ title, sub, back, action }: { title: string; sub?: 
       ) : null}
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="min-w-0">
-          <h1 className="font-display text-[1.75rem] leading-tight font-bold tracking-[-0.025em] sm:text-[2rem]">{title}</h1>
+          <h1
+            className={
+              serif
+                ? "font-serif text-[2rem] leading-[1.05] font-semibold tracking-[-0.015em] sm:text-[2.3rem]"
+                : "font-display text-[1.75rem] leading-tight font-bold tracking-[-0.025em] sm:text-[2rem]"
+            }
+          >
+            {title}
+          </h1>
           {sub ? <p className="mt-1.5 text-mute">{sub}</p> : null}
         </div>
         {action}

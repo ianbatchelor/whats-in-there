@@ -17,6 +17,8 @@ import { nestedOrder, countThings } from "@/lib/domain/places";
 import { formatQuantity } from "@/lib/domain/quantity";
 import { Button } from "@/components/ui/Button";
 import { Notice } from "@/components/ui/Notice";
+import { Tip } from "@/components/ui/Tip";
+import { EmptyNote } from "@/components/ui/EmptyNote";
 import { Toast, type ToastData } from "@/components/ui/Toast";
 import { IconBasket, IconCheck, IconPlus, IconX } from "@/components/ui/icons";
 
@@ -187,15 +189,16 @@ function ShoppingList({ session }: { session: Session }) {
       ) : (
         <>
           <section aria-labelledby="buy-h" className="flex flex-col gap-2.5">
+            {toBuy.length > 0 ? (
+              <Tip id="shop-put-away">
+                Tick things as you shop. Back home, pick where each one goes and tap <b>Put it away</b>.
+              </Tip>
+            ) : null}
             <SectionLabel id="buy-h">To buy {toBuy.length > 0 ? <span className="font-semibold text-mute">· {toBuy.length}</span> : null}</SectionLabel>
             {toBuy.length === 0 ? (
-              <div className="flex items-center gap-3.5 rounded-[var(--radius-card)] border-2 border-dashed border-line bg-sunk/40 p-5">
-                <IconBasket className="size-8 shrink-0 text-leaf" />
-                <p className="text-[15px] text-mute">
-                  {bought.length > 0 ? "That's everything. " : "Nothing to buy. "}
-                  When you finish something, tap <b className="text-fg">Add to list</b> on it, or type it above.
-                </p>
-              </div>
+              <EmptyNote Icon={IconBasket}>
+                {bought.length > 0 ? "That's everything. " : "Nothing to buy. "}Type it above, or tap <b className="text-fg">Add to list</b> on something that&apos;s run out.
+              </EmptyNote>
             ) : (
               <ul className="overflow-hidden rounded-[var(--radius-card)] border border-line bg-card shadow-[var(--shadow-card)]">
                 {toBuy.map((i) => (

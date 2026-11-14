@@ -324,7 +324,7 @@ export function LentPill({ item, className = "max-w-[60%]" }: { item: StockItem;
 
 /** The list container used everywhere items are shown. */
 export function ItemList({ children }: { children: React.ReactNode }) {
-  return <ul className="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-card">{children}</ul>;
+  return <ul className="divide-y divide-line overflow-hidden rounded-[var(--radius-card)] border border-line bg-card shadow-[var(--shadow-card)]">{children}</ul>;
 }
 
 /** Loading placeholder shaped like the real list, so the page doesn't jump when things arrive. */
