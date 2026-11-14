@@ -86,7 +86,8 @@ export default function HelpPage() {
         </li>
         <li>
           <b>Your own lists</b>: tap <b>New list</b> to make any list you like, such as jobs before a visit or Christmas ideas.
-          Choose <b>Just me</b> and nobody else can see it, not even people at home; share it with everyone at home; or choose{" "}
+          Choose <b>Just me</b> and nobody else can see it, not even people at home; share it with everyone at home; choose{" "}
+          <b>Everyone at home and family</b> to include family with their own homes, such as for Christmas Day plans; or choose{" "}
           <b>A group I invite</b> and send friends or family elsewhere a link. They sign in with their email and see that list only,
           never your home. Change your mind any time with <b>Change</b> at the top of the list.
         </li>
