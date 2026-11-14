@@ -403,7 +403,7 @@ function Place({ me }: { me: string }) {
         >
           <IconLock className="size-5 shrink-0 text-leaf" />
           <span className="min-w-0 flex-1">
-            <span className="font-semibold">Shared with you{sharedBy ? ` by ${sharedBy}` : ""}.</span>{" "}
+            <span className="font-semibold">Shared with you{sharedBy ? ` from ${sharedBy}` : ""}.</span>{" "}
             <span className="text-mute">You see {parent ? parent.name : "this place"} only.</span>
           </span>
           <IconChevronRight className="size-4 shrink-0 text-mute/70" />
@@ -513,7 +513,7 @@ function Place({ me }: { me: string }) {
               Or add a box or shelf inside it
             </button>
           ) : null}
-          <div className="mt-2 w-full border-t border-line pt-5 text-left">{starters}</div>
+          {guest ? null : <div className="mt-2 w-full border-t border-line pt-5 text-left">{starters}</div>}
         </div>
       ) : shown.length === 0 ? (
         <p className="text-mute">
@@ -584,7 +584,7 @@ function Place({ me }: { me: string }) {
         </section>
       )}
 
-      {items && items.length > 0 && items.length < 3 && !filtering && boxes.length === 0 ? starters : null}
+      {items && items.length > 0 && items.length < 3 && !filtering && boxes.length === 0 && !guest ? starters : null}
 
       {/* Changing or removing the place, at the end of its page where people look for it. */}
       {items && guest ? (

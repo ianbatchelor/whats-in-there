@@ -124,21 +124,6 @@ export function ListSettingsSheet({
           required
         />
 
-        <fieldset className="flex flex-col gap-1.5">
-          <legend className="mb-1.5 font-display text-sm font-bold">Kind of list</legend>
-          <div className="flex gap-1 rounded-xl bg-sunk p-1">
-            {KINDS.map((k) => (
-              <label
-                key={k.kind}
-                className={`flex min-h-10 flex-1 cursor-pointer items-center justify-center rounded-[9px] px-2 text-center text-[14px] font-semibold transition has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-leaf/50 ${kind === k.kind ? "bg-card text-fg shadow-[0_1px_2px_rgba(0,0,0,0.08)]" : "text-mute"}`}
-              >
-                <input type="radio" name="list-kind" value={k.kind} checked={kind === k.kind} onChange={() => setKind(k.kind)} className="sr-only" />
-                {k.label}
-              </label>
-            ))}
-          </div>
-        </fieldset>
-
         <fieldset className="flex flex-col gap-2">
           <legend className="mb-1.5 font-display text-sm font-bold">Who can see it?</legend>
           {options.map((o) => {
@@ -169,6 +154,21 @@ export function ListSettingsSheet({
           {list && stopping(list.visibility, visibility) ? (
             <p className="text-[13.5px] text-mute">{stopping(list.visibility, visibility)} will stop seeing it straight away, including anything they added.</p>
           ) : null}
+        </fieldset>
+
+        <fieldset className="flex flex-col gap-1.5">
+          <legend className="mb-1.5 font-display text-sm font-bold">Kind of list</legend>
+          <div className="flex gap-1 rounded-xl bg-sunk p-1">
+            {KINDS.map((k) => (
+              <label
+                key={k.kind}
+                className={`flex min-h-10 flex-1 cursor-pointer items-center justify-center rounded-[9px] px-2 text-center text-[14px] font-semibold transition has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-leaf/50 ${kind === k.kind ? "bg-card text-fg shadow-[0_1px_2px_rgba(0,0,0,0.08)]" : "text-mute"}`}
+              >
+                <input type="radio" name="list-kind" value={k.kind} checked={kind === k.kind} onChange={() => setKind(k.kind)} className="sr-only" />
+                {k.label}
+              </label>
+            ))}
+          </div>
         </fieldset>
 
         {error ? <Notice>{error}</Notice> : null}
