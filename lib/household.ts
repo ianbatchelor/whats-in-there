@@ -151,13 +151,23 @@ export async function loadInvitePreview(token: string): Promise<InvitePreview | 
   return row ? { household: row.household, invitedBy: row.invited_by, role: row.role } : null;
 }
 
-/** Presents can come from your own home or from a family you're part of. */
-export function defaultPresentsCircle(memberships: Membership[], remembered: string | null, home: string | null): Membership | null {
+/**
+ * Presents can come from your own home or from a family you're part of. Your own home comes first
+ * when other people live there too; when you live on your own (a grown-up daughter's flat), the family
+ * you're part of is the bigger present circle, so that comes first instead.
+ */
+export function defaultPresentsCircle(
+  memberships: Membership[],
+  remembered: string | null,
+  home: string | null,
+  homeIsJustYou = false,
+): Membership | null {
+  const yours = memberships.find((m) => m.householdId === home && m.role !== "family") ?? homesOf(memberships)[0] ?? null;
   return (
     memberships.find((m) => m.householdId === remembered) ??
-    // Family elsewhere is usually the bigger present circle (a grown-up daughter's own flat is just her).
+    (yours && !homeIsJustYou ? yours : null) ??
     familiesOf(memberships)[0] ??
-    memberships.find((m) => m.householdId === home) ??
+    yours ??
     memberships[0] ??
     null
   );

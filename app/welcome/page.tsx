@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { Session } from "@supabase/supabase-js";
 import { AuthGate } from "@/components/AuthGate";
@@ -14,6 +15,7 @@ import { AuthFrame } from "@/components/AuthFrame";
 import { Field } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 import { Notice } from "@/components/ui/Notice";
+import { IconChevronLeft } from "@/components/ui/icons";
 
 export default function WelcomePage() {
   return <AuthGate>{(session) => <Welcome session={session} />}</AuthGate>;
@@ -79,38 +81,10 @@ function Welcome({ session }: { session: Session }) {
         <h1 className="font-display text-[2.2rem] leading-none font-bold tracking-[-0.03em]">Welcome in</h1>
         <p className="text-mute">Set up your household. You can invite everyone else in a moment.</p>
       </div>
-      {shared.length > 0 ? (
-        <div className="flex flex-col gap-2 rounded-[var(--radius-card)] border border-line bg-card p-4">
-          <p className="text-[15px]">
-            <strong>Shared with you:</strong> {shared.map((p) => `${p.name} at ${p.household}`).join(", ")}. Set up a household below only if you want to keep track
-            of your own home too.
-          </p>
-          {shared.map((p) => (
-            <Button key={p.id} variant="ghost" onClick={() => router.push(`/place/?id=${p.id}`)} className="w-full">
-              Open {p.name}
-            </Button>
-          ))}
-        </div>
-      ) : null}
-      {family ? (
-        <div className="flex flex-col gap-2 rounded-[var(--radius-card)] border border-line bg-card p-4">
-          <p className="text-[15px]">
-            <strong>You&apos;re family at {family}.</strong> Their present lists are ready. Set up a household below only if you want to keep track of your own home.
-          </p>
-          <Button variant="ghost" onClick={() => router.push("/presents/")} className="w-full">
-            Go to presents
-          </Button>
-        </div>
-      ) : null}
-      {hasLists ? (
-        <div className="flex flex-col gap-2 rounded-[var(--radius-card)] border border-line bg-card p-4">
-          <p className="text-[15px]">
-            <strong>Here for a shared list?</strong> You don&apos;t need a household for that.
-          </p>
-          <Button variant="ghost" onClick={() => router.push("/lists/")} className="w-full">
-            Go to my lists
-          </Button>
-        </div>
+      {shared.length > 0 || family || hasLists ? (
+        <Link href="/" className="flex min-h-11 items-center gap-1.5 self-start text-[14px] font-semibold text-leaf">
+          <IconChevronLeft className="size-4" /> Back to what&apos;s shared with you
+        </Link>
       ) : null}
       <form onSubmit={create} className="flex flex-col gap-4">
         <Field label="Your name" autoComplete="given-name" value={name} onChange={(e) => setName(e.target.value)} maxLength={60} />

@@ -18,9 +18,15 @@ describe("family memberships", () => {
     expect(pickCurrent([dads, flat])).toEqual(flat);
   });
 
-  it("shows the family's presents first, unless you picked your own", () => {
-    expect(defaultPresentsCircle([flat, dads], null, "flat")).toEqual(dads);
-    expect(defaultPresentsCircle([flat, dads], "flat", "flat")).toEqual(flat);
+  it("shows your own home's presents first when others live there", () => {
+    expect(defaultPresentsCircle([flat, dads], null, "flat")).toEqual(flat);
+    expect(defaultPresentsCircle([flat, dads], null, null)).toEqual(flat);
+    expect(defaultPresentsCircle([flat, dads], "dads", "flat")).toEqual(dads);
+  });
+
+  it("shows the family's presents first when you live on your own, unless you picked your own", () => {
+    expect(defaultPresentsCircle([flat, dads], null, "flat", true)).toEqual(dads);
+    expect(defaultPresentsCircle([flat, dads], "flat", "flat", true)).toEqual(flat);
     expect(defaultPresentsCircle([flat], null, "flat")).toEqual(flat);
     expect(defaultPresentsCircle([dads], "gone", null)).toEqual(dads);
     expect(defaultPresentsCircle([], null, null)).toBeNull();

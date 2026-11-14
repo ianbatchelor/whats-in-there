@@ -22,8 +22,16 @@ export function usePresentCircle(session: Session) {
       try {
         const all = await loadMemberships(session.user.id);
         if (!active) return;
+        // Whether you live on your own decides if your home or a family elsewhere comes first.
+        const home = readLocal(KEYS.household);
+        const ownHome = all.find((m) => m.householdId === home && m.role !== "family") ?? all.find((m) => m.role !== "family");
+        const justYou =
+          ownHome && all.some((m) => m.role === "family")
+            ? (await loadMembers(ownHome.householdId).catch(() => [])).filter((m) => m.role !== "family").length <= 1
+            : false;
+        if (!active) return;
         setCircles(all);
-        setCircle(defaultPresentsCircle(all, readLocal(KEYS.presentsCircle), readLocal(KEYS.household)));
+        setCircle(defaultPresentsCircle(all, readLocal(KEYS.presentsCircle), ownHome?.householdId ?? home, justYou));
       } catch (e) {
         if (active) setError(friendlyError(e));
       }

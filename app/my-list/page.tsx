@@ -261,7 +261,7 @@ function MyList({ session }: { session: Session }) {
           ) : (
             <ul className="overflow-hidden rounded-[var(--radius-card)] border border-line bg-card shadow-[var(--shadow-card)]">
               {open.map((e) => (
-                <Row key={e.id} entry={e} by={shared ? who(e.addedBy) : null} busy={busy === e.id} onTick={tick} onRemove={remove} />
+                <Row key={e.id} entry={e} by={shared && e.addedBy !== session.user.id ? who(e.addedBy) : null} busy={busy === e.id} onTick={tick} onRemove={remove} />
               ))}
             </ul>
           )}

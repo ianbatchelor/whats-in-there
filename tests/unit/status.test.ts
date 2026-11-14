@@ -47,6 +47,10 @@ describe("needsAttention", () => {
 describe("itemKind", () => {
   it("guesses a kind from everyday names", () => {
     expect(itemKind("Beef mince")).toBe("meat");
+    expect(itemKind("Mince pies")).toBe("bakery");
+    expect(itemKind("Christmas pudding")).toBe("bakery");
+    expect(itemKind("Stollen")).toBe("bakery");
+    expect(itemKind("Chicken pie")).toBe("meat");
     expect(itemKind("Mature cheddar")).toBe("cheese");
     expect(itemKind("Free-range eggs")).toBe("egg");
     expect(itemKind("Greek yoghurt")).toBe("dairy");

@@ -10,6 +10,8 @@ const WORDS: [ItemKind, RegExp][] = [
   ["wine", /\b(wine|rioja|merlot|malbec|shiraz|chardonnay|sauvignon|pinot|prosecco|champagne|cava|port|whisky|whiskey|gin|vodka|rum|beer|lager|ale|cider)\b/],
   ["frozen", /\b(ice cream|ice lolly|lollies|sorbet|ice cubes?|frozen)\b/],
   ["fish", /\b(fish|salmon|cod|haddock|tuna|prawns?|mackerel|trout|sea bass|scampi|fish fingers?)\b/],
+  // Before meat, so "mince pies" aren't mince.
+  ["bakery", /\b(mince pies?|(christmas|sticky toffee|bread and butter) (pudding|cake)|stollen|panettone|yule logs?|gingerbread|biscuits?|scones?|brownies?|cookies?)\b/],
   ["meat", /\b(beef|mince|steak|chicken|pork|lamb|bacon|sausages?|ham|turkey|duck|burgers?|meatballs?|gammon|chorizo|ribs)\b/],
   ["egg", /\b(eggs?)\b/],
   ["cheese", /\b(cheese|cheddar|brie|feta|mozzarella|parmesan|halloumi|stilton|camembert|gouda|edam)\b/],

@@ -40,7 +40,8 @@ import { IconCheck, IconChevronRight, IconHandOver, IconLeaf, IconScan, IconSear
 import { AddPlaceSheet } from "@/components/home/AddPlaceSheet";
 import { AddPlaceTile, GroupCard } from "@/components/home/PlaceCard";
 import { FirstThingsTip, StarterPlaces } from "@/components/home/StarterPlaces";
-import { SharedPlaces } from "@/components/home/SharedPlaces";
+import { SharedPlaceCards, useSharedWithMe } from "@/components/home/SharedPlaces";
+import { GuestHome } from "@/components/home/GuestHome";
 import { useSeasonal, type Seasonal } from "@/components/home/SeasonalReminders";
 import { ItemList, ItemRow } from "@/components/stock/ItemRow";
 import { TakeOutSheet } from "@/components/stock/TakeOutSheet";
@@ -56,7 +57,13 @@ export default function HomePage() {
 }
 
 function Home({ session }: { session: Session }) {
-  const hh = useHousehold(session);
+  // Family and guests with no home of their own get a Home of what's shared with them.
+  const hh = useHousehold(session, { optional: true });
+  if (hh.ready && !hh.current) return <GuestHome session={session} />;
+  return <HouseholdHome session={session} hh={hh} />;
+}
+
+function HouseholdHome({ session, hh }: { session: Session; hh: ReturnType<typeof useHousehold> }) {
   const { current, members, places, names, placeById, error, version, refresh } = hh;
   const [adding, setAdding] = useState(false);
   const [useFirst, setUseFirst] = useState<StockItem[]>([]);
@@ -67,6 +74,7 @@ function Home({ session }: { session: Session }) {
   const [section, setSection] = useState<PlaceSection | "all">("all");
   const [open, setOpen] = useState<StockItem | null>(null);
   const seasonal = useSeasonal(current?.householdId, places);
+  const shared = useSharedWithMe(version);
 
   const loadExtras = useCallback(async () => {
     if (!current) return;
@@ -113,6 +121,8 @@ function Home({ session }: { session: Session }) {
   const sections = topPlaces ? usedSections(topPlaces) : [];
   const shownPlaces = topPlaces && section !== "all" ? topPlaces.filter((p) => sectionOf(p.type) === section) : topPlaces;
   const groups = shownPlaces ? groupPlaces(shownPlaces) : null;
+  // Places other people let you into sit with your own, each saying whose it is.
+  const sharedShown = (shared ?? []).filter((p) => section === "all" || sectionOf(p.type) === section);
   const total = places?.reduce((n, p) => n + p.itemCount, 0) ?? 0;
   const who = (id: string | null) => (id === session.user.id ? "You" : (id && names.get(id)) || "Someone");
   // Per place: how many are past a printed date, and how many are only close to one.
@@ -317,12 +327,11 @@ function Home({ session }: { session: Session }) {
             {groups.map((g, i) => (
               <GroupCard key={g.type} group={g} index={i} late={sumOver(lateIn, g.places)} soon={sumOver(soonIn, g.places)} />
             ))}
+            <SharedPlaceCards places={sharedShown} offset={groups.length} />
             <AddPlaceTile onClick={() => setAdding(true)} />
           </ul>
         )}
       </section>
-
-      <SharedPlaces version={version} />
 
       {oldest.length > 0 ? (
         <section aria-labelledby="first-h" className="flex flex-col gap-2.5">
