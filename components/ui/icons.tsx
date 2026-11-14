@@ -94,3 +94,5 @@ export const IconShare = ({ className }: P) =>
   svg(<path d="M12 15V3.5M7.5 8 12 3.5 16.5 8M5.5 12v6.5a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2V12" />, className);
 export const IconLink = ({ className }: P) =>
   svg(<path d="M10 14a4.2 4.2 0 0 0 6 0l3-3a4.2 4.2 0 0 0-6-6l-1 1M14 10a4.2 4.2 0 0 0-6 0l-3 3a4.2 4.2 0 0 0 6 6l1-1" />, className);
+export const IconLock = ({ className }: P) =>
+  svg(<><rect x="5" y="10.5" width="14" height="10" rx="2.5" /><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5" /></>, className);

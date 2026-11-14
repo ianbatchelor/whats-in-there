@@ -70,6 +70,11 @@ export default function HelpPage() {
           <b>Seasonal jobs</b>: a few jobs that come round each year, such as swapping to winter clothes, for the places you have.
           Tick one off and it&apos;s done for everyone, or tap the cross to hide it for a week.
         </li>
+        <li>
+          <b>Your own lists</b>: tap <b>New list</b> to make any list you like, such as jobs before a visit or Christmas ideas.
+          Choose <b>Just me</b> and nobody else can see it, not even people at home, or share it with everyone at home. Change
+          your mind any time with <b>Change</b> at the top of the list.
+        </li>
       </ul>
 
       <h2>Stickers and QR labels</h2>

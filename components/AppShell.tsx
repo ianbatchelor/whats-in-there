@@ -6,7 +6,7 @@ import { BrandMark, Wordmark } from "@/components/brand/BrandMark";
 import { IconActivity, IconHome, IconList, IconPeople, IconScan, IconSearch } from "@/components/ui/icons";
 
 /** Pages reached from the Lists tab, so the tab stays lit while you're on one of them. */
-const LIST_PAGES = ["lists", "list", "presents", "books", "lent", "season"];
+const LIST_PAGES = ["lists", "list", "my-list", "presents", "books", "lent", "season"];
 
 type NavItem = {
   href: string;
