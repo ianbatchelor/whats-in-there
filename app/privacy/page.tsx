@@ -43,6 +43,15 @@ export default function PrivacyPage() {
         itself, not just by the app.
       </p>
 
+      <h2>Family with their own home</h2>
+      <p>
+        A household owner can invite someone as <b>family</b>, such as a grown-up child or a grandparent with a home of their own.
+        Family see the household&apos;s name, the names of the people in it and its present lists, and can add ideas and say what
+        they&apos;re getting. They see nothing else: no places, things, photos, shopping or other lists. The household sees nothing of
+        theirs. Anyone holding a family invitation link can see the household&apos;s name and who sent it before joining. Family can leave,
+        or be removed, at any time.
+      </p>
+
       <h2>Your own lists and group lists</h2>
       <p>
         A list you make can be <b>Just me</b>, which nobody else can see, not even people in your household; shared with your household;

@@ -5,10 +5,11 @@ import type { Session } from "@supabase/supabase-js";
 import { AuthGate } from "@/components/AuthGate";
 import { AppShell, SectionLabel } from "@/components/AppShell";
 import { HouseholdLoading, PageHeader } from "@/components/common/PageHeader";
-import { useHousehold } from "@/lib/hooks/useHousehold";
+import { usePresentCircle } from "@/lib/hooks/usePresentCircle";
+import Link from "next/link";
 import { supabase } from "@/lib/supabase/client";
 import { friendlyError } from "@/lib/supabase/errors";
-import { addIdea, addNamedList, claimIdea, ensureList, loadPresents, readLink, removeIdea, unclaimIdea, type Presents } from "@/lib/presents";
+import { addIdea, addNamedList, claimIdea, claimList, ensureList, loadPresents, readLink, removeIdea, unclaimIdea, type Presents } from "@/lib/presents";
 import { cleanLink, firstName, linkLabel, linkProblem, looksLikeLink, people, sortIdeas, wouldLove, wrapFor, type Person, type WishIdea } from "@/lib/domain/presents";
 import { Button } from "@/components/ui/Button";
 import { Notice } from "@/components/ui/Notice";
@@ -26,7 +27,7 @@ export default function PresentsPage() {
 
 function PresentIdeas({ session }: { session: Session }) {
   const me = session.user.id;
-  const { current, members, names, error, setError } = useHousehold(session);
+  const { circles, circle: current, choose: chooseCircle, members, names, error, setError } = usePresentCircle(session);
   const [data, setData] = useState<Presents | null>(null);
   const [chosen, setChosen] = useState<string | null>(null);
   const [title, setTitle] = useState("");
@@ -35,6 +36,8 @@ function PresentIdeas({ session }: { session: Session }) {
   const [sharing, setSharing] = useState(false);
   const [naming, setNaming] = useState(false);
   const [toast, setToast] = useState<ToastData | null>(null);
+  /** The list kept for someone, while asking "is this really you?". */
+  const [claiming, setClaiming] = useState<string | null>(null);
   const say = (message: string, undo?: () => void) =>
     setToast((t) => ({ id: (t?.id ?? 0) + 1, message, actionLabel: undo ? "Undo" : undefined, onAction: undo }));
 
@@ -84,7 +87,19 @@ function PresentIdeas({ session }: { session: Session }) {
   const countFor = (p: Person) => (p.list && data ? data.ideas.filter((i) => i.listId === p.list!.id).length : 0);
   const who = (id: string | null) => (id === me ? "you" : (id && names.get(id)) || "Someone");
 
+  function switchCircle(id: string) {
+    if (id === current?.householdId) return;
+    setData(null);
+    setChosen(null);
+    setClaiming(null);
+    const url = new URL(window.location.href);
+    url.searchParams.delete("for");
+    window.history.replaceState(null, "", url);
+    chooseCircle(id);
+  }
+
   function choose(key: string) {
+    setClaiming(null);
     setChosen(key);
     setTitle("");
     const url = new URL(window.location.href);
@@ -181,6 +196,17 @@ function PresentIdeas({ session }: { session: Session }) {
     }
   }
 
+  // "This is me": a list someone kept for you before you joined. Only while your own list is empty.
+  const myOwn = everyone.find((p) => p.userId === me);
+  const canClaim = Boolean(person && !person.userId && person.list && !person.list.friend && (!myOwn || countFor(myOwn) === 0));
+  const claimIt = (p: Person) =>
+    run(`claim-${p.key}`, async () => {
+      await claimList(p.list!.id);
+      setClaiming(null);
+      setChosen(me);
+      say("It's your list now. From here on you won't see what anyone's getting you.");
+    });
+
   const gettingCount = data ? data.claims.filter((c) => c.claimedBy === me).length : 0;
 
   return (
@@ -188,12 +214,36 @@ function PresentIdeas({ session }: { session: Session }) {
       <PageHeader
         title="Present ideas"
         back={{ href: "/lists/", label: "Lists" }}
-        sub="Everyone's wish list in one place. Share one with family when they ask what to get."
+        sub={
+          current?.role === "family"
+            ? `${current.name}: everyone's wish list in one place. You're here as family.`
+            : "Everyone's wish list in one place. Share one with family when they ask what to get."
+        }
       />
 
       {error ? <Notice>{error}</Notice> : null}
 
-      {data === null || !current ? (
+      {circles && circles.length > 1 ? (
+        <div role="group" aria-label="Whose presents" className="flex flex-wrap gap-2">
+          {circles.map((c) => (
+            <button
+              key={c.householdId}
+              onClick={() => switchCircle(c.householdId)}
+              aria-pressed={c.householdId === current?.householdId}
+              className={`rounded-full border px-3.5 py-1.5 text-sm font-semibold ${c.householdId === current?.householdId ? "border-go bg-go text-on-go" : "border-line bg-card"}`}
+            >
+              {c.role === "family" ? `${c.name} (family)` : c.name}
+            </button>
+          ))}
+        </div>
+      ) : null}
+
+      {circles && circles.length === 0 ? (
+        <div className="flex flex-col gap-3 rounded-[var(--radius-card)] border-2 border-dashed border-line bg-sunk/40 p-5 text-[15px] text-mute">
+          <p>Present lists are shared with your household or your family. Open the invitation link someone sent you, or set up your own household.</p>
+          <Link href="/welcome/" className="font-semibold text-leaf">Set up a household</Link>
+        </div>
+      ) : data === null || !current ? (
         <HouseholdLoading />
       ) : (
         <>
@@ -260,6 +310,25 @@ function PresentIdeas({ session }: { session: Session }) {
                 >
                   <IconShare className="size-[18px]" /> {mine ? "Share my list" : `Share ${firstName(person.name)}'s list`}
                 </button>
+                {canClaim ? (
+                  claiming === person.key ? (
+                    <div className="mt-3 flex flex-col gap-2 rounded-xl bg-black/20 p-3 text-[14px] leading-snug">
+                      <p>Make this your list? Its ideas come with it, and you won&apos;t see what anyone&apos;s getting you any more.</p>
+                      <div className="flex gap-2">
+                        <Button busy={busy === `claim-${person.key}`} onClick={() => claimIt(person)} className="min-h-10! px-4!">
+                          Yes, it&apos;s me
+                        </Button>
+                        <button onClick={() => setClaiming(null)} className="min-h-10 px-3 font-semibold opacity-85">
+                          Not me
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button onClick={() => setClaiming(person.key)} className="mt-3 block text-[14px] font-semibold underline underline-offset-2 opacity-85">
+                      Is this you? Make it your list
+                    </button>
+                  )
+                ) : null}
               </WrappedBand>
 
               <form onSubmit={add} className="flex gap-2">

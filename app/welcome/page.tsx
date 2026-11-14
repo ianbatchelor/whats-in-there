@@ -6,7 +6,7 @@ import type { Session } from "@supabase/supabase-js";
 import { AuthGate } from "@/components/AuthGate";
 import { supabase } from "@/lib/supabase/client";
 import { friendlyError } from "@/lib/supabase/errors";
-import { rememberHousehold } from "@/lib/household";
+import { familiesOf, loadMemberships, rememberHousehold } from "@/lib/household";
 import { KEYS, readLocal } from "@/lib/storage";
 import { loadLists } from "@/lib/ownLists";
 import { AuthFrame } from "@/components/AuthFrame";
@@ -26,6 +26,8 @@ function Welcome({ session }: { session: Session }) {
   const [error, setError] = useState<string | null>(null);
   // Someone who joined a friend's group list has lists before they have a home.
   const [hasLists, setHasLists] = useState(false);
+  // Someone who's family in another household (presents only) before they have a home of their own.
+  const [family, setFamily] = useState<string | null>(null);
 
   useEffect(() => {
     const pending = readLocal(KEYS.pendingInvite);
@@ -39,6 +41,9 @@ function Welcome({ session }: { session: Session }) {
       .eq("user_id", session.user.id)
       .maybeSingle()
       .then(({ data }) => data && setName((n) => n || (data.display_name as string)));
+    loadMemberships(session.user.id)
+      .then((m) => setFamily(familiesOf(m)[0]?.name ?? null))
+      .catch(() => {});
     loadLists()
       .then((l) => setHasLists(l.length > 0))
       .catch(() => {});
@@ -68,6 +73,16 @@ function Welcome({ session }: { session: Session }) {
         <h1 className="font-display text-[2.2rem] leading-none font-bold tracking-[-0.03em]">Welcome in</h1>
         <p className="text-mute">Set up your household. You can invite everyone else in a moment.</p>
       </div>
+      {family ? (
+        <div className="flex flex-col gap-2 rounded-[var(--radius-card)] border border-line bg-card p-4">
+          <p className="text-[15px]">
+            <strong>You&apos;re family at {family}.</strong> Their present lists are ready. Set up a household below only if you want to keep track of your own home.
+          </p>
+          <Button variant="ghost" onClick={() => router.push("/presents/")} className="w-full">
+            Go to presents
+          </Button>
+        </div>
+      ) : null}
       {hasLists ? (
         <div className="flex flex-col gap-2 rounded-[var(--radius-card)] border border-line bg-card p-4">
           <p className="text-[15px]">

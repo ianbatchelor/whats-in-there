@@ -204,7 +204,9 @@ Deno.serve(async (req) => {
   if (!UUID.test(householdId)) return reply(400, { error: "bad_request" });
   if (!link) return reply(400, { error: "bad_link" });
 
-  const { data: member } = await asUser.rpc("is_member", { hid: householdId });
+  // Family (presents only) can paste links too. Older databases without in_family fall back to is_member.
+  const family = await asUser.rpc("in_family", { hid: householdId });
+  const member = family.error ? (await asUser.rpc("is_member", { hid: householdId })).data : family.data;
   if (member !== true) return reply(403, { error: "not_member" });
 
   const admin = createClient(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });

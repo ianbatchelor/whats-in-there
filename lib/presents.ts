@@ -284,3 +284,9 @@ export async function suggestBook(code: string, name: string, b: NewBook): Promi
   const { error } = await supabase().rpc("suggest_shared_book", { p_code: code, p_name: name.trim(), p_title: b.title, p_author: b.author, p_isbn: b.isbn, p_cover: b.coverId });
   if (error) throw error;
 }
+
+/** "This is me": take over the list someone kept for you before you joined, ideas and all. */
+export async function claimList(id: string): Promise<void> {
+  const { error } = await supabase().rpc("claim_wish_list", { p_list: id });
+  if (error) throw error;
+}

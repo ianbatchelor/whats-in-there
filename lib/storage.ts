@@ -18,6 +18,7 @@ export function writeLocal(key: string, value: string | null): void {
 
 export const KEYS = {
   household: "wit.household",
+  presentsCircle: "wit.presentsCircle",
   pendingInvite: "wit.pendingInvite",
   lastPlace: "wit.lastPlace",
   searches: "wit.searches",
