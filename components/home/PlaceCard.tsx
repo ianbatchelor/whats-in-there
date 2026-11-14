@@ -19,6 +19,7 @@ function Tile({
   feature = false,
   cover,
   shared,
+  big = false,
 }: {
   href: string;
   type: LocationType;
@@ -33,7 +34,10 @@ function Tile({
   cover?: React.ReactNode;
   /** First names of people outside the home who use it. */
   shared?: string[];
+  /** Home's larger card: a taller photo with the name on it. */
+  big?: boolean;
 }) {
+  if (big) return <BigTile {...{ href, type, imagePath, title, sub, late, soon, index, shared }} />;
   return (
     <li className={`rise ${feature ? "col-span-2 sm:col-span-1" : ""}`} style={{ animationDelay: `${Math.min(index, 8) * 40}ms` }}>
       <Link href={href} className="group flex flex-col gap-2">
@@ -57,15 +61,44 @@ function Tile({
   );
 }
 
+/**
+ * Home's place card: a tall photo with the name set on it, so the places read as the heart of
+ * the page. Urgency sits at the top, who else uses it underneath.
+ */
+function BigTile({ href, type, imagePath, title, sub, late, soon, index, shared }: { href: string; type: LocationType; imagePath?: string | null; title: string; sub: string; late: number; soon: number; index: number; shared?: string[] }) {
+  return (
+    <li className="rise" style={{ animationDelay: `${Math.min(index, 8) * 40}ms` }}>
+      <Link href={href} className="group lift relative block aspect-[4/5] overflow-hidden rounded-[20px] bg-sunk shadow-[var(--shadow-card)] sm:aspect-[5/4]">
+        <PlacePhoto type={type} imagePath={imagePath} className="transition duration-700 ease-out group-hover:scale-[1.04]" eager={index < 6} />
+        <span className="absolute inset-x-0 bottom-0 h-[58%] bg-gradient-to-t from-black/75 via-black/30 to-transparent" aria-hidden="true" />
+        {late > 0 || soon > 0 ? <UrgencyBadge late={late} soon={soon} short /> : null}
+        <span className="absolute inset-x-0 bottom-0 flex flex-col gap-1.5 px-3.5 pb-3 text-white">
+          {shared && shared.length > 0 ? (
+            <span className="flex h-6 max-w-full items-center gap-1 self-start truncate rounded-full bg-white/95 px-2.5 text-[12.5px] font-semibold text-[#1e4a38]">
+              <IconPeople className="size-3.5 shrink-0" />
+              <span className="sr-only">Shared with </span>
+              <span className="truncate">{shortNames(shared)}</span>
+            </span>
+          ) : null}
+          <span className="min-w-0">
+            <span className="block truncate font-display text-[18px] leading-tight font-bold tracking-[-0.01em] drop-shadow-sm">{title}</span>
+            <span className="block truncate text-[13px] text-white/85">{sub}</span>
+          </span>
+        </span>
+      </Link>
+    </li>
+  );
+}
+
 /** The most urgent count leads, in its own colour: "1 past its date · 4 soon", or "4 to use soon". */
-function UrgencyBadge({ late, soon }: { late: number; soon: number }) {
+function UrgencyBadge({ late, soon, short = false }: { late: number; soon: number; /** Fewer words, for Home's narrower cards. */ short?: boolean }) {
   return (
     <span className="absolute top-2 left-2 flex h-6 max-w-[calc(100%-1rem)] items-center gap-1.5 truncate rounded-full bg-white/95 px-2.5 text-[12.5px] font-semibold">
       <span className={`size-1.5 shrink-0 rounded-full ${late > 0 ? "bg-[#c4502c]" : "bg-[#c98a14]"}`} aria-hidden="true" />
       {late > 0 ? (
         <>
           <span className="text-[#a63b1a]">
-            {late} past {late === 1 ? "its date" : "a date"}
+            {late} past {short ? "date" : late === 1 ? "its date" : "a date"}
           </span>
           {soon > 0 ? <span className="text-[#855a0b]">· {soon} soon</span> : null}
         </>
@@ -84,6 +117,7 @@ export function GroupCard({
   index = 0,
   feature = false,
   shared,
+  big = false,
 }: {
   group: PlaceGroup;
   late?: number;
@@ -92,6 +126,7 @@ export function GroupCard({
   feature?: boolean;
   /** Who else uses each place, by place id. */
   shared?: Map<string, string[]>;
+  big?: boolean;
 }) {
   const sharedWith = [...new Set(group.places.flatMap((p) => shared?.get(p.id) ?? []))];
   const info = placeType(group.type);
@@ -114,6 +149,7 @@ export function GroupCard({
       index={index}
       feature={feature}
       shared={sharedWith}
+      big={big}
     />
   );
 }
@@ -125,6 +161,7 @@ export function PlaceCard({
   cover,
   sub,
   shared,
+  big = false,
 }: {
   place: { id: string; name: string; type: LocationType; itemCount: number; imagePath?: string | null };
   shared?: string[];
@@ -133,6 +170,7 @@ export function PlaceCard({
   cover?: React.ReactNode;
   /** Replaces the count under the name. */
   sub?: string;
+  big?: boolean;
 }) {
   return (
     <Tile
@@ -145,11 +183,24 @@ export function PlaceCard({
       index={index}
       cover={cover}
       shared={shared}
+      big={big && !cover}
     />
   );
 }
 
-export function AddPlaceTile({ onClick, label = "Add a place" }: { onClick: () => void; label?: string }) {
+export function AddPlaceTile({ onClick, label = "Add a place", big = false }: { onClick: () => void; label?: string; big?: boolean }) {
+  if (big)
+    return (
+      <li>
+        <button
+          onClick={onClick}
+          className="flex aspect-[4/5] w-full flex-col items-center justify-center gap-2 rounded-[20px] border-[1.5px] border-dashed border-line text-leaf transition hover:border-leaf/50 hover:bg-sunk sm:aspect-[5/4]"
+        >
+          <IconPlus className="size-6" />
+          <span className="text-[15px] font-semibold">{label}</span>
+        </button>
+      </li>
+    );
   return (
     <li>
       <button onClick={onClick} className="group flex w-full flex-col gap-2 text-left">

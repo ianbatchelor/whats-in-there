@@ -210,7 +210,7 @@ function HouseholdHome({ session, hh }: { session: Session; hh: ReturnType<typeo
   );
 
   return (
-    <AppShell wide rail={rail}>
+    <AppShell wide roomy rail={rail}>
       <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="flex items-start justify-between gap-3">
           <div>
@@ -248,51 +248,43 @@ function HouseholdHome({ session, hh }: { session: Session; hh: ReturnType<typeo
 
       {error ? <Notice>{error}</Notice> : null}
 
-      {places && places.length > 0 ? (
-        <dl className="hidden grid-cols-4 divide-x divide-line rounded-2xl border border-line bg-card lg:grid">
-          {[
-            { n: total, label: total === 1 ? "thing" : "things", tone: "" },
-            { n: places.length, label: places.length === 1 ? "place" : "places", tone: "" },
-            { n: late, label: "past a date", tone: late > 0 ? "text-late" : "" },
-            { n: attention.length - late, label: "to use soon", tone: attention.length - late > 0 ? "text-soon" : "" },
-          ].map((s) => (
-            <div key={s.label} className="px-5 py-3.5">
-              <dd className={`font-display text-[1.45rem] leading-tight font-bold tabular-nums ${s.tone}`}>{s.n}</dd>
-              <dt className="text-[13px] text-mute">{s.label}</dt>
-            </div>
-          ))}
-        </dl>
-      ) : null}
 
-      {attention.length > 0 ? (
-        <section className="flex flex-col gap-2.5" aria-labelledby="attention-h">
-          <div className="flex items-baseline justify-between">
-            <SectionLabel id="attention-h">Needs attention</SectionLabel>
-            <span className="text-[13px] text-mute">
-              {late > 0 ? `${late} past a date` : null}
-              {late > 0 && attention.length > late ? " · " : null}
-              {attention.length > late ? `${attention.length - late} to use soon` : null}
-            </span>
-          </div>
-          <ItemList>{shownAttention.map(row)}</ItemList>
-          {attention.length > 3 ? (
-            <button onClick={() => setShowAll((v) => !v)} className="min-h-10 self-start text-[14px] font-semibold text-leaf">
-              {showAll ? "Show fewer" : `Show all ${attention.length}`}
-            </button>
-          ) : null}
-        </section>
-      ) : places && places.length > 0 && total === 0 ? (
+      {places && places.length > 0 && total === 0 ? (
         <FirstThingsTip />
-      ) : total > 0 ? (
-        <p className="flex items-center gap-2.5 rounded-2xl border border-line bg-card px-4 py-3 text-[14.5px] text-mute">
-          <span className="grid size-6 shrink-0 place-items-center rounded-full bg-ok-bg text-ok" aria-hidden="true">
-            <IconCheck className="size-3.5" />
-          </span>
-          Nothing needs using up in the next two weeks.
-        </p>
+      ) : places && places.length > 0 ? (
+        <section aria-labelledby="today-h" className="overflow-hidden rounded-[20px] border border-line bg-card shadow-[var(--shadow-card)]">
+          <div className="flex items-baseline justify-between gap-3 px-4 pt-3.5 pb-1">
+            <h2 id="today-h" className="font-display text-[15px] font-bold tracking-[-0.01em]">
+              {attention.length > 0 ? "Use soon" : "Today"}
+            </h2>
+            {attention.length > 0 ? (
+              <span className="truncate text-[13px] text-mute">
+                {late > 0 ? <span className="font-semibold text-late">{late} past a date</span> : null}
+                {late > 0 && attention.length > late ? " · " : null}
+                {attention.length > late ? `${attention.length - late} to use soon` : null}
+              </span>
+            ) : null}
+          </div>
+          {attention.length > 0 ? (
+            <>
+              <ul className="divide-y divide-line">{shownAttention.map(row)}</ul>
+              {attention.length > 3 ? (
+                <button onClick={() => setShowAll((v) => !v)} className="min-h-11 w-full border-t border-line px-4 text-left text-[14px] font-semibold text-leaf">
+                  {showAll ? "Show fewer" : `Show all ${attention.length}`}
+                </button>
+              ) : null}
+            </>
+          ) : (
+            <p className="flex items-center gap-2.5 px-4 pt-1 pb-3.5 text-[14.5px] text-mute">
+              <span className="grid size-6 shrink-0 place-items-center rounded-full bg-ok-bg text-ok" aria-hidden="true">
+                <IconCheck className="size-3.5" />
+              </span>
+              Nothing needs using up in the next two weeks.
+            </p>
+          )}
+          <Reminders lent={lent} longLent={longLent} seasonal={seasonal} />
+        </section>
       ) : null}
-
-      {places && places.length > 0 ? <Reminders lent={lent} longLent={longLent} seasonal={seasonal} /> : null}
 
       <section className="flex flex-col gap-3" aria-labelledby="places-h">
         <h2 id="places-h" className="sr-only">
@@ -318,20 +310,20 @@ function HouseholdHome({ session, hh }: { session: Session; hh: ReturnType<typeo
           ) : null}
         </div>
         {groups === null ? (
-          <ul className="grid grid-cols-2 gap-x-3 gap-y-5 sm:grid-cols-3 sm:gap-x-4 lg:grid-cols-4" aria-busy="true">
+          <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4" aria-busy="true">
             {[0, 1, 2, 3].map((i) => (
-              <li key={i} className="aspect-[4/3] animate-pulse rounded-2xl bg-sunk" />
+              <li key={i} className="aspect-[4/5] animate-pulse rounded-[20px] bg-sunk sm:aspect-[5/4]" />
             ))}
           </ul>
         ) : places!.length === 0 ? (
           <StarterPlaces householdId={current.householdId} onAdded={refresh} onOwn={() => setAdding(true)} />
         ) : (
-          <ul className="grid grid-cols-2 gap-x-3 gap-y-5 sm:grid-cols-3 sm:gap-x-4 lg:grid-cols-4">
+          <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
             {groups.map((g, i) => (
-              <GroupCard key={g.type} group={g} index={i} late={sumOver(lateIn, g.places)} soon={sumOver(soonIn, g.places)} shared={guests} />
+              <GroupCard key={g.type} group={g} index={i} late={sumOver(lateIn, g.places)} soon={sumOver(soonIn, g.places)} shared={guests} big />
             ))}
-            <SharedPlaceCards places={sharedShown} offset={groups.length} />
-            <AddPlaceTile onClick={() => setAdding(true)} />
+            <SharedPlaceCards places={sharedShown} offset={groups.length} big />
+            <AddPlaceTile onClick={() => setAdding(true)} big />
           </ul>
         )}
       </section>
@@ -371,8 +363,9 @@ function greeting(now: Date = new Date()): string {
 }
 
 /**
- * One slim line each for things that have been lent a long time and this season's jobs, so Home stays
- * short and the places stay near the top. The full lists are under the Lists tab.
+ * One slim line each for things that have been lent a long time, Christmas and this season's jobs, at
+ * the foot of the Today card, so Home stays short and the places stay near the top. The full lists
+ * are under the Lists tab.
  */
 function Reminders({ lent, longLent, seasonal }: { lent: StockItem[]; longLent: number; seasonal: Seasonal }) {
   const lines: { href: string; Icon: (p: { className?: string }) => React.ReactNode; text: string; late?: boolean }[] = [];
@@ -399,7 +392,7 @@ function Reminders({ lent, longLent, seasonal }: { lent: StockItem[]; longLent: 
   }
   if (lines.length === 0) return null;
   return (
-    <ul className="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-card">
+    <ul className="divide-y divide-line border-t border-line bg-sunk/35">
       {lines.map((l) => (
         <li key={l.href}>
           <Link href={l.href} className="flex min-h-12 items-center gap-3 px-4 py-2.5 text-[14.5px] transition hover:bg-sunk/50">

@@ -29,4 +29,5 @@ export const KEYS = {
   seasonDone: "wit.seasonDone",
   seasonSnooze: "wit.seasonSnooze",
   kindHint: "wit.kindHint",
+  lastList: "wit.lastList",
 } as const;

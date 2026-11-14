@@ -13,12 +13,14 @@ import { countThings, isKeepPlace } from "@/lib/domain/places";
 import type { StockItem } from "@/lib/domain/stock";
 import { Notice } from "@/components/ui/Notice";
 import { Toast } from "@/components/ui/Toast";
-import { IconChevronRight, IconScan, IconSearch, IconX } from "@/components/ui/icons";
+import { IconBasket, IconBook, IconChevronRight, IconGift, IconList, IconScan, IconSearch, IconX } from "@/components/ui/icons";
+import { matches, searchLists, type ListHit, type ListHitKind, type ListSources } from "@/lib/domain/search";
+import { loadListSources } from "@/lib/search";
 import { KEYS, readLocal, writeLocal } from "@/lib/storage";
 import { tookOutMessage, useQuickTake } from "@/components/stock/useQuickTake";
 import { placeType } from "@/components/home/placeTypes";
 import { PlacePhoto } from "@/components/art/PlacePhoto";
-import { ItemList, ItemListSkeleton, ItemRow } from "@/components/stock/ItemRow";
+import { Highlight, ItemList, ItemListSkeleton, ItemRow } from "@/components/stock/ItemRow";
 import { TakeOutSheet } from "@/components/stock/TakeOutSheet";
 import { useUndoToast } from "@/components/stock/useUndoToast";
 
@@ -42,6 +44,20 @@ function Search({ session }: { session: Session }) {
   const [busy, setBusy] = useState(false);
   const [open, setOpen] = useState<StockItem | null>(null);
   const q = query.trim();
+  // The lists are loaded once, the first time a search is typed, and matched here as you type.
+  const [sources, setSources] = useState<ListSources | null>(null);
+  const wantLists = q.length >= 2;
+  useEffect(() => {
+    if (!wantLists || !current) return;
+    let active = true;
+    loadListSources(current.householdId, session.user.id, names).then((s) => {
+      if (active) setSources(s);
+    });
+    return () => {
+      active = false;
+    };
+  }, [wantLists, current, session.user.id, names, version]);
+  const listHits = useMemo(() => (sources ? searchLists(q, sources) : []), [sources, q]);
 
   useEffect(() => {
     if (!current || q.length < 2) return;
@@ -65,8 +81,7 @@ function Search({ session }: { session: Session }) {
 
   const matchingPlaces = useMemo(() => {
     if (q.length < 2 || !places) return [];
-    const lower = q.toLowerCase();
-    return places.filter((p) => p.name.toLowerCase().includes(lower) || placeType(p.type).label.toLowerCase().includes(lower));
+    return places.filter((p) => matches(q, p.name, placeType(p.type).label));
   }, [places, q]);
 
   const { toast, clear, announce } = useUndoToast(() => {
@@ -94,7 +109,7 @@ function Search({ session }: { session: Session }) {
 
   return (
     <AppShell>
-      <PageHeader title="Search" sub="Everything you have, in every place." />
+      <PageHeader title="Search" sub="Every place and every list, all at once." />
       <label className="sticky top-[max(8px,env(safe-area-inset-top))] z-20 flex min-h-13 items-center gap-3 rounded-xl border border-line bg-card px-4 shadow-[var(--shadow-lift)] focus-within:border-leaf">
         <IconSearch className="size-5 shrink-0 text-mute" />
         <input
@@ -102,7 +117,7 @@ function Search({ session }: { session: Session }) {
           autoFocus
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Try passport or curry"
+          placeholder="Try passport, Pinot or Sherlock"
           aria-label="Search everything"
           className="min-w-0 flex-1 bg-transparent text-[17px] placeholder:text-mute focus:outline-none focus-visible:outline-none [&::-webkit-search-cancel-button]:hidden"
         />
@@ -149,7 +164,7 @@ function Search({ session }: { session: Session }) {
               </div>
             </section>
           ) : (
-            <p className="text-mute">Type a name, a brand or a place. Each result shows where the thing is.</p>
+            <p className="text-mute">Type a name, a brand, a place or something on a list. Each result shows where it is.</p>
           )}
           {places && places.length > 0 ? (
             <section className="flex flex-col gap-2.5" aria-labelledby="browse-h">
@@ -203,13 +218,13 @@ function Search({ session }: { session: Session }) {
               </ul>
             </section>
           ) : null}
-          {shown && shown.length === 0 && matchingPlaces.length > 0 ? null : (
+          {shown && shown.length === 0 && (matchingPlaces.length > 0 || listHits.length > 0) ? null : (
             <section className="flex flex-col gap-2.5" aria-labelledby="si-h">
               <SectionLabel id="si-h">{shown ? countThings(shown.length) : "Things"}</SectionLabel>
               {shown === null ? (
                 <ItemListSkeleton rows={3} />
               ) : shown.length === 0 ? (
-                <p className="text-mute">Nothing called &ldquo;{q}&rdquo; yet. Check the spelling, or add it to a place.</p>
+                <p className="text-mute">Nothing called &ldquo;{q}&rdquo; in a place or on a list. Check the spelling, or add it.</p>
               ) : (
                 <ItemList>
                   {shown.map((item, i) => (
@@ -234,6 +249,16 @@ function Search({ session }: { session: Session }) {
               )}
             </section>
           )}
+          {listHits.length > 0 ? (
+            <section className="flex flex-col gap-2.5" aria-labelledby="sl-h">
+              <SectionLabel id="sl-h">On lists</SectionLabel>
+              <ul className="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-card">
+                {listHits.slice(0, 30).map((h) => (
+                  <ListHitRow key={h.id} hit={h} query={q} onOpen={remember} />
+                ))}
+              </ul>
+            </section>
+          ) : null}
         </div>
       )}
 
@@ -255,5 +280,33 @@ function Search({ session }: { session: Session }) {
       />
       <Toast toast={toast} onDone={clear} />
     </AppShell>
+  );
+}
+
+const HIT_ICON: Record<ListHitKind, (p: { className?: string }) => React.ReactNode> = {
+  shopping: IconBasket,
+  list: IconList,
+  present: IconGift,
+  book: IconBook,
+};
+
+/** One thing on a list: what it is, and which list it's on. */
+function ListHitRow({ hit, query, onOpen }: { hit: ListHit; query: string; onOpen: () => void }) {
+  const Icon = HIT_ICON[hit.kind];
+  return (
+    <li>
+      <Link href={hit.href} onClick={onOpen} className="flex min-h-14 items-center gap-3 px-3 py-2 transition hover:bg-sunk/60">
+        <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-sunk text-leaf" aria-hidden="true">
+          <Icon className="size-5" />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className={`block truncate text-[15px] font-semibold ${hit.done ? "text-mute line-through decoration-1" : ""}`}>
+            <Highlight text={hit.title} match={query} />
+          </span>
+          <span className="block truncate text-[13px] text-mute">{hit.where}</span>
+        </span>
+        <IconChevronRight className="size-4 shrink-0 text-mute/60" />
+      </Link>
+    </li>
   );
 }
