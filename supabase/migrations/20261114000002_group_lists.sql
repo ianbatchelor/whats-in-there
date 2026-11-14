@@ -41,9 +41,7 @@ as $$
   );
 $$;
 
-drop policy lists_select on public.lists;
-create policy lists_select on public.lists for select to authenticated
-  using (public.can_see_list(id));
+alter policy lists_select on public.lists using (public.can_see_list(id));
 
 alter table public.list_members enable row level security;
 alter table public.list_invites enable row level security;
