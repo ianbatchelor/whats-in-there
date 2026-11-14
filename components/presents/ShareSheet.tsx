@@ -1,5 +1,6 @@
 "use client";
 
+import { PeopleLink } from "@/components/common/PeopleLink";
 import { useEffect, useState } from "react";
 import { Sheet } from "@/components/ui/Sheet";
 import { Button } from "@/components/ui/Button";
@@ -124,10 +125,10 @@ export function ShareSheet({
             <p className="truncate rounded-2xl border border-line bg-sunk px-4 py-3 font-mono text-[14px] text-fg/80">{url}</p>
             <div className="flex flex-wrap gap-2">
               <Button onClick={send} className="max-sm:flex-1">
-                <IconShare className="size-[18px]" /> Send link
+                <IconShare className="size-[18px]" /> Send the link
               </Button>
               <Button variant="ghost" onClick={copy} className="max-sm:flex-1">
-                <IconCopy className="size-[18px]" /> Copy
+                <IconCopy className="size-[18px]" /> Copy the link
               </Button>
             </div>
             {said ? <p className="text-[14px] text-mute">{said}</p> : null}
@@ -135,7 +136,7 @@ export function ShareSheet({
               <p className="text-[14px] text-mute">This is {first}&apos;s own list, started from your link. {first} keeps it up to date from their link.</p>
             ) : (
               <button onClick={stop} disabled={busy !== null} className="min-h-10 self-start text-[14px] font-semibold text-mute hover:text-fg">
-                Stop sharing (the link stops working)
+                Stop the link
               </button>
             )}
           </>
@@ -149,6 +150,7 @@ export function ShareSheet({
         )}
 
         {error ? <Notice>{error}</Notice> : null}
+        <PeopleLink />
 
         {onRemoved ? (
           <div className="border-t border-line pt-4">

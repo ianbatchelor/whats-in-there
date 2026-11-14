@@ -4,7 +4,8 @@ import type { LocationType } from "@/lib/household";
 import type { PlaceGroup } from "@/lib/domain/places";
 import { countThings } from "@/lib/domain/places";
 import { countPlaces, placeType } from "./placeTypes";
-import { IconPlus } from "@/components/ui/icons";
+import { IconPeople, IconPlus } from "@/components/ui/icons";
+import { shortNames } from "@/lib/domain/access";
 
 function Tile({
   href,
@@ -17,6 +18,7 @@ function Tile({
   index = 0,
   feature = false,
   cover,
+  shared,
 }: {
   href: string;
   type: LocationType;
@@ -29,6 +31,8 @@ function Tile({
   feature?: boolean;
   /** Drawn instead of the place photo, e.g. a box's own colour and contents. */
   cover?: React.ReactNode;
+  /** First names of people outside the home who use it. */
+  shared?: string[];
 }) {
   return (
     <li className={`rise ${feature ? "col-span-2 sm:col-span-1" : ""}`} style={{ animationDelay: `${Math.min(index, 8) * 40}ms` }}>
@@ -36,6 +40,13 @@ function Tile({
         <span className={`lift relative block overflow-hidden rounded-2xl bg-sunk ${feature ? "aspect-[2/1] sm:aspect-[4/3]" : "aspect-[4/3]"}`}>
           {cover ?? <PlacePhoto type={type} imagePath={imagePath} className="transition duration-700 ease-out group-hover:scale-[1.04]" eager={index < 6} />}
           {late > 0 || soon > 0 ? <UrgencyBadge late={late} soon={soon} /> : null}
+          {shared && shared.length > 0 ? (
+            <span className="absolute bottom-2 left-2 flex h-6 max-w-[calc(100%-1rem)] items-center gap-1 truncate rounded-full bg-white/95 px-2.5 text-[12.5px] font-semibold text-[#1e4a38]">
+              <IconPeople className="size-3.5 shrink-0" />
+              <span className="sr-only">Shared with </span>
+              <span className="truncate">{shortNames(shared)}</span>
+            </span>
+          ) : null}
         </span>
         <span className="min-w-0 px-0.5">
           <span className="block truncate text-[15px] leading-snug font-semibold">{title}</span>
@@ -72,13 +83,17 @@ export function GroupCard({
   soon = 0,
   index = 0,
   feature = false,
+  shared,
 }: {
   group: PlaceGroup;
   late?: number;
   soon?: number;
   index?: number;
   feature?: boolean;
+  /** Who else uses each place, by place id. */
+  shared?: Map<string, string[]>;
 }) {
+  const sharedWith = [...new Set(group.places.flatMap((p) => shared?.get(p.id) ?? []))];
   const info = placeType(group.type);
   const single = group.places.length === 1 ? group.places[0]! : null;
   return (
@@ -98,6 +113,7 @@ export function GroupCard({
       soon={soon}
       index={index}
       feature={feature}
+      shared={sharedWith}
     />
   );
 }
@@ -108,8 +124,10 @@ export function PlaceCard({
   index = 0,
   cover,
   sub,
+  shared,
 }: {
   place: { id: string; name: string; type: LocationType; itemCount: number; imagePath?: string | null };
+  shared?: string[];
   soon?: number;
   index?: number;
   cover?: React.ReactNode;
@@ -126,6 +144,7 @@ export function PlaceCard({
       soon={soon}
       index={index}
       cover={cover}
+      shared={shared}
     />
   );
 }

@@ -9,6 +9,7 @@ import { AppShell } from "@/components/AppShell";
 import { HouseholdLoading, PageHeader } from "@/components/common/PageHeader";
 import { useSeasonal } from "@/components/home/SeasonalReminders";
 import { useHousehold } from "@/lib/hooks/useHousehold";
+import { useQueryParam } from "@/lib/hooks/useQueryParam";
 import { friendlyError } from "@/lib/supabase/errors";
 import { loadLent } from "@/lib/stock";
 import { loadToBuy } from "@/lib/shopping";
@@ -18,6 +19,8 @@ import type { StockItem } from "@/lib/domain/stock";
 import { Notice } from "@/components/ui/Notice";
 import { ListSettingsSheet } from "@/components/lists/ListSettingsSheet";
 import { createList, loadEntries, loadLists, loadPeople } from "@/lib/ownLists";
+import { shortNames } from "@/lib/domain/access";
+import { countdown, daysToChristmas, isChristmasTime } from "@/lib/domain/christmas";
 import { listCaption, listsForTab, splitEntries, type ListEntry, type ListPerson, type OwnList } from "@/lib/domain/ownLists";
 import { supabase } from "@/lib/supabase/client";
 import { loadNames } from "@/lib/sharedPlaces";
@@ -34,6 +37,7 @@ import {
   IconLock,
   IconPeople,
   IconPlus,
+  IconStar,
 } from "@/components/ui/icons";
 
 export default function ListsPage() {
@@ -53,6 +57,8 @@ type Row = {
   group?: boolean;
 };
 
+const CHRISTMAS_START = { title: "Christmas dinner", kind: "buy" as const, visibility: "family" as const };
+
 const KIND_ICON = { todo: IconList, ideas: IconBulb, buy: IconBasket } as const;
 
 function Lists({ session }: { session: Session }) {
@@ -64,6 +70,17 @@ function Lists({ session }: { session: Session }) {
   /** Names of people who own family lists in other homes (Dad's list, seen from Molly's flat). */
   const [ownerNames, setOwnerNames] = useState<Map<string, string>>(new Map());
   const [making, setMaking] = useState(false);
+  // Arriving from the Christmas page: open a new list ready for the day.
+  const asked = useQueryParam("new");
+  const start = asked === "christmas" ? CHRISTMAS_START : null;
+  const [opened, setOpened] = useState(false);
+  useEffect(() => {
+    if (start && ready && !opened) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setOpened(true);
+      setMaking(true);
+    }
+  }, [start, ready, opened]);
   const [toBuy, setToBuy] = useState<string[] | null>(null);
   const [ideas, setIdeas] = useState<number | null>(null);
   const [books, setBooks] = useState<number | null>(null);
@@ -130,6 +147,10 @@ function Lists({ session }: { session: Session }) {
   const jobs = seasonal.shown?.length ?? null;
 
   const rows: Row[] = [
+    // From November to Boxing Day, Christmas leads.
+    ...(isChristmasTime()
+      ? [{ href: "/christmas/", Icon: IconStar, title: "Christmas", n: null, caption: `${countdown(daysToChristmas())}. Presents, lists and decorations` }]
+      : []),
     {
       href: "/list/",
       Icon: IconBasket,
@@ -190,14 +211,20 @@ function Lists({ session }: { session: Session }) {
       caption: (by ? `${by}'s · ` : "") + listCaption(open.map((e) => e.text), done.length),
     };
   };
-  const homeRows = [...rows.slice(0, 3), ...tab.home.map((l) => toRow(l, false)), ...rows.slice(3)];
+  const homeRows = tab.home.map((l) => toRow(l, false));
   const mineRows = tab.mine.map((l) => toRow(l, true));
   const groupRows = tab.groups.map((l) => {
     const row = toRow(l, false);
     const n = people.filter((p) => p.listId === l.id).length;
     return { ...row, Icon: IconPeople, group: true, caption: `${n === 1 ? "Just you so far" : `${n} people`} · ${row.caption}` };
   });
-  const familyRows = tab.family.map((l) => ({ ...toRow(l, false), Icon: IconGift }));
+  const familyFirstNames = members.filter((m) => m.role === "family").map((m) => m.displayName.trim().split(/\s+/)[0]!);
+  const familyRows = tab.family.map((l) => {
+    const row = toRow(l, false);
+    // Lists from this home say which family can see them; a family list from another home says whose it is already.
+    const withWho = l.householdId === current?.householdId && familyFirstNames.length > 0 ? `With ${shortNames(familyFirstNames)} · ` : "";
+    return { ...row, Icon: IconGift, caption: withWho + row.caption };
+  });
   // People who live here, and family with homes of their own, for the "who can see it" choices.
   const others = members.filter((m) => m.userId !== session.user.id && m.role !== "family").map((m) => m.displayName);
   const family = members.filter((m) => m.role === "family").map((m) => m.displayName);
@@ -210,7 +237,22 @@ function Lists({ session }: { session: Session }) {
         <HouseholdLoading />
       ) : (
         <>
-          {current ? <Section id="home-h" label={`Everyone in ${current.name}`} Icon={IconHouse} rows={homeRows} /> : null}
+          {current ? (
+            <section aria-labelledby="home-h" className="flex flex-col gap-2">
+              <h2 id="home-h" className="flex items-center gap-1.5 font-display text-[13px] font-bold tracking-[0.06em] text-mute uppercase">
+                <IconHouse className="size-4" /> Everyone in {current.name}
+              </h2>
+              <ul className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
+                {rows.map((r) => (
+                  <Tile key={r.href} row={r} />
+                ))}
+              </ul>
+            </section>
+          ) : null}
+          {homeRows.length + familyRows.length + groupRows.length + mineRows.length > 0 ? (
+            <h2 className="-mb-2 pt-2 font-display text-[20px] font-bold tracking-[-0.015em]">Your lists</h2>
+          ) : null}
+          {homeRows.length > 0 ? <Section id="homelists-h" label="Everyone at home" Icon={IconHouse} rows={homeRows} /> : null}
           {familyRows.length > 0 ? <Section id="family-h" label="With family" Icon={IconGift} rows={familyRows} /> : null}
           {groupRows.length > 0 ? <Section id="groups-h" label="Groups" Icon={IconPeople} rows={groupRows} /> : null}
           {mineRows.length > 0 ? <Section id="mine-h" label="Just you" Icon={IconLock} rows={mineRows} /> : null}
@@ -220,7 +262,7 @@ function Lists({ session }: { session: Session }) {
           >
             <IconPlus className="size-[18px]" /> New list
           </button>
-          {mineRows.length === 0 && groupRows.length === 0 && familyRows.length === 0 ? (
+          {mineRows.length === 0 && groupRows.length === 0 && familyRows.length === 0 && homeRows.length === 0 ? (
             <p className="-mt-2 text-center text-[13.5px] text-mute">Make a list just for you, for everyone at home, or for friends you invite.</p>
           ) : null}
           {!current ? (
@@ -235,6 +277,7 @@ function Lists({ session }: { session: Session }) {
             householdName={current?.name ?? null}
             others={others}
             family={family}
+            start={start}
             onSave={async (s) => {
               const id = await createList(s);
               setMaking(false);
@@ -247,6 +290,26 @@ function Lists({ session }: { session: Session }) {
         How lists work <IconChevronRight className="size-4" />
       </Link>
     </AppShell>
+  );
+}
+
+/** A built-in list as a small tile: icon, name, count, and a line of what's on it. */
+function Tile({ row: r }: { row: Row }) {
+  return (
+    <li>
+      <Link href={r.href} className="flex h-full min-h-[112px] flex-col gap-1.5 rounded-2xl border border-line bg-card p-3.5 shadow-[var(--shadow-card)] transition hover:bg-sunk/50">
+        <span className="flex items-center justify-between">
+          <span className="grid size-9 place-items-center rounded-xl bg-sunk text-leaf" aria-hidden="true">
+            <r.Icon className="size-5" />
+          </span>
+          {r.n !== null && r.n > 0 ? (
+            <span className={`font-display text-[1.25rem] leading-none font-bold tabular-nums ${r.urgent ? "text-late" : ""}`}>{r.n}</span>
+          ) : null}
+        </span>
+        <span className="font-display text-[15px] leading-snug font-bold">{r.title}</span>
+        <span className={`line-clamp-2 text-[13px] leading-snug ${r.urgent ? "text-late" : "text-mute"}`}>{r.caption ?? " "}</span>
+      </Link>
+    </li>
   );
 }
 

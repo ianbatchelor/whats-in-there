@@ -8,6 +8,9 @@ import { HouseholdLoading, PageHeader } from "@/components/common/PageHeader";
 import { useHousehold } from "@/lib/hooks/useHousehold";
 import { supabase } from "@/lib/supabase/client";
 import { friendlyError } from "@/lib/supabase/errors";
+import { loadStockLines } from "@/lib/stock";
+import { loadSharedWithMe } from "@/lib/sharedPlaces";
+import { haveAlready, haveLine, type HaveAlready, type StockLine } from "@/lib/domain/haveAlready";
 import { addToList, loadList, putAway, removeFromList, setBought, setPlace } from "@/lib/shopping";
 import { splitList, type ShoppingItem } from "@/lib/domain/shopping";
 import { nestedOrder, countThings } from "@/lib/domain/places";
@@ -29,6 +32,9 @@ function ShoppingList({ session }: { session: Session }) {
   const [name, setName] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
   const [toast, setToast] = useState<ToastData | null>(null);
+  /** What's already at home (or in a place shared with you), to check the list against. */
+  const [stock, setStock] = useState<StockLine[]>([]);
+  const [sharedNames, setSharedNames] = useState<Map<string, string>>(new Map());
   const say = (message: string, undo?: () => void) =>
     setToast((t) => ({ id: (t?.id ?? 0) + 1, message, actionLabel: undo ? "Undo" : undefined, onAction: undo }));
 
@@ -57,6 +63,22 @@ function ShoppingList({ session }: { session: Session }) {
       supabase().removeChannel(channel);
     };
   }, [current, refresh]);
+
+  useEffect(() => {
+    if (!current) return;
+    let live = true;
+    Promise.all([loadStockLines(), loadSharedWithMe().catch(() => [])])
+      .then(([lines, shared]) => {
+        if (!live) return;
+        setStock(lines);
+        setSharedNames(new Map(shared.map((s) => [s.id, `${s.name} at ${s.household}`])));
+      })
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, [current, items?.length]);
+  const placeName = (id: string) => placeById.get(id)?.name ?? sharedNames.get(id);
 
   // Places to put things away in, each followed by the boxes inside it.
   const spots: Spot[] = places ? nestedOrder(places).map(({ place }) => ({ id: place.id, label: placeById.get(place.id)?.name ?? place.name })) : [];
@@ -183,6 +205,7 @@ function ShoppingList({ session }: { session: Session }) {
                     spots={spots}
                     spotName={spotName(i.locationId)}
                     addedBy={who(i.addedBy)}
+                    have={haveAlready(i.name, stock, placeName)}
                     busy={busy === i.id}
                     onTick={tick}
                     onRemove={remove}
@@ -241,6 +264,7 @@ function Row({
   spots,
   spotName,
   addedBy,
+  have,
   busy,
   onTick,
   onRemove,
@@ -248,6 +272,8 @@ function Row({
   onPutAway,
 }: {
   item: ShoppingItem;
+  /** Already at home, said under the name so nobody buys more than needed. */
+  have?: HaveAlready | null;
   spots: Spot[];
   spotName?: string;
   addedBy?: string | null;
@@ -302,6 +328,7 @@ function Row({
           </label>
           {item.brand ? <span className="min-w-0 truncate">{item.brand}</span> : addedBy ? <span className="min-w-0 truncate">added by {addedBy}</span> : null}
         </div>
+        {have && !bought ? <p className="truncate text-[13px] font-semibold text-leaf">{haveLine(have)}</p> : null}
       </div>
       {onPutAway ? (
         <Button variant="ghost" onClick={onPutAway} disabled={busy} className="min-h-9 shrink-0 rounded-xl px-3 text-[13.5px]">

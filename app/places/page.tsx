@@ -6,6 +6,7 @@ import { AuthGate } from "@/components/AuthGate";
 import { AppShell } from "@/components/AppShell";
 import { PageHeader, HouseholdLoading } from "@/components/common/PageHeader";
 import { useHousehold } from "@/lib/hooks/useHousehold";
+import { usePlaceGuests } from "@/lib/hooks/usePlaceGuests";
 import { useQueryParam } from "@/lib/hooks/useQueryParam";
 import { countThings } from "@/lib/domain/places";
 import type { LocationType } from "@/lib/household";
@@ -20,7 +21,8 @@ export default function PlacesPage() {
 }
 
 function Places({ session }: { session: Session }) {
-  const { current, places, error, refresh } = useHousehold(session);
+  const { current, members, places, error, refresh } = useHousehold(session);
+  const guests = usePlaceGuests(session.user.id, current, members, places);
   const raw = useQueryParam("type");
   const [adding, setAdding] = useState(false);
   const type = (PLACE_TYPES.some((t) => t.value === raw) ? raw : "other") as LocationType;
@@ -47,7 +49,7 @@ function Places({ session }: { session: Session }) {
       ) : (
         <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
           {mine.map((p, i) => (
-            <PlaceCard key={p.id} place={p} index={i} />
+            <PlaceCard key={p.id} place={p} index={i} shared={guests.get(p.id)} />
           ))}
           <AddPlaceTile onClick={() => setAdding(true)} />
         </ul>

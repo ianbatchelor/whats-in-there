@@ -1,5 +1,6 @@
 "use client";
 
+import { PeopleLink } from "@/components/common/PeopleLink";
 import { useEffect, useState } from "react";
 import { Sheet } from "@/components/ui/Sheet";
 import { Button } from "@/components/ui/Button";
@@ -223,7 +224,7 @@ export function WhoUsesSheet({
               })}
             </ul>
           ) : (
-            <p className="text-[14px] text-mute">Family you add on the Household page show up here, ready to let in.</p>
+            <p className="text-[14px] text-mute">Family you add on the People page show up here, ready to let in.</p>
           )}
         </section>
 
@@ -274,13 +275,14 @@ export function WhoUsesSheet({
           )}
           {expires ? (
             <Button variant="danger" onClick={stop} busy={busy === "stop"} className="self-start px-0">
-              Stop links I&apos;ve sent
+              Stop the links
             </Button>
           ) : null}
         </section>
 
         {said ? <Notice tone="info">{said}</Notice> : null}
         {error ? <Notice>{error}</Notice> : null}
+        <PeopleLink />
       </div>
     </Sheet>
   );

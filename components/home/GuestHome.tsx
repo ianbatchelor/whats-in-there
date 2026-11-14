@@ -8,7 +8,8 @@ import { AppShell, SectionLabel } from "@/components/AppShell";
 import { Splash } from "@/components/ui/Screen";
 import { Notice } from "@/components/ui/Notice";
 import { SharedPlaces } from "@/components/home/SharedPlaces";
-import { IconBasket, IconBulb, IconChevronRight, IconGift, IconHouse, IconList, IconPeople } from "@/components/ui/icons";
+import { IconBasket, IconBulb, IconChevronRight, IconGift, IconHouse, IconList, IconPeople, IconStar } from "@/components/ui/icons";
+import { countdown, daysToChristmas, isChristmasTime } from "@/lib/domain/christmas";
 import { supabase } from "@/lib/supabase/client";
 import { friendlyError } from "@/lib/supabase/errors";
 import { familiesOf, loadMemberships, type Membership } from "@/lib/household";
@@ -105,6 +106,20 @@ export function GuestHome({ session }: { session: Session }) {
                 </button>
               </li>
             ))}
+            {isChristmasTime() ? (
+              <li>
+                <Link href="/christmas/" className="flex min-h-[72px] w-full items-center gap-3.5 px-4 py-3 text-left transition hover:bg-sunk/50">
+                  <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-sunk text-leaf" aria-hidden="true">
+                    <IconStar className="size-[22px]" />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block font-display text-[16px] leading-snug font-bold">Christmas</span>
+                    <span className="block truncate text-[14px] text-mute">{countdown(daysToChristmas())}. Who&apos;s getting what</span>
+                  </span>
+                  <IconChevronRight className="size-5 shrink-0 text-mute/70" />
+                </Link>
+              </li>
+            ) : null}
           </ul>
         </section>
       ) : null}
