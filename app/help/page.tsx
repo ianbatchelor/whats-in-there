@@ -20,7 +20,7 @@ export default function HelpPage() {
 
       <h2>Sharing with your household</h2>
       <p>
-        Open <b>Household</b> and tap <b>Invite someone</b>. Each link works once, for one person, and expires after 7
+        Open <b>People</b> and tap <b>Invite someone</b>. Each link works once, for one person, and expires after 7
         days. Everyone who lives in the household sees the same places and things, and changes appear for everyone straight away.
       </p>
       <p>
@@ -29,12 +29,20 @@ export default function HelpPage() {
         <b> Is this you?</b> on it to make it theirs.
       </p>
 
+      <h2>Who sees what</h2>
+      <p>
+        <b>People</b> shows everyone you share with in one place: who lives here and sees everything, family and the places and
+        lists they see, anyone else who uses a place or is in a group list, and lists anyone with the link can open. To stop sharing
+        something, open that place or list.
+      </p>
+
       <h2>Sharing one place</h2>
       <p>
         To let someone who doesn&apos;t live with you use one place, such as a daughter who keeps food in your garage freezer, open the
         place and tap <b>Who else uses this?</b> at the bottom. Tap <b>Let in</b> next to family, or make an invitation link for anyone
         else. They see that place, the boxes inside it and what&apos;s in them, and can add and take things out. They don&apos;t see your
-        other places, and you don&apos;t see their home. It shows under <b>Shared with you</b> on their Home. Tap <b>Take out</b> to
+        other places, and you don&apos;t see their home. It shows with their own places on Home, marked with whose it is, and your
+        card shows who else uses it. Tap <b>Take out</b> to
         stop sharing; they can leave whenever they like.
       </p>
 
@@ -64,7 +72,12 @@ export default function HelpPage() {
         <li>
           <b>Shopping list</b>: shared with everyone at home. Add things by typing, or from a thing&apos;s details with{" "}
           <b>Add to shopping list</b>. Tick things off as you shop, choose where each one goes, then tap <b>Put it away</b> to add
-          them to their places.
+          them to their places. If you already have something on the list at home, or in a place shared with you, it says how
+          many and where, so you don&apos;t buy more.
+        </li>
+        <li>
+          <b>Christmas</b>: from November, a page with who&apos;s getting what, lists for the day, where the decorations are, and
+          what to use up to make room in the freezer.
         </li>
         <li>
           <b>Present ideas</b>: a wish list for each person, including children without an account. Paste a shop link and the
@@ -102,7 +115,7 @@ export default function HelpPage() {
 
       <h2>Deleting your account</h2>
       <p>
-        Open <b>Household</b> and tap <b>Delete my account</b>. You&apos;ll confirm it&apos;s you with a code, and then your account is
+        Open <b>People</b> and tap <b>Delete my account</b>. You&apos;ll confirm it&apos;s you with a code, and then your account is
         deleted. See <Link href="/privacy/">Privacy</Link> for exactly what is removed.
       </p>
     </DocPage>

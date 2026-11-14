@@ -6,7 +6,7 @@ import { BrandMark, Wordmark } from "@/components/brand/BrandMark";
 import { IconActivity, IconHome, IconList, IconPeople, IconScan, IconSearch } from "@/components/ui/icons";
 
 /** Pages reached from the Lists tab, so the tab stays lit while you're on one of them. */
-const LIST_PAGES = ["lists", "list", "my-list", "presents", "books", "lent", "season"];
+const LIST_PAGES = ["lists", "list", "my-list", "presents", "books", "lent", "season", "christmas"];
 
 type NavItem = {
   href: string;
@@ -25,7 +25,7 @@ const NAV: NavItem[] = [
   { href: "/search/", label: "Search", Icon: IconSearch, only: "desktop", match: (p: string) => p.startsWith("/search") },
   { href: "/add/", label: "Add", Icon: IconScan, primary: true, match: (p: string) => p.startsWith("/add") },
   { href: "/activity/", label: "Activity", Icon: IconActivity, match: (p: string) => p.startsWith("/activity") },
-  { href: "/household/", label: "Household", Icon: IconPeople, match: (p: string) => p.startsWith("/household") },
+  { href: "/household/", label: "People", Icon: IconPeople, match: (p: string) => p.startsWith("/household") },
 ];
 
 /**

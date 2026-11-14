@@ -1,5 +1,6 @@
 "use client";
 
+import { PeopleLink } from "@/components/common/PeopleLink";
 import { useEffect, useState } from "react";
 import { Sheet } from "@/components/ui/Sheet";
 import { Button } from "@/components/ui/Button";
@@ -190,6 +191,7 @@ export function GroupSheet({
           </ul>
         </section>
 
+        {isOwner ? <PeopleLink /> : null}
         {!isOwner ? (
           <Button variant="danger" onClick={leave} busy={busy === "leave"} className="self-start px-0">
             Leave this list

@@ -17,8 +17,9 @@ import { groupNames, kindInfo, splitEntries, visibilityLine, type ListEntry, typ
 import { Button } from "@/components/ui/Button";
 import { Notice } from "@/components/ui/Notice";
 import { Toast, type ToastData } from "@/components/ui/Toast";
-import { IconCheck, IconGift, IconHouse, IconLink, IconLock, IconPeople, IconPlus, IconX } from "@/components/ui/icons";
+import { IconBasket, IconCheck, IconGift, IconHouse, IconLink, IconLock, IconPeople, IconPlus, IconX } from "@/components/ui/icons";
 import { loadMembers } from "@/lib/household";
+import { addToList } from "@/lib/shopping";
 
 export default function MyListPage() {
   return <AuthGate>{(session) => <MyList session={session} />}</AuthGate>;
@@ -122,6 +123,15 @@ function MyList({ session }: { session: Session }) {
     run(entry.id, async () => {
       await removeEntries([entry.id]);
       say(`Took ${entry.text} off the list`, () => run(entry.id, () => addEntry(entry.listId, entry.text, entry.note, entry.doneAt)));
+    });
+
+  // A "To buy" list can send what's on it to the household's shopping list, where things get put away in places.
+  const toShopping = (open: ListEntry[]) =>
+    run("shopping", async () => {
+      if (!current) return;
+      let added = 0;
+      for (const e of open) if (await addToList(current.householdId, { name: e.text })) added++;
+      say(added === 0 ? "They're all on the shopping list already" : `Added ${added === 1 ? "1 thing" : `${added} things`} to the shopping list`);
     });
 
   const clearDone = (done: ListEntry[]) =>
@@ -265,6 +275,16 @@ function MyList({ session }: { session: Session }) {
               ))}
             </ul>
           )}
+
+          {list?.kind === "buy" && current && open.length > 0 && !awayHousehold ? (
+            <button
+              onClick={() => toShopping(open)}
+              disabled={busy !== null}
+              className="flex min-h-11 items-center gap-2 self-start text-[14.5px] font-semibold text-leaf disabled:opacity-60"
+            >
+              <IconBasket className="size-[18px]" /> Add these to the shopping list
+            </button>
+          ) : null}
 
           {done.length > 0 ? (
             <section aria-labelledby="done-h" className="flex flex-col gap-2.5">

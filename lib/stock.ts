@@ -95,6 +95,30 @@ export async function searchItems(householdId: string, query: string): Promise<S
   return sortUseFirst((data ?? []).map(toItem));
 }
 
+/** Things whose name has any of these words, across the household, for pages like Christmas. */
+export async function loadMatching(householdId: string, words: string[]): Promise<StockItem[]> {
+  if (words.length === 0) return [];
+  const { data, error } = await supabase()
+    .from("stock_items")
+    .select(COLUMNS)
+    .eq("household_id", householdId)
+    .eq("status", "in_stock")
+    .or(words.map((w) => `product_name.ilike.${likePattern(w)}`).join(","))
+    .limit(100);
+  if (error) throw error;
+  return (data ?? []).map(toItem);
+}
+
+/**
+ * What's in stock everywhere you can see: your home and any place someone shares with you
+ * (the database only returns those). For checking the shopping list against.
+ */
+export async function loadStockLines(): Promise<{ name: string; quantity: number; unit: string; locationId: string }[]> {
+  const { data, error } = await supabase().from("stock_items").select("product_name, quantity, unit, location_id").eq("status", "in_stock").limit(3000);
+  if (error) throw error;
+  return (data ?? []).map((r) => ({ name: r.product_name as string, quantity: Number(r.quantity), unit: r.unit as string, locationId: r.location_id as string }));
+}
+
 export type NewItem = {
   locationId: string;
   productName: string;

@@ -132,7 +132,7 @@ export default function PrivacyPage() {
 
       <h2>Keeping and deleting your data</h2>
       <p>
-        We keep your data while you have an account. You can delete your account at any time in the app: open <b>Household</b>,
+        We keep your data while you have an account. You can delete your account at any time in the app: open <b>People</b>,
         then <b>Delete my account</b>. That deletes your sign-in, your name and every household where you&apos;re the only member,
         with all its places, things and photos. Households you share carry on for the other members; things you added there
         stay, without your name.

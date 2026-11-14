@@ -9,7 +9,7 @@ import { friendlyError } from "@/lib/supabase/errors";
 import { publicOrigin } from "@/lib/config";
 import { buildInviteUrl } from "@/lib/domain/invite";
 import { formatDay } from "@/lib/domain/dates";
-import { familiesOf, homesOf, loadMembers, loadMemberships, pickCurrent, rememberHousehold, type Member, type Membership, type Role } from "@/lib/household";
+import { familiesOf, homesOf, loadMembers, loadMemberships, loadPlaces, pickCurrent, rememberHousehold, type Member, type Membership, type Role } from "@/lib/household";
 import { KEYS, writeLocal } from "@/lib/storage";
 import { Splash } from "@/components/ui/Screen";
 import { AppShell, SectionLabel } from "@/components/AppShell";
@@ -23,6 +23,8 @@ import { IconCheck, IconChevronRight, IconCopy, IconMore } from "@/components/ui
 import Link from "next/link";
 import { DeleteAccountSheet } from "@/components/account/DeleteAccountSheet";
 import { LegalLinks } from "@/components/common/LegalLinks";
+import { loadAccess } from "@/lib/access";
+import type { Access } from "@/lib/domain/access";
 
 type Invite = { id: string; expires_at: string; created_at: string; role: Role };
 
@@ -54,6 +56,8 @@ function Household({ session }: { session: Session }) {
   const [newName, setNewName] = useState("");
   const [confirmLeave, setConfirmLeave] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  /** Who sees what beyond the household: places, lists and links shared outside it. */
+  const [access, setAccess] = useState<Access | null>(null);
 
   const isOwner = current?.role === "owner";
 
@@ -65,7 +69,12 @@ function Household({ session }: { session: Session }) {
     setCurrent(chosen);
     setLoaded(true);
     if (!chosen) return;
-    setMembers(await loadMembers(chosen.householdId));
+    const people = await loadMembers(chosen.householdId);
+    setMembers(people);
+    loadPlaces(chosen.householdId)
+      .then((places) => loadAccess(session.user.id, chosen.householdId, people, places))
+      .then(setAccess)
+      .catch(() => {});
     if (chosen.role === "owner") {
       const { data } = await supabase()
         .from("household_invitations")
@@ -274,7 +283,7 @@ function Household({ session }: { session: Session }) {
           {m.userId === session.user.id ? <span className="font-normal text-mute"> (you)</span> : null}
         </p>
         <p className="text-xs text-mute">
-          {roleLabel(m.role)} · joined {formatDay(m.joinedAt)}
+          {m.role === "family" ? familyLine(access?.family.get(m.userId)) : <>{roleLabel(m.role)} · joined {formatDay(m.joinedAt)}</>}
         </p>
       </div>
       {isOwner && m.userId !== session.user.id ? (
@@ -328,16 +337,42 @@ function Household({ session }: { session: Session }) {
 
       {family.length > 0 ? (
         <section aria-labelledby="family-h" className="flex flex-col gap-2.5">
-          <SectionLabel id="family-h">Family · presents and Christmas</SectionLabel>
+          <SectionLabel id="family-h">Family · present lists, and what you share</SectionLabel>
           <ul className="overflow-hidden rounded-[var(--radius-card)] border border-line bg-card shadow-[var(--shadow-card)]">
             {family.map((m, i) => personRow(m, atHome.length + i))}
           </ul>
           <p className="px-1 text-[13.5px] leading-snug text-mute">
-            Family see everyone&apos;s present lists and can say what they&apos;re getting. They don&apos;t see your places, shopping list or anything else.
+            Family see everyone&apos;s present lists and can say what they&apos;re getting. Beyond that they only see the places and lists named here, never the rest of your home.
           </p>
         </section>
       ) : null}
 
+      {access && access.outsiders.length > 0 ? (
+        <section aria-labelledby="outsiders-h" className="flex flex-col gap-2.5">
+          <SectionLabel id="outsiders-h">Others you share with</SectionLabel>
+          <ul className="overflow-hidden rounded-[var(--radius-card)] border border-line bg-card shadow-[var(--shadow-card)]">
+            {access.outsiders.map((o, i) => (
+              <li key={o.userId} className="flex items-center gap-3 border-t border-line px-3.5 py-3 first:border-t-0">
+                <Avatar name={o.name} index={members.length + i} size={36} />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-display font-bold">{o.name}</p>
+                  <p className="text-xs text-mute">Sees {o.sees.join(", ")} only</p>
+                </div>
+              </li>
+            ))}
+          </ul>
+          <p className="px-1 text-[13.5px] leading-snug text-mute">To stop sharing, open the place or list and take them off it.</p>
+        </section>
+      ) : null}
+      {access && access.links.length > 0 ? (
+        <section aria-labelledby="links-h" className="flex flex-col gap-2.5">
+          <SectionLabel id="links-h">Anyone with the link</SectionLabel>
+          <div className="flex flex-col gap-1 rounded-[var(--radius-card)] border border-line bg-card px-3.5 py-3 shadow-[var(--shadow-card)]">
+            <p className="text-[14.5px]">{access.links.join(", ")}</p>
+            <p className="text-xs text-mute">These lists can be opened by anyone you sent the link to. Turn a link off on Presents or Book wish lists.</p>
+          </div>
+        </section>
+      ) : null}
       {isOwner ? (
         <section aria-labelledby="invite-h" className="flex flex-col gap-2.5">
           <SectionLabel id="invite-h">Invite someone</SectionLabel>
@@ -524,6 +559,12 @@ function Household({ session }: { session: Session }) {
       {leaveFamilySheet}
     </AppShell>
   );
+}
+
+/** What a family member sees, said in one line: "Presents, Christmas dinner, Garage freezer". */
+function familyLine(sees: string[] | undefined): string {
+  if (!sees || sees.length === 0) return "Family · present lists only";
+  return `Family · present lists, ${sees.join(", ")}`;
 }
 
 function roleLabel(role: Role): string {

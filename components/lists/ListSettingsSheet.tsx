@@ -24,6 +24,7 @@ export function ListSettingsSheet({
   others,
   family = [],
   list,
+  start,
   onSave,
   onDelete,
 }: {
@@ -37,6 +38,8 @@ export function ListSettingsSheet({
   /** First names of family with their own homes (presents only), for "…plus Molly and Carol". */
   family?: string[];
   list?: OwnList | null;
+  /** For a new list: a ready-made start, such as "Christmas dinner" shared with family. */
+  start?: { title: string; kind: ListKind; visibility: ListVisibility } | null;
   onSave: (s: ListSettings) => Promise<void>;
   onDelete?: () => Promise<void>;
 }) {
@@ -51,13 +54,13 @@ export function ListSettingsSheet({
   useEffect(() => {
     if (!open) return;
     /* eslint-disable react-hooks/set-state-in-effect */
-    setTitle(list?.title ?? "");
-    setKind(list?.kind ?? "todo");
-    setVisibility(list?.visibility ?? "me");
+    setTitle(list?.title ?? start?.title ?? "");
+    setKind(list?.kind ?? start?.kind ?? "todo");
+    setVisibility(list?.visibility ?? (start?.visibility === "family" && !householdId ? "me" : start?.visibility) ?? "me");
     setConfirming(false);
     setError(null);
     /* eslint-enable react-hooks/set-state-in-effect */
-  }, [open, list]);
+  }, [open, list, start, householdId]);
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
@@ -97,7 +100,7 @@ export function ListSettingsSheet({
             body:
               family.length > 0
                 ? `Plus ${joinNames(family)}, who have their own homes. They see this list only.`
-                : "Plus family with their own homes, once you add them on the Household page. They see this list only.",
+                : "Plus family with their own homes, once you add them on the People page. They see this list only.",
             Icon: IconGift,
           },
         ]

@@ -36,12 +36,14 @@ import { Avatar } from "@/components/ui/Avatar";
 import { Notice } from "@/components/ui/Notice";
 import { Button } from "@/components/ui/Button";
 import { Toast } from "@/components/ui/Toast";
-import { IconCheck, IconChevronRight, IconHandOver, IconLeaf, IconScan, IconSearch } from "@/components/ui/icons";
+import { IconCheck, IconChevronRight, IconHandOver, IconLeaf, IconScan, IconSearch, IconStar } from "@/components/ui/icons";
+import { countdown, daysToChristmas, isChristmasTime } from "@/lib/domain/christmas";
 import { AddPlaceSheet } from "@/components/home/AddPlaceSheet";
 import { AddPlaceTile, GroupCard } from "@/components/home/PlaceCard";
 import { FirstThingsTip, StarterPlaces } from "@/components/home/StarterPlaces";
 import { SharedPlaceCards, useSharedWithMe } from "@/components/home/SharedPlaces";
 import { GuestHome } from "@/components/home/GuestHome";
+import { usePlaceGuests } from "@/lib/hooks/usePlaceGuests";
 import { useSeasonal, type Seasonal } from "@/components/home/SeasonalReminders";
 import { ItemList, ItemRow } from "@/components/stock/ItemRow";
 import { TakeOutSheet } from "@/components/stock/TakeOutSheet";
@@ -75,6 +77,7 @@ function HouseholdHome({ session, hh }: { session: Session; hh: ReturnType<typeo
   const [open, setOpen] = useState<StockItem | null>(null);
   const seasonal = useSeasonal(current?.householdId, places);
   const shared = useSharedWithMe(version);
+  const guests = usePlaceGuests(session.user.id, current, members, places);
 
   const loadExtras = useCallback(async () => {
     if (!current) return;
@@ -325,7 +328,7 @@ function HouseholdHome({ session, hh }: { session: Session; hh: ReturnType<typeo
         ) : (
           <ul className="grid grid-cols-2 gap-x-3 gap-y-5 sm:grid-cols-3 sm:gap-x-4 lg:grid-cols-4">
             {groups.map((g, i) => (
-              <GroupCard key={g.type} group={g} index={i} late={sumOver(lateIn, g.places)} soon={sumOver(soonIn, g.places)} />
+              <GroupCard key={g.type} group={g} index={i} late={sumOver(lateIn, g.places)} soon={sumOver(soonIn, g.places)} shared={guests} />
             ))}
             <SharedPlaceCards places={sharedShown} offset={groups.length} />
             <AddPlaceTile onClick={() => setAdding(true)} />
@@ -385,6 +388,7 @@ function Reminders({ lent, longLent, seasonal }: { lent: StockItem[]; longLent: 
           : `${longLent} things have been lent over a month`,
     });
   }
+  if (isChristmasTime()) lines.push({ href: "/christmas/", Icon: IconStar, text: `Christmas: ${countdown(daysToChristmas()).toLowerCase()}` });
   const jobs = seasonal.shown ?? [];
   if (jobs.length > 0) {
     lines.push({
