@@ -15,6 +15,7 @@ import { loadOwnedNames, lookUpIsbn, readBarcode, type FoundBook, type OwnedBook
 import { loadPlaces, type Place } from "@/lib/household";
 import { addItem, undo } from "@/lib/stock";
 import { Notice } from "@/components/ui/Notice";
+import { EmptyNote } from "@/components/ui/EmptyNote";
 import { Toast, type ToastData } from "@/components/ui/Toast";
 import { IconBook, IconPlus, IconShare } from "@/components/ui/icons";
 import { BookStack, ClothBand } from "@/components/books/Book";
@@ -289,7 +290,7 @@ function BookWishLists({ session }: { session: Session }) {
 
   return (
     <AppShell>
-      <PageHeader title="Book wish lists" back={{ href: "/lists/", label: "Lists" }} sub="The books everyone wants to read next. Share a list so friends and family know what to get." />
+      <PageHeader serif title="Book wish lists" back={{ href: "/lists/", label: "Lists" }} sub="The books everyone wants to read next. Share a list so friends and family know what to get." />
 
       {error ? <Notice>{error}</Notice> : null}
 
@@ -342,24 +343,22 @@ function BookWishLists({ session }: { session: Session }) {
                 <p className="font-display text-[12.5px] font-bold tracking-[0.08em] uppercase opacity-75">
                   {mine ? "Your book wish list" : person.list?.friend ? `${firstName(person.name)}'s own list` : `For ${firstName(person.name)}`}
                 </p>
-                <h2 id="list-h" className="mt-1 font-serif text-[1.7rem] leading-[1.05] font-semibold tracking-[-0.015em] sm:text-[2.4rem]">
+                <h2 id="list-h" className="mt-0.5 font-serif text-[1.45rem] leading-[1.1] font-semibold tracking-[-0.015em] sm:text-[1.9rem]">
                   {wantsToRead(person.name, mine)}
                 </h2>
-                {mine && person.list?.shareCode ? (
-                  <p className="mt-1.5 text-[13.5px] leading-snug opacity-80">Shared. Anyone with the link can see it.</p>
-                ) : (
-                  <p className="mt-2 max-w-[34ch] text-[14.5px] leading-snug opacity-85">
-                    {mine
-                      ? "Friends can say they'll get you one. You won't see which, so it stays a surprise."
-                      : `Say you'll get one so nobody doubles up. ${firstName(person.name)} won't see.`}
-                  </p>
-                )}
+                <p className="mt-1 text-[13.5px] leading-snug opacity-85">
+                  {mine
+                    ? person.list?.shareCode
+                      ? "Shared. Anyone with the link can see it."
+                      : "Friends can say they'll get you one. You won't see which."
+                    : `${firstName(person.name)} won't see who's getting which.`}
+                </p>
                 <button
                   onClick={startShare}
-                  className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-btn)] px-4 font-display text-[14.5px] font-bold shadow-[0_6px_16px_-10px_rgba(0,0,0,0.6)] transition active:scale-[0.98]"
+                  className="mt-3 inline-flex min-h-10 items-center gap-2 rounded-[var(--radius-btn)] px-3.5 font-display text-[14px] font-bold shadow-[0_6px_16px_-10px_rgba(0,0,0,0.6)] transition active:scale-[0.98]"
                   style={{ background: BOOK_LOOK.paper, color: BOOK_LOOK.cloth }}
                 >
-                  <IconShare className="size-[18px]" /> {mine ? "Share my list" : `Share ${firstName(person.name)}'s list`}
+                  <IconShare className="size-[17px]" /> {mine ? "Share my list" : `Share ${firstName(person.name)}'s list`}
                 </button>
               </ClothBand>
 
@@ -375,14 +374,9 @@ function BookWishLists({ session }: { session: Session }) {
               />
 
               {books.length === 0 ? (
-                <div className="flex items-center gap-3.5 rounded-[var(--radius-card)] border-2 border-dashed border-line bg-sunk/40 p-5">
-                  <IconBook className="size-8 shrink-0" />
-                  <p className="text-[15px] text-mute">
-                    {mine
-                      ? "Nothing on your list yet. Scan the barcode on a book you spot, or type a title to find it."
-                      : `${firstName(person.name)} hasn't added any books yet. You can add some for them too.`}
-                  </p>
-                </div>
+                <EmptyNote Icon={IconBook}>
+                  {mine ? "Nothing yet. Scan a book's barcode or type a title above." : `Nothing yet. You can add books for ${firstName(person.name)} too.`}
+                </EmptyNote>
               ) : (
                 <>
                   <div className="flex flex-col gap-2.5 pt-1 sm:flex-row sm:items-center sm:justify-between">

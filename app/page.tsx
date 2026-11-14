@@ -34,6 +34,7 @@ import { tookOutMessage, useQuickTake } from "@/components/stock/useQuickTake";
 import { Splash } from "@/components/ui/Screen";
 import { Avatar } from "@/components/ui/Avatar";
 import { Notice } from "@/components/ui/Notice";
+import { Tip } from "@/components/ui/Tip";
 import { Button } from "@/components/ui/Button";
 import { Toast } from "@/components/ui/Toast";
 import { IconCheck, IconChevronRight, IconHandOver, IconLeaf, IconScan, IconSearch, IconStar } from "@/components/ui/icons";
@@ -246,13 +247,19 @@ function HouseholdHome({ session, hh }: { session: Session; hh: ReturnType<typeo
         </div>
       </header>
 
+      {total > 0 && total < 40 ? (
+        <Tip id="home-plus">
+          The <b>+</b> button adds anything: a label, a whole shelf, or a line on a list. Search finds it again, wherever it is.
+        </Tip>
+      ) : null}
+
       {error ? <Notice>{error}</Notice> : null}
 
 
       {places && places.length > 0 && total === 0 ? (
         <FirstThingsTip />
       ) : places && places.length > 0 ? (
-        <section aria-labelledby="today-h" className="overflow-hidden rounded-[20px] border border-line bg-card shadow-[var(--shadow-card)]">
+        <section aria-labelledby="today-h" className="overflow-hidden rounded-[var(--radius-card)] border border-line bg-card shadow-[var(--shadow-card)]">
           <div className="flex items-baseline justify-between gap-3 px-4 pt-3.5 pb-1">
             <h2 id="today-h" className="font-display text-[15px] font-bold tracking-[-0.01em]">
               {attention.length > 0 ? "Use soon" : "Today"}

@@ -16,6 +16,7 @@ import { GroupSheet } from "@/components/lists/GroupSheet";
 import { groupNames, kindInfo, splitEntries, visibilityLine, type ListEntry, type ListPerson, type OwnList } from "@/lib/domain/ownLists";
 import { Button } from "@/components/ui/Button";
 import { Notice } from "@/components/ui/Notice";
+import { EmptyNote } from "@/components/ui/EmptyNote";
 import { Toast, type ToastData } from "@/components/ui/Toast";
 import { IconBasket, IconCheck, IconGift, IconHouse, IconLink, IconLock, IconPeople, IconPlus, IconX } from "@/components/ui/icons";
 import { loadMembers } from "@/lib/household";
@@ -264,10 +265,7 @@ function MyList({ session }: { session: Session }) {
       ) : (
         <>
           {open.length === 0 ? (
-            <div className="flex items-center gap-3.5 rounded-[var(--radius-card)] border-2 border-dashed border-line bg-sunk/40 p-5">
-              <IconCheck className="size-8 shrink-0 text-leaf" />
-              <p className="text-[15px] text-mute">{done.length > 0 ? "All done. " : "Nothing on it yet. "}Type above to add something.</p>
-            </div>
+            <EmptyNote Icon={IconCheck}>{done.length > 0 ? "All done. " : "Nothing on it yet. "}Type above to add something.</EmptyNote>
           ) : (
             <ul className="overflow-hidden rounded-[var(--radius-card)] border border-line bg-card shadow-[var(--shadow-card)]">
               {open.map((e) => (

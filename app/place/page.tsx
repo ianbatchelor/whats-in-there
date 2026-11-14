@@ -19,6 +19,7 @@ import { AppShell, SectionLabel } from "@/components/AppShell";
 import { Screen, Splash } from "@/components/ui/Screen";
 import { Button } from "@/components/ui/Button";
 import { Notice } from "@/components/ui/Notice";
+import { Tip } from "@/components/ui/Tip";
 import { Toast } from "@/components/ui/Toast";
 import { IconChevronLeft, IconChevronRight, IconGrid, IconList, IconLock, IconPencil, IconPeople, IconPlus, IconSearch, IconStack, IconSticker } from "@/components/ui/icons";
 import { PlacePhoto } from "@/components/art/PlacePhoto";
@@ -282,6 +283,8 @@ function Place({ me }: { me: string }) {
   // One level only: a box doesn't hold boxes.
   const boxes = family && !place.parentId ? boxesIn(family, place.id) : [];
   const canHoldBoxes = !place.parentId;
+  // On shelves and rails, one photo of the lot is the quickest start.
+  const shelfFirst = place.type === "bookshelf" || place.type === "wardrobe";
   const grid = keep && view === "grid";
   const lentHere = (items ?? []).filter((i) => i.lentTo).length;
   const count = items?.length ?? 0;
@@ -318,7 +321,7 @@ function Place({ me }: { me: string }) {
       placeId={place.id}
       type={place.type}
       have={(items ?? []).map((i) => i.productName)}
-      label="Tap to add some common things. You can edit them after."
+      label="Quick add"
       onAdded={(item, movementId) => {
         refresh(place.id);
         announce(`Added ${item.productName}`, movementId);
@@ -495,25 +498,40 @@ function Place({ me }: { me: string }) {
       {shown === null ? (
         <ItemListSkeleton rows={4} />
       ) : items!.length === 0 && boxes.length > 0 ? null : items!.length === 0 ? (
-        <div className="flex flex-col items-center gap-3 rounded-[24px] bg-sunk/40 px-6 py-8 text-center">
-          <h2 className="font-display text-xl font-bold">Nothing recorded here yet</h2>
-          <p className="max-w-sm text-sm text-mute">
-            Add what&apos;s in {place.name} as you put it in, like &ldquo;{info.thing}&rdquo;. It takes a few seconds per thing.
-          </p>
-          <div className="flex flex-wrap justify-center gap-2.5">
-            <Button onClick={() => setAdding(true)}>
+        <div className="flex flex-col gap-4 rounded-[var(--radius-card)] border border-line bg-card p-5 shadow-[var(--shadow-card)]">
+          <div>
+            <h2 className="font-display text-lg font-bold">Empty for now</h2>
+            <p className="mt-0.5 text-[14.5px] text-mute">
+              {shelfFirst ? `One photo of the ${place.type === "wardrobe" ? "rail" : "shelf"} lists everything on it.` : `Add things as you put them in, like “${info.thing}”.`}
+            </p>
+          </div>
+          {/* One clear next step; the other ways in are quieter links. */}
+          {shelfFirst ? (
+            <Button onClick={() => setMany(true)} className="self-start">
+              <IconStack /> {place.type === "wardrobe" ? "Snap the rail" : "Snap the shelf"}
+            </Button>
+          ) : (
+            <Button onClick={() => setAdding(true)} className="self-start">
               <IconPlus /> Add the first thing
             </Button>
-            <Button variant="ghost" onClick={() => setMany(true)}>
-              <IconStack /> Snap a whole shelf
-            </Button>
+          )}
+          <div className="flex flex-wrap gap-x-5 gap-y-1 text-[14.5px] font-semibold text-leaf">
+            {shelfFirst ? (
+              <button onClick={() => setAdding(true)} className="min-h-10">
+                Add one by one
+              </button>
+            ) : place.type === "freezer" || place.type === "fridge" ? null : (
+              <button onClick={() => setMany(true)} className="min-h-10">
+                Snap a whole shelf
+              </button>
+            )}
+            {canHoldBoxes && !guest ? (
+              <button onClick={() => setAddingBox(true)} className="min-h-10">
+                Add a box or shelf inside
+              </button>
+            ) : null}
           </div>
-          {canHoldBoxes && !guest ? (
-            <button onClick={() => setAddingBox(true)} className="min-h-11 text-[15px] font-semibold text-leaf">
-              Or add a box or shelf inside it
-            </button>
-          ) : null}
-          {guest ? null : <div className="mt-2 w-full border-t border-line pt-5 text-left">{starters}</div>}
+          {guest ? null : <div className="border-t border-line pt-4">{starters}</div>}
         </div>
       ) : shown.length === 0 ? (
         <p className="text-mute">
@@ -550,6 +568,11 @@ function Place({ me }: { me: string }) {
         ))
       ) : (
         <section aria-labelledby="items-h" className="flex flex-col gap-2.5">
+          {guest || filtering ? null : (
+            <Tip id="place-minus">
+              Tap <b>&minus;</b> to take one out. Tap a thing to move it, lend it or change it.
+            </Tip>
+          )}
           <SectionLabel id="items-h">
             {filtering
               ? countThings(shown.length)

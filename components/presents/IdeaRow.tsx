@@ -6,8 +6,10 @@ import { wishPictureUrl } from "@/lib/presents";
 export type ClaimView = { byMe: boolean; name: string; fromLink: boolean };
 
 /**
- * One idea as a gift tag: a punched tag edge in the person's wrapping colour, then the idea, its
- * note, price and shop. On someone else's list, a button to say you're getting it.
+ * One idea as a gift tag: a punched tag edge in the person's wrapping colour, then the shop picture,
+ * the idea (two lines at most; the whole name is in its details), note, price and shop. On someone
+ * else's list, a button to say you're getting it. Once someone is, the tag turns green and says who,
+ * and the name stays easy to read.
  */
 export function IdeaRow({
   idea,
@@ -33,14 +35,14 @@ export function IdeaRow({
   const taken = !!claim;
   return (
     <li
-      className={`rise relative flex overflow-hidden rounded-[var(--radius-card)] border border-line bg-card shadow-[var(--shadow-card)] ${taken && !claim.byMe ? "opacity-75" : ""}`}
+      className={`rise relative flex overflow-hidden rounded-[var(--radius-card)] border shadow-[var(--shadow-card)] ${taken ? "border-ok/25 bg-ok-bg/45" : "border-line bg-card"}`}
       aria-busy={busy || undefined}
     >
-      <span aria-hidden="true" className="relative w-3.5 shrink-0" style={{ background: wrap.paper }}>
+      <span aria-hidden="true" className={`relative w-3.5 shrink-0 ${taken ? "bg-ok" : ""}`} style={taken ? undefined : { background: wrap.paper }}>
         <span className="absolute top-4 left-1/2 size-[7px] -translate-x-1/2 rounded-full bg-card ring-1 ring-black/10" />
       </span>
       {idea.imagePath ? (
-        <button onClick={onOpen} tabIndex={-1} aria-hidden="true" className="my-3 ml-3 size-16 shrink-0 overflow-hidden rounded-xl bg-white ring-1 ring-line">
+        <button onClick={onOpen} tabIndex={-1} aria-hidden="true" className="my-3 ml-3 size-20 shrink-0 overflow-hidden rounded-xl bg-white ring-1 ring-line">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={wishPictureUrl(idea.imagePath)} alt="" loading="lazy" className="h-full w-full object-contain" />
         </button>
@@ -50,7 +52,9 @@ export function IdeaRow({
           {idea.favourite ? (
             <IconStar className="mt-[3px] size-4 shrink-0 fill-[#e9b949]! stroke-[#c8962a]!" />
           ) : null}
-          <span className={`min-w-0 font-semibold leading-snug ${taken && !claim.byMe ? "line-through decoration-mute/50" : ""}`}>{idea.title}</span>
+          <span className="line-clamp-2 min-w-0 font-semibold leading-snug" title={idea.title}>
+            {idea.title}
+          </span>
         </span>
         {idea.note ? <span className="line-clamp-2 text-[14px] leading-snug text-mute">{idea.note}</span> : null}
         {idea.price || idea.link || addedBy ? (
@@ -70,10 +74,8 @@ export function IdeaRow({
           </span>
         ) : null}
         {claim ? (
-          <span className="flex items-center gap-1.5 pt-0.5 text-[13px] font-semibold text-ok">
-            <span className="grid size-[18px] place-items-center rounded-full bg-ok-bg">
-              <IconCheck className="size-3" />
-            </span>
+          <span className="mt-0.5 inline-flex items-center gap-1.5 self-start rounded-full bg-ok px-2.5 py-1 text-[12.5px] font-semibold text-white dark:text-[#0d1f17]">
+            <IconCheck className="size-3.5" />
             {claim.byMe ? "You're getting this" : `${claim.name} is getting this`}
           </span>
         ) : null}

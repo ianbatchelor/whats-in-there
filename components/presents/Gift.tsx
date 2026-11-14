@@ -74,13 +74,13 @@ export function GiftTag({ children, className = "", style }: { children: React.R
   );
 }
 
-/** The wide wrapped band at the top of someone's list: paper, a ribbon across, and a bow. */
+/** The wrapped band at the top of someone's list: paper, a ribbon down the side, and a bow. Kept short so the wishes come first. */
 export function WrappedBand({ wrap, children, className = "" }: { wrap: Wrap; children: React.ReactNode; className?: string }) {
   return (
-    <div className={`relative isolate overflow-hidden rounded-[22px] shadow-[0_18px_38px_-24px_rgba(21,33,28,0.75)] ${className}`} style={paperStyle(wrap)}>
-      <span aria-hidden="true" className="absolute inset-y-0 right-[18%] -z-10 w-5" style={{ background: wrap.ribbon, boxShadow: "inset 2px 0 0 rgba(255,255,255,0.25), inset -2px 0 0 rgba(0,0,0,0.12)" }} />
-      <Bow color={wrap.ribbon} className="absolute top-1 right-[calc(18%-34px)] -z-10 w-[88px] drop-shadow-[0_3px_3px_rgba(0,0,0,0.3)]" />
-      <div className="relative px-5 pt-5 pb-5 pr-[30%] sm:px-7 sm:pt-7 sm:pr-[32%]">{children}</div>
+    <div className={`relative isolate overflow-hidden rounded-[20px] shadow-[0_14px_30px_-22px_rgba(21,33,28,0.75)] ${className}`} style={paperStyle(wrap)}>
+      <span aria-hidden="true" className="absolute inset-y-0 right-[12%] -z-10 w-4" style={{ background: wrap.ribbon, boxShadow: "inset 2px 0 0 rgba(255,255,255,0.25), inset -2px 0 0 rgba(0,0,0,0.12)" }} />
+      <Bow color={wrap.ribbon} className="absolute top-0.5 right-[calc(12%-24px)] -z-10 w-[64px] drop-shadow-[0_3px_3px_rgba(0,0,0,0.3)]" />
+      <div className="relative px-4 py-4 pr-[24%] sm:px-6 sm:py-5 sm:pr-[22%]">{children}</div>
     </div>
   );
 }
