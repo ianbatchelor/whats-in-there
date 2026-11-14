@@ -20,6 +20,7 @@ const messages: Record<string, string> = {
   name_needed: "Add your first name, so others know who's getting it.",
   too_many_books: "That list is full for now. Take a few books off, or try again later.",
   too_many_lists: "This household already has lots of friends' lists. Ask them to make room first.",
+  list_not_empty: "You already have ideas on a list of your own here. Move them across or take them off first.",
   last_owner: "You're the only owner. Make someone else an owner before you leave.",
 };
 

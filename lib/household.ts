@@ -1,7 +1,8 @@
 import { supabase } from "@/lib/supabase/client";
 import { KEYS, readLocal, writeLocal } from "@/lib/storage";
 
-export type Role = "owner" | "member";
+/** "family": has their own home, and is here for presents and Christmas only. */
+export type Role = "owner" | "member" | "family";
 export type Membership = { householdId: string; name: string; role: Role };
 export type Member = { userId: string; role: Role; joinedAt: string; displayName: string };
 export type LocationType =
@@ -67,10 +68,24 @@ export async function loadMemberships(userId: string): Promise<Membership[]> {
   });
 }
 
-/** Picks the remembered household if the user still belongs to it, otherwise the first one. */
+/** Households you live in (not ones where you're family). */
+export function homesOf(memberships: Membership[]): Membership[] {
+  return memberships.filter((m) => m.role !== "family");
+}
+
+/** Households where you're family: their present lists, nothing else. */
+export function familiesOf(memberships: Membership[]): Membership[] {
+  return memberships.filter((m) => m.role === "family");
+}
+
+/**
+ * Picks the remembered home if the user still lives there, otherwise the first one. Households
+ * where they're only family are never "current": the app has nothing to show from them but presents.
+ */
 export function pickCurrent(memberships: Membership[]): Membership | null {
+  const homes = homesOf(memberships);
   const remembered = readLocal(KEYS.household);
-  const found = memberships.find((m) => m.householdId === remembered) ?? memberships[0] ?? null;
+  const found = homes.find((m) => m.householdId === remembered) ?? homes[0] ?? null;
   if (found) writeLocal(KEYS.household, found.householdId);
   return found;
 }
@@ -124,4 +139,26 @@ export async function loadPlaces(householdId: string): Promise<Place[]> {
     imagePath: (l.image_path as string | null) ?? null,
     parentId: (l.parent_id as string | null) ?? null,
   }));
+}
+
+export type InvitePreview = { household: string; invitedBy: string; role: Role };
+
+/** What an invitation link is for, before joining. Null when it's used, stopped or out of date. */
+export async function loadInvitePreview(token: string): Promise<InvitePreview | null> {
+  const { data, error } = await supabase().rpc("invitation_preview", { p_token: token });
+  if (error) throw error;
+  const row = (data as { household: string; invited_by: string; role: Role }[] | null)?.[0];
+  return row ? { household: row.household, invitedBy: row.invited_by, role: row.role } : null;
+}
+
+/** Presents can come from your own home or from a family you're part of. */
+export function defaultPresentsCircle(memberships: Membership[], remembered: string | null, home: string | null): Membership | null {
+  return (
+    memberships.find((m) => m.householdId === remembered) ??
+    // Family elsewhere is usually the bigger present circle (a grown-up daughter's own flat is just her).
+    familiesOf(memberships)[0] ??
+    memberships.find((m) => m.householdId === home) ??
+    memberships[0] ??
+    null
+  );
 }

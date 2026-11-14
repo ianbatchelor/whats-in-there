@@ -20,8 +20,13 @@ export default function HelpPage() {
 
       <h2>Sharing with your household</h2>
       <p>
-        Open <b>Household</b> and tap <b>Create an invitation link</b>. Each link works once, for one person, and expires after 7
-        days. Everyone in the household sees the same places and things, and changes appear for everyone straight away.
+        Open <b>Household</b> and tap <b>Invite someone</b>. Each link works once, for one person, and expires after 7
+        days. Everyone who lives in the household sees the same places and things, and changes appear for everyone straight away.
+      </p>
+      <p>
+        For family with their own home, such as a grown-up son or daughter, choose <b>Family with their own home</b>. They see
+        everyone&apos;s present lists and keep their own, and nothing else. If you already kept a list for them, they can tap
+        <b> Is this you?</b> on it to make it theirs.
       </p>
 
       <h2>Adding things</h2>

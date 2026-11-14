@@ -9,7 +9,7 @@ import { friendlyError } from "@/lib/supabase/errors";
 import { publicOrigin } from "@/lib/config";
 import { buildInviteUrl } from "@/lib/domain/invite";
 import { formatDay } from "@/lib/domain/dates";
-import { loadMembers, loadMemberships, pickCurrent, rememberHousehold, type Member, type Membership } from "@/lib/household";
+import { familiesOf, homesOf, loadMembers, loadMemberships, pickCurrent, rememberHousehold, type Member, type Membership, type Role } from "@/lib/household";
 import { KEYS, writeLocal } from "@/lib/storage";
 import { Splash } from "@/components/ui/Screen";
 import { AppShell, SectionLabel } from "@/components/AppShell";
@@ -24,7 +24,7 @@ import Link from "next/link";
 import { DeleteAccountSheet } from "@/components/account/DeleteAccountSheet";
 import { LegalLinks } from "@/components/common/LegalLinks";
 
-type Invite = { id: string; expires_at: string; created_at: string };
+type Invite = { id: string; expires_at: string; created_at: string; role: Role };
 
 export default function HouseholdPage() {
   return <AuthGate>{(session) => <Household session={session} />}</AuthGate>;
@@ -34,6 +34,14 @@ function Household({ session }: { session: Session }) {
   const router = useRouter();
   const [all, setAll] = useState<Membership[]>([]);
   const [current, setCurrent] = useState<Membership | null>(null);
+  /** True once memberships have loaded (someone who's only family elsewhere has no current household). */
+  const [loaded, setLoaded] = useState(false);
+  /** Choosing who to invite: someone who lives here, or family with their own home. */
+  const [inviting, setInviting] = useState(false);
+  const [inviteKind, setInviteKind] = useState<"member" | "family">("family");
+  const [linkKind, setLinkKind] = useState<"member" | "family">("member");
+  /** The family you're about to leave. */
+  const [leavingFamily, setLeavingFamily] = useState<Membership | null>(null);
   const [members, setMembers] = useState<Member[]>([]);
   const [invites, setInvites] = useState<Invite[]>([]);
   const [link, setLink] = useState<string | null>(null);
@@ -53,13 +61,15 @@ function Household({ session }: { session: Session }) {
     const memberships = await loadMemberships(session.user.id);
     setAll(memberships);
     const chosen = pickCurrent(memberships);
-    if (!chosen) return router.replace("/welcome/");
+    if (!chosen && familiesOf(memberships).length === 0) return router.replace("/welcome/");
     setCurrent(chosen);
+    setLoaded(true);
+    if (!chosen) return;
     setMembers(await loadMembers(chosen.householdId));
     if (chosen.role === "owner") {
       const { data } = await supabase()
         .from("household_invitations")
-        .select("id, expires_at, created_at")
+        .select("id, expires_at, created_at, role")
         .eq("household_id", chosen.householdId)
         .is("used_at", null)
         .is("revoked_at", null)
@@ -89,11 +99,29 @@ function Household({ session }: { session: Session }) {
 
   const createInvite = () =>
     run("invite", async () => {
-      const { data, error } = await supabase().rpc("create_invitation", { p_household: current!.householdId });
+      const { data, error } = await supabase().rpc("create_invitation", { p_household: current!.householdId, p_role: inviteKind });
       if (error) throw error;
       const row = (data as { token: string }[])[0]!;
       setLink(buildInviteUrl(publicOrigin(), row.token));
+      setLinkKind(inviteKind);
       setCopied(false);
+      setInviting(false);
+      await load();
+    });
+
+  const setRole = (m: Member, role: Role) =>
+    run(`role-${m.userId}`, async () => {
+      const { error } = await supabase().rpc("set_member_role", { p_household: current!.householdId, p_user: m.userId, p_role: role });
+      if (error) throw error;
+      setManaging(null);
+      await load();
+    });
+
+  const leaveFamily = (f: Membership) =>
+    run(`leave-${f.householdId}`, async () => {
+      const { error } = await supabase().rpc("leave_household", { p_household: f.householdId });
+      if (error) throw error;
+      setLeavingFamily(null);
       await load();
     });
 
@@ -101,7 +129,10 @@ function Household({ session }: { session: Session }) {
     if (!link) return;
     try {
       if (navigator.share) {
-        await navigator.share({ title: `Join ${current?.name} on See What's in Here`, url: link });
+        await navigator.share({
+          title: linkKind === "family" ? `Join ${current?.name} as family on See What's in Here` : `Join ${current?.name} on See What's in Here`,
+          url: link,
+        });
         return;
       }
       await navigator.clipboard.writeText(link);
@@ -159,13 +190,110 @@ function Household({ session }: { session: Session }) {
       router.replace("/sign-in/");
     });
 
-  if (!current) return error ? <AppShell><Notice>{error}</Notice></AppShell> : <Splash />;
+  const homes = homesOf(all);
+  const families = familiesOf(all);
+  const atHome = members.filter((m) => m.role !== "family");
+  const family = members.filter((m) => m.role === "family");
+
+  const familySection =
+    families.length > 0 ? (
+      <section aria-labelledby="families-h" className="flex flex-col gap-2.5">
+        <SectionLabel id="families-h">Family you&apos;re part of</SectionLabel>
+        <ul className="overflow-hidden rounded-[var(--radius-card)] border border-line bg-card shadow-[var(--shadow-card)]">
+          {families.map((f) => (
+            <li key={f.householdId} className="flex items-center gap-3 border-t border-line px-3.5 py-3 first:border-t-0">
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-display font-bold">{f.name}</p>
+                <p className="text-xs text-mute">Presents and Christmas only. They don&apos;t see your home.</p>
+              </div>
+              <Link href="/presents/" className="shrink-0 px-2 text-sm font-semibold text-leaf">
+                Presents
+              </Link>
+              <button
+                onClick={() => setLeavingFamily(f)}
+                aria-label={`Leave ${f.name}`}
+                className="grid size-11 shrink-0 place-items-center rounded-full text-mute transition hover:bg-sunk hover:text-fg"
+              >
+                <IconMore className="size-5" />
+              </button>
+            </li>
+          ))}
+        </ul>
+      </section>
+    ) : null;
+
+  const leaveFamilySheet = (
+    <Sheet open={leavingFamily !== null} onClose={() => setLeavingFamily(null)} title={`Leave ${leavingFamily?.name ?? ""}?`}>
+      <p className="text-mute">You&apos;ll stop seeing their present lists, and your own list there goes too. They can invite you back any time.</p>
+      {error ? <Notice>{error}</Notice> : null}
+      <Button variant="go" className="w-full bg-warn" busy={busy === `leave-${leavingFamily?.householdId}`} onClick={() => leavingFamily && leaveFamily(leavingFamily)}>
+        Leave
+      </Button>
+      <Button variant="quiet" onClick={() => setLeavingFamily(null)}>Stay</Button>
+    </Sheet>
+  );
+
+  if (!current) {
+    if (!loaded) return error ? <AppShell><Notice>{error}</Notice></AppShell> : <Splash />;
+    // Family elsewhere, with no home of their own here (yet).
+    return (
+      <AppShell>
+        <PageHeader title="You" sub="You're here as family. Set up a household any time to keep track of your own home." />
+        {error ? <Notice>{error}</Notice> : null}
+        {familySection}
+        <Button variant="ghost" onClick={() => router.push("/welcome/")} className="w-full">
+          Set up my own household
+        </Button>
+        <div className="flex flex-col gap-8 border-t border-line pt-6">
+          <Button variant="ghost" busy={busy === "signout"} onClick={signOut} className="w-full">
+            Sign out
+          </Button>
+        </div>
+        <section aria-labelledby="account-h" className="flex flex-col gap-2.5">
+          <SectionLabel id="account-h">Your account</SectionLabel>
+          <div className="flex flex-col gap-1 rounded-[var(--radius-card)] border border-line bg-card px-3.5 py-3 shadow-[var(--shadow-card)]">
+            <p className="truncate text-sm text-mute">Signed in as {session.user.email}</p>
+            <Button variant="danger" className="min-h-10 self-start px-0! text-[13.5px] font-semibold" onClick={() => setDeleting(true)}>
+              Delete my account
+            </Button>
+          </div>
+          <LegalLinks className="justify-center pt-2" />
+        </section>
+        <DeleteAccountSheet open={deleting} onClose={() => setDeleting(false)} session={session} />
+        {leaveFamilySheet}
+      </AppShell>
+    );
+  }
+
+  const personRow = (m: Member, i: number) => (
+    <li key={m.userId} className="flex items-center gap-3 border-t border-line px-3.5 py-3 first:border-t-0">
+      <Avatar name={m.displayName} index={i} size={36} />
+      <div className="min-w-0 flex-1">
+        <p className="truncate font-display font-bold">
+          {m.displayName}
+          {m.userId === session.user.id ? <span className="font-normal text-mute"> (you)</span> : null}
+        </p>
+        <p className="text-xs text-mute">
+          {roleLabel(m.role)} · joined {formatDay(m.joinedAt)}
+        </p>
+      </div>
+      {isOwner && m.userId !== session.user.id ? (
+        <button
+          onClick={() => setManaging({ member: m, confirm: false })}
+          aria-label={`Options for ${m.displayName}`}
+          className="grid size-11 shrink-0 place-items-center rounded-full text-mute transition hover:bg-sunk hover:text-fg"
+        >
+          <IconMore className="size-5" />
+        </button>
+      ) : null}
+    </li>
+  );
 
   return (
     <AppShell>
       <PageHeader
         title={current.name}
-        sub={<>{members.length === 1 ? "Just you so far" : `${members.length} people`} · you&apos;re {isOwner ? "an owner" : "a member"}</>}
+        sub={<>{atHome.length === 1 ? "Just you at home" : `${atHome.length} people at home`}{family.length ? ` and ${family.length} family` : ""} · you&apos;re {isOwner ? "an owner" : "a member"}</>}
         action={
           isOwner ? (
             <Button variant="ghost" className="min-h-10! px-4!" onClick={() => { setNewName(current.name); setRenaming(true); }}>
@@ -192,55 +320,51 @@ function Household({ session }: { session: Session }) {
       </Link>
 
       <section aria-labelledby="people-h" className="flex flex-col gap-2.5">
-        <SectionLabel id="people-h">People</SectionLabel>
+        <SectionLabel id="people-h">At home · sees everything</SectionLabel>
         <ul className="overflow-hidden rounded-[var(--radius-card)] border border-line bg-card shadow-[var(--shadow-card)]">
-          {members.map((m, i) => (
-            <li key={m.userId} className="flex items-center gap-3 border-t border-line px-3.5 py-3 first:border-t-0">
-              <Avatar name={m.displayName} index={i} size={36} />
-              <div className="min-w-0 flex-1">
-                <p className="truncate font-display font-bold">
-                  {m.displayName}
-                  {m.userId === session.user.id ? <span className="font-normal text-mute"> (you)</span> : null}
-                </p>
-                <p className="text-xs text-mute">
-                  {m.role === "owner" ? "Owner" : "Member"} · joined {formatDay(m.joinedAt)}
-                </p>
-              </div>
-              {isOwner && m.userId !== session.user.id ? (
-                <button
-                  onClick={() => setManaging({ member: m, confirm: false })}
-                  aria-label={`Options for ${m.displayName}`}
-                  className="grid size-11 shrink-0 place-items-center rounded-full text-mute transition hover:bg-sunk hover:text-fg"
-                >
-                  <IconMore className="size-5" />
-                </button>
-              ) : null}
-            </li>
-          ))}
+          {atHome.map(personRow)}
         </ul>
       </section>
+
+      {family.length > 0 ? (
+        <section aria-labelledby="family-h" className="flex flex-col gap-2.5">
+          <SectionLabel id="family-h">Family · presents and Christmas</SectionLabel>
+          <ul className="overflow-hidden rounded-[var(--radius-card)] border border-line bg-card shadow-[var(--shadow-card)]">
+            {family.map((m, i) => personRow(m, atHome.length + i))}
+          </ul>
+          <p className="px-1 text-[13.5px] leading-snug text-mute">
+            Family see everyone&apos;s present lists and can say what they&apos;re getting. They don&apos;t see your places, shopping list or anything else.
+          </p>
+        </section>
+      ) : null}
 
       {isOwner ? (
         <section aria-labelledby="invite-h" className="flex flex-col gap-2.5">
           <SectionLabel id="invite-h">Invite someone</SectionLabel>
           {link ? (
             <div className="flex flex-col gap-3 rounded-[var(--radius-card)] border border-line bg-card p-4 shadow-[var(--shadow-card)]">
-              <p className="text-sm">Send this link to one person. It works once and expires in 7 days.</p>
+              <p className="text-sm">
+                {linkKind === "family"
+                  ? "Send this link to one family member. They'll see the present lists, nothing else. It works once and expires in 7 days."
+                  : "Send this link to one person who lives here. It works once and expires in 7 days."}
+              </p>
               <code className="block rounded-xl bg-sunk px-3 py-2 font-mono text-xs break-all text-mute select-all">{link}</code>
               <Button onClick={copyLink} className="w-full">
                 {copied ? <><IconCheck /> Copied</> : <><IconCopy /> Share link</>}
               </Button>
             </div>
           ) : (
-            <Button busy={busy === "invite"} onClick={createInvite} className="w-full">
-              Create an invitation link
+            <Button onClick={() => setInviting(true)} className="w-full">
+              Invite someone
             </Button>
           )}
           {invites.length > 0 ? (
             <ul className="flex flex-col gap-1.5 text-sm">
               {invites.map((inv) => (
                 <li key={inv.id} className="flex items-center justify-between gap-2 text-mute">
-                  <span>Link made {formatDay(inv.created_at, { year: false })}, expires {formatDay(inv.expires_at, { year: false })}</span>
+                  <span>
+                    {inv.role === "family" ? "Family link" : "Link"} made {formatDay(inv.created_at, { year: false })}, expires {formatDay(inv.expires_at, { year: false })}
+                  </span>
                   <Button variant="danger" className="min-h-0! px-0! py-0.5! text-sm" busy={busy === `revoke-${inv.id}`} onClick={() => revoke(inv.id)}>
                     Cancel
                   </Button>
@@ -251,11 +375,13 @@ function Household({ session }: { session: Session }) {
         </section>
       ) : null}
 
-      {all.length > 1 ? (
+      {familySection}
+
+      {homes.length > 1 ? (
         <section aria-labelledby="switch-h" className="flex flex-col gap-2.5">
           <SectionLabel id="switch-h">Your households</SectionLabel>
           <div className="flex flex-wrap gap-2">
-            {all.map((h) => (
+            {homes.map((h) => (
               <button
                 key={h.householdId}
                 onClick={() => { rememberHousehold(h.householdId); router.replace("/"); }}
@@ -299,12 +425,14 @@ function Household({ session }: { session: Session }) {
 
       <Sheet open={confirmLeave} onClose={() => setConfirmLeave(false)} title="Leave this household?">
         <p className="text-mute">
-          {members.length === 1
-            ? "You're the only member, so the household and everything in it will be deleted."
+          {atHome.length === 1
+            ? family.length
+              ? "You're the only one living here, so the household and everything in it will be deleted, and family lose its present lists."
+              : "You're the only member, so the household and everything in it will be deleted."
             : "You'll stop seeing its places and everything in them. Someone can invite you back later."}
         </p>
         <Button variant="go" className="w-full bg-warn" busy={busy === "leave"} onClick={leave}>
-          {members.length === 1 ? "Delete household" : "Leave household"}
+          {atHome.length === 1 ? "Delete household" : "Leave household"}
         </Button>
         <Button variant="quiet" onClick={() => setConfirmLeave(false)}>Keep it</Button>
       </Sheet>
@@ -313,8 +441,11 @@ function Household({ session }: { session: Session }) {
           managing.confirm ? (
             <div className="flex flex-col gap-4">
               <p>
-                Remove <b>{managing.member.displayName}</b> from {current.name}? They&apos;ll stop seeing its places straight away. Things they added stay
-                here, and you can invite them back any time.
+                Remove <b>{managing.member.displayName}</b> from {current.name}?{" "}
+                {managing.member.role === "family"
+                  ? "They'll stop seeing the present lists straight away, and their own list here goes too."
+                  : "They'll stop seeing its places straight away. Things they added stay here."}{" "}
+                You can invite them back any time.
               </p>
               {error ? <Notice>{error}</Notice> : null}
               <div className="flex gap-2">
@@ -334,22 +465,67 @@ function Household({ session }: { session: Session }) {
           ) : (
             <div className="flex flex-col gap-2">
               <p className="text-sm text-mute">
-                {managing.member.role === "owner" ? "Owner" : "Member"} · joined {formatDay(managing.member.joinedAt)}
+                {roleLabel(managing.member.role)} · joined {formatDay(managing.member.joinedAt)}
               </p>
               {managing.member.role === "member" ? (
-                <Button variant="ghost" className="justify-start" busy={busy === `owner-${managing.member.userId}`} onClick={() => makeOwner(managing.member)}>
-                  Make an owner
-                  <span className="ml-auto text-sm font-normal text-mute">Can invite and remove people</span>
+                <>
+                  <Button variant="ghost" className="justify-start" busy={busy === `owner-${managing.member.userId}`} onClick={() => makeOwner(managing.member)}>
+                    Make an owner
+                    <span className="ml-auto text-sm font-normal text-mute">Can invite and remove people</span>
+                  </Button>
+                  <Button variant="ghost" className="justify-start" busy={busy === `role-${managing.member.userId}`} onClick={() => setRole(managing.member, "family")}>
+                    Family only
+                    <span className="ml-auto text-sm font-normal text-mute">Moved out: presents, nothing else</span>
+                  </Button>
+                </>
+              ) : managing.member.role === "family" ? (
+                <Button variant="ghost" className="justify-start" busy={busy === `role-${managing.member.userId}`} onClick={() => setRole(managing.member, "member")}>
+                  Lives here now
+                  <span className="ml-auto text-sm font-normal text-mute">Sees every place and list</span>
                 </Button>
               ) : null}
               <Button variant="ghost" className="justify-start text-warn" onClick={() => setManaging({ ...managing, confirm: true })}>
-                Remove from household…
+                {managing.member.role === "family" ? "Remove from the family…" : "Remove from household…"}
               </Button>
               {error ? <Notice>{error}</Notice> : null}
             </div>
           )
         ) : null}
       </Sheet>
+      <Sheet open={inviting} onClose={() => setInviting(false)} title="Invite someone">
+        <p className="-mt-2 text-mute">How do they fit in?</p>
+        <div role="radiogroup" aria-label="Who are you inviting" className="flex flex-col gap-2.5">
+          {(
+            [
+              ["member", "They live here", "Everything: every place, list and the shopping."],
+              ["family", "Family with their own home", "Presents and Christmas only. They won't see your places or anything else."],
+            ] as const
+          ).map(([kind, title, detail]) => (
+            <button
+              key={kind}
+              role="radio"
+              aria-checked={inviteKind === kind}
+              onClick={() => setInviteKind(kind)}
+              className={`flex items-center gap-3 rounded-2xl border-[1.5px] px-4 py-3 text-left transition ${inviteKind === kind ? "border-go bg-ice" : "border-line bg-card"}`}
+            >
+              <span className="min-w-0 flex-1">
+                <b className="block font-display text-[16px]">{title}</b>
+                <span className="text-[13.5px] text-mute">{detail}</span>
+              </span>
+              <span className={`size-[22px] shrink-0 rounded-full border-2 ${inviteKind === kind ? "border-[7px] border-go" : "border-line"}`} aria-hidden="true" />
+            </button>
+          ))}
+        </div>
+        {error ? <Notice>{error}</Notice> : null}
+        <Button busy={busy === "invite"} onClick={createInvite} className="w-full">
+          Make an invite link
+        </Button>
+      </Sheet>
+      {leaveFamilySheet}
     </AppShell>
   );
+}
+
+function roleLabel(role: Role): string {
+  return role === "owner" ? "Owner" : role === "family" ? "Family" : "Member";
 }
