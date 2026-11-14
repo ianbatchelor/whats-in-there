@@ -22,7 +22,7 @@ export function useSharedWithMe(version = 0): SharedPlace[] | null {
 }
 
 /** Cards for shared places, to sit in a grid of places. Each says whose it is. */
-export function SharedPlaceCards({ places, offset = 0 }: { places: SharedPlace[]; offset?: number }) {
+export function SharedPlaceCards({ places, offset = 0, big = false }: { places: SharedPlace[]; offset?: number; big?: boolean }) {
   return (
     <>
       {places.map((p, i) => (
@@ -31,6 +31,7 @@ export function SharedPlaceCards({ places, offset = 0 }: { places: SharedPlace[]
           index={offset + i}
           place={{ id: p.id, name: p.name, type: p.type, itemCount: p.things, imagePath: p.imagePath }}
           sub={`${p.household} · ${countThings(p.things)}`}
+          big={big}
         />
       ))}
     </>

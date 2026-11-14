@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useQueryParam } from "@/lib/hooks/useQueryParam";
 import { BrandMark, Wordmark } from "@/components/brand/BrandMark";
-import { IconActivity, IconHome, IconList, IconPeople, IconScan, IconSearch } from "@/components/ui/icons";
+import { IconActivity, IconHome, IconList, IconPeople, IconPlus, IconSearch } from "@/components/ui/icons";
 
 /** Pages reached from the Lists tab, so the tab stays lit while you're on one of them. */
 const LIST_PAGES = ["lists", "list", "my-list", "presents", "books", "lent", "season", "christmas"];
@@ -23,7 +24,7 @@ const NAV: NavItem[] = [
   { href: "/", label: "Home", Icon: IconHome, match: (p: string) => p === "/" || p.startsWith("/place") },
   { href: "/lists/", label: "Lists", Icon: IconList, match: (p: string) => LIST_PAGES.includes(p.split("/")[1] ?? "") },
   { href: "/search/", label: "Search", Icon: IconSearch, only: "desktop", match: (p: string) => p.startsWith("/search") },
-  { href: "/add/", label: "Add", Icon: IconScan, primary: true, match: (p: string) => p.startsWith("/add") },
+  { href: "/add/", label: "Add", Icon: IconPlus, primary: true, match: (p: string) => p.startsWith("/add") },
   { href: "/activity/", label: "Activity", Icon: IconActivity, match: (p: string) => p.startsWith("/activity") },
   { href: "/household/", label: "People", Icon: IconPeople, match: (p: string) => p.startsWith("/household") },
 ];
@@ -32,8 +33,11 @@ const NAV: NavItem[] = [
  * Frame for signed-in screens: bottom tabs on phones, a sidebar on wide screens.
  * Every tab is a real screen; nothing here is decoration.
  */
-export function AppShell({ children, wide = false, rail }: { children: React.ReactNode; wide?: boolean; rail?: React.ReactNode }) {
+export function AppShell({ children, wide = false, rail, roomy = false }: { children: React.ReactNode; wide?: boolean; rail?: React.ReactNode; /** More space between sections (Home). */ roomy?: boolean }) {
   const path = usePathname() || "/";
+  // From a place, Add starts out adding to that place.
+  const placeId = useQueryParam("id");
+  const addHref = path.startsWith("/place") && placeId ? `/add/?place=${encodeURIComponent(placeId)}` : "/add/";
   return (
     <div className="min-h-dvh bg-bg lg:flex">
       <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col gap-7 border-r border-line bg-card/60 px-4 py-6 lg:flex">
@@ -59,18 +63,18 @@ export function AppShell({ children, wide = false, rail }: { children: React.Rea
             );
           })}
           <Link
-            href="/add/"
+            href={addHref}
             aria-current={path.startsWith("/add") ? "page" : undefined}
             className="mt-3 flex min-h-11 items-center justify-center gap-2.5 rounded-xl bg-go text-[14.5px] font-semibold text-on-go transition hover:opacity-90"
           >
-            <IconScan className="size-5" />
-            Add or scan
+            <IconPlus className="size-5" />
+            Add
           </Link>
         </nav>
       </aside>
 
       <main
-        className={`mx-auto flex w-full flex-col gap-6 px-4 pt-[max(16px,env(safe-area-inset-top))] pb-[calc(96px+env(safe-area-inset-bottom))] sm:px-6 lg:px-10 lg:pt-10 lg:pb-16 ${
+        className={`mx-auto flex w-full flex-col ${roomy ? "gap-7 sm:gap-8" : "gap-6"} px-4 pt-[max(16px,env(safe-area-inset-top))] pb-[calc(96px+env(safe-area-inset-bottom))] sm:px-6 lg:px-10 lg:pt-10 lg:pb-16 ${
           wide ? "max-w-6xl" : "max-w-3xl"
         }`}
       >
@@ -91,7 +95,7 @@ export function AppShell({ children, wide = false, rail }: { children: React.Rea
             return (
               <li key={href}>
                 {primary ? (
-                  <Link href={href} aria-current={active ? "page" : undefined} aria-label="Add or scan" className="flex min-h-[60px] items-start justify-center">
+                  <Link href={addHref} aria-current={active ? "page" : undefined} aria-label="Add something" className="flex min-h-[60px] items-start justify-center">
                     <span className="-mt-4 grid size-[54px] place-items-center rounded-[18px] bg-go text-on-go shadow-[0_10px_20px_-8px_rgba(30,74,56,0.65)] ring-4 ring-bg transition active:scale-95">
                       <Icon className="size-6" />
                     </span>
