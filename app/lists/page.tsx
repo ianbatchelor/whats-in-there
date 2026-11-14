@@ -17,8 +17,8 @@ import { isLongLent } from "@/lib/domain/lending";
 import type { StockItem } from "@/lib/domain/stock";
 import { Notice } from "@/components/ui/Notice";
 import { ListSettingsSheet } from "@/components/lists/ListSettingsSheet";
-import { createList, loadEntries, loadLists } from "@/lib/ownLists";
-import { listCaption, listsForTab, splitEntries, type ListEntry, type OwnList } from "@/lib/domain/ownLists";
+import { createList, loadEntries, loadLists, loadPeople } from "@/lib/ownLists";
+import { listCaption, listsForTab, splitEntries, type ListEntry, type ListPerson, type OwnList } from "@/lib/domain/ownLists";
 import { supabase } from "@/lib/supabase/client";
 import {
   IconBasket,
@@ -31,6 +31,7 @@ import {
   IconLeaf,
   IconList,
   IconLock,
+  IconPeople,
   IconPlus,
 } from "@/components/ui/icons";
 
@@ -47,15 +48,18 @@ type Row = {
   n: number | null;
   /** Something wants doing: the count shows in the late colour. */
   urgent?: boolean;
+  /** A group list: people outside the household. */
+  group?: boolean;
 };
 
 const KIND_ICON = { todo: IconList, ideas: IconBulb, buy: IconBasket } as const;
 
 function Lists({ session }: { session: Session }) {
   const router = useRouter();
-  const { current, members, names, places, error, setError, version } = useHousehold(session);
+  const { current, ready, members, names, places, error, setError, version } = useHousehold(session, { optional: true });
   const [own, setOwn] = useState<OwnList[] | null>(null);
   const [ownEntries, setOwnEntries] = useState<ListEntry[]>([]);
+  const [people, setPeople] = useState<ListPerson[]>([]);
   const [making, setMaking] = useState(false);
   const [toBuy, setToBuy] = useState<string[] | null>(null);
   const [ideas, setIdeas] = useState<number | null>(null);
@@ -66,15 +70,12 @@ function Lists({ session }: { session: Session }) {
   const load = useCallback(async () => {
     if (!current) return;
     try {
-      const [list, wishes, wanted, out, mine] = await Promise.all([
+      const [list, wishes, wanted, out] = await Promise.all([
         loadToBuy(current.householdId).catch(() => null),
         countIdeas(current.householdId).catch(() => null),
         countIdeas(current.householdId, "books").catch(() => null),
         loadLent(current.householdId),
-        loadLists().catch(() => [] as OwnList[]),
       ]);
-      setOwn(mine);
-      setOwnEntries(await loadEntries(mine.map((l) => l.id)).catch(() => []));
       setToBuy(list);
       setIdeas(wishes);
       setBooks(wanted);
@@ -89,18 +90,36 @@ function Lists({ session }: { session: Session }) {
     load();
   }, [load, version]);
 
+  // Your own lists, the household's and group lists: these work with or without a household.
+  const loadOwn = useCallback(async () => {
+    try {
+      const [mine, who] = await Promise.all([loadLists(), loadPeople().catch(() => [] as ListPerson[])]);
+      setOwnEntries(await loadEntries(mine.map((l) => l.id)).catch(() => []));
+      setPeople(who);
+      setOwn(mine);
+    } catch (e) {
+      setError(friendlyError(e));
+    }
+  }, [setError]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (ready) loadOwn();
+  }, [ready, loadOwn]);
+
   // Someone at home shares a list, or adds to one: the counts keep up.
   useEffect(() => {
-    if (!current) return;
+    if (!ready) return;
     const channel = supabase()
-      .channel(`own-lists:${current.householdId}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "lists" }, () => load())
-      .on("postgres_changes", { event: "*", schema: "public", table: "list_entries" }, () => load())
+      .channel(`own-lists:${session.user.id}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "lists" }, () => loadOwn())
+      .on("postgres_changes", { event: "*", schema: "public", table: "list_entries" }, () => loadOwn())
+      .on("postgres_changes", { event: "*", schema: "public", table: "list_members" }, () => loadOwn())
       .subscribe();
     return () => {
       supabase().removeChannel(channel);
     };
-  }, [current, load]);
+  }, [ready, loadOwn, session.user.id]);
 
   const longLent = lent?.filter((i) => isLongLent(i)).length ?? 0;
   const jobs = seasonal.shown?.length ?? null;
@@ -153,10 +172,11 @@ function Lists({ session }: { session: Session }) {
     },
   ];
 
-  const tab = own && current ? listsForTab(own, session.user.id, current.householdId) : { mine: [], home: [] };
+  const tab = own ? listsForTab(own, session.user.id, current?.householdId ?? null) : { mine: [], home: [], groups: [] };
   const toRow = (l: OwnList, privateList: boolean): Row => {
     const { open, done } = splitEntries(ownEntries.filter((e) => e.listId === l.id));
-    const by = !privateList && l.owner !== session.user.id ? names.get(l.owner) : null;
+    const ownerName = names.get(l.owner) ?? people.find((p) => p.listId === l.id && p.isOwner)?.name;
+    const by = !privateList && l.owner !== session.user.id ? ownerName : null;
     return {
       href: `/my-list/?id=${l.id}`,
       Icon: KIND_ICON[l.kind] ?? IconList,
@@ -167,17 +187,23 @@ function Lists({ session }: { session: Session }) {
   };
   const homeRows = [...rows.slice(0, 3), ...tab.home.map((l) => toRow(l, false)), ...rows.slice(3)];
   const mineRows = tab.mine.map((l) => toRow(l, true));
+  const groupRows = tab.groups.map((l) => {
+    const row = toRow(l, false);
+    const n = people.filter((p) => p.listId === l.id).length;
+    return { ...row, Icon: IconPeople, group: true, caption: `${n === 1 ? "Just you so far" : `${n} people`} · ${row.caption}` };
+  });
   const others = members.filter((m) => m.userId !== session.user.id).map((m) => m.displayName);
 
   return (
     <AppShell>
-      <PageHeader title="Lists" sub="Lists for everyone at home, and lists just for you." />
+      <PageHeader title="Lists" sub="Lists for everyone at home, just for you, or for a group you invite." />
       {error ? <Notice>{error}</Notice> : null}
-      {!current ? (
+      {!ready || own === null ? (
         <HouseholdLoading />
       ) : (
         <>
-          <Section id="home-h" label={`Everyone in ${current.name}`} Icon={IconHouse} rows={homeRows} />
+          {current ? <Section id="home-h" label={`Everyone in ${current.name}`} Icon={IconHouse} rows={homeRows} /> : null}
+          {groupRows.length > 0 ? <Section id="groups-h" label="Groups" Icon={IconPeople} rows={groupRows} /> : null}
           {mineRows.length > 0 ? <Section id="mine-h" label="Just you" Icon={IconLock} rows={mineRows} /> : null}
           <button
             onClick={() => setMaking(true)}
@@ -185,12 +211,19 @@ function Lists({ session }: { session: Session }) {
           >
             <IconPlus className="size-[18px]" /> New list
           </button>
-          {mineRows.length === 0 ? <p className="-mt-2 text-center text-[13.5px] text-mute">Make a list just for you, or one for everyone at home.</p> : null}
+          {mineRows.length === 0 && groupRows.length === 0 ? (
+            <p className="-mt-2 text-center text-[13.5px] text-mute">Make a list just for you, for everyone at home, or for friends you invite.</p>
+          ) : null}
+          {!current ? (
+            <Link href="/welcome/" className="flex min-h-11 items-center gap-1.5 self-start text-[14px] font-semibold text-leaf">
+              Keep track of your own home too <IconChevronRight className="size-4" />
+            </Link>
+          ) : null}
           <ListSettingsSheet
             open={making}
             onClose={() => setMaking(false)}
-            householdId={current.householdId}
-            householdName={current.name}
+            householdId={current?.householdId ?? null}
+            householdName={current?.name ?? null}
             others={others}
             onSave={async (s) => {
               const id = await createList(s);
@@ -217,7 +250,7 @@ function Section({ id, label, Icon, rows }: { id: string; label: string; Icon: (
         {rows.map((r) => (
           <li key={r.href}>
             <Link href={r.href} className="flex min-h-[76px] items-center gap-3.5 px-4 py-3 transition hover:bg-sunk/50">
-              <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-sunk text-leaf" aria-hidden="true">
+              <span className={`grid size-11 shrink-0 place-items-center rounded-xl ${r.group ? "bg-plum-bg text-plum" : "bg-sunk text-leaf"}`} aria-hidden="true">
                 <r.Icon className="size-[22px]" />
               </span>
               <span className="min-w-0 flex-1">

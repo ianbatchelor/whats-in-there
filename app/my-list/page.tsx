@@ -11,12 +11,13 @@ import { useHousehold } from "@/lib/hooks/useHousehold";
 import { useQueryParam } from "@/lib/hooks/useQueryParam";
 import { supabase } from "@/lib/supabase/client";
 import { friendlyError } from "@/lib/supabase/errors";
-import { addEntry, deleteList, loadEntries, loadList, removeEntries, setDone, updateList } from "@/lib/ownLists";
-import { kindInfo, splitEntries, visibilityLine, type ListEntry, type OwnList } from "@/lib/domain/ownLists";
+import { addEntry, deleteList, loadEntries, loadList, loadPeople, removeEntries, setDone, updateList } from "@/lib/ownLists";
+import { GroupSheet } from "@/components/lists/GroupSheet";
+import { groupNames, kindInfo, splitEntries, visibilityLine, type ListEntry, type ListPerson, type OwnList } from "@/lib/domain/ownLists";
 import { Button } from "@/components/ui/Button";
 import { Notice } from "@/components/ui/Notice";
 import { Toast, type ToastData } from "@/components/ui/Toast";
-import { IconCheck, IconHouse, IconLock, IconPlus, IconX } from "@/components/ui/icons";
+import { IconCheck, IconHouse, IconLink, IconLock, IconPeople, IconPlus, IconX } from "@/components/ui/icons";
 
 export default function MyListPage() {
   return <AuthGate>{(session) => <MyList session={session} />}</AuthGate>;
@@ -25,13 +26,15 @@ export default function MyListPage() {
 function MyList({ session }: { session: Session }) {
   const router = useRouter();
   const id = useQueryParam("id");
-  const { current, members, names, error, setError } = useHousehold(session);
+  const { current, members, names, error, setError } = useHousehold(session, { optional: true });
   // undefined while loading; null when it doesn't exist or isn't shared with you.
   const [list, setList] = useState<OwnList | null | undefined>(undefined);
   const [entries, setEntries] = useState<ListEntry[]>([]);
   const [text, setText] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
   const [settings, setSettings] = useState(false);
+  const [people, setPeople] = useState<ListPerson[]>([]);
+  const [group, setGroup] = useState(false);
   const [toast, setToast] = useState<ToastData | null>(null);
   const say = (message: string, undo?: () => void) =>
     setToast((t) => ({
@@ -47,6 +50,7 @@ function MyList({ session }: { session: Session }) {
       const l = await loadList(id);
       setList(l);
       setEntries(l ? await loadEntries([l.id]) : []);
+      setPeople(l?.visibility === "group" ? (await loadPeople()).filter((p) => p.listId === l.id) : []);
     } catch (e) {
       setError(friendlyError(e));
     }
@@ -74,6 +78,7 @@ function MyList({ session }: { session: Session }) {
         () => refresh(),
       )
       .on("postgres_changes", { event: "*", schema: "public", table: "lists", filter: `id=eq.${id}` }, () => refresh())
+      .on("postgres_changes", { event: "*", schema: "public", table: "list_members", filter: `list_id=eq.${id}` }, () => refresh())
       .subscribe();
     return () => {
       supabase().removeChannel(channel);
@@ -123,8 +128,10 @@ function MyList({ session }: { session: Session }) {
     });
 
   const isOwner = list?.owner === session.user.id;
-  const shared = list?.visibility === "household";
-  const who = (uid: string | null) => (uid === session.user.id ? "you" : (uid && names.get(uid)) || null);
+  const isGroup = list?.visibility === "group";
+  const shared = list?.visibility === "household" || isGroup;
+  const groupName = (uid: string) => people.find((p) => p.userId === uid)?.name;
+  const who = (uid: string | null) => (uid === session.user.id ? "you" : (uid && (groupName(uid) ?? names.get(uid))) || null);
   const others = members.filter((m) => m.userId !== session.user.id).map((m) => m.displayName);
   const { open, done } = splitEntries(entries);
 
@@ -145,7 +152,9 @@ function MyList({ session }: { session: Session }) {
         sub={
           list ? (
             <span>
-              {shared ? (
+              {isGroup ? (
+                <IconPeople className="mr-1.5 inline size-4 -translate-y-px align-middle text-plum" />
+              ) : shared ? (
                 <IconHouse className="mr-1.5 inline size-4 -translate-y-px align-middle text-leaf" />
               ) : (
                 <IconLock className="mr-1.5 inline size-4 -translate-y-px align-middle text-leaf" />
@@ -163,6 +172,36 @@ function MyList({ session }: { session: Session }) {
           ) : undefined
         }
       />
+
+      {list && isGroup ? (
+        <div className="flex flex-col gap-3 rounded-[18px] bg-plum px-4 py-4 text-white dark:text-[#1d1424]">
+          <button onClick={() => setGroup(true)} className="flex items-center gap-2.5 text-left">
+            <span className="flex shrink-0 -space-x-2" aria-hidden="true">
+              {people.slice(0, 5).map((p) => (
+                <span
+                  key={p.userId}
+                  className="grid size-8 place-items-center rounded-full border-2 border-plum bg-plum-bg font-display text-[13px] font-bold text-plum"
+                >
+                  {p.name.trim().charAt(0).toUpperCase() || "?"}
+                </span>
+              ))}
+            </span>
+            <span className="min-w-0 text-[15px] leading-snug font-medium">{groupNames(people, session.user.id)}</span>
+          </button>
+          {isOwner ? (
+            <button
+              onClick={() => setGroup(true)}
+              className="flex min-h-11 items-center gap-2 self-start rounded-xl bg-white px-3.5 font-display text-[15px] font-bold text-plum dark:bg-[#1d1424]"
+            >
+              <IconLink className="size-[18px]" /> Invite with a link
+            </button>
+          ) : (
+            <button onClick={() => setGroup(true)} className="self-start text-[14px] font-semibold underline underline-offset-2">
+              See who&apos;s in the group
+            </button>
+          )}
+        </div>
+      ) : null}
 
       <form onSubmit={add} className="flex gap-2">
         <label htmlFor="own-add" className="sr-only">
@@ -235,19 +274,37 @@ function MyList({ session }: { session: Session }) {
         </>
       )}
 
-      {list && current && isOwner ? (
+      {list && isGroup ? (
+        <GroupSheet
+          open={group}
+          onClose={() => setGroup(false)}
+          list={list}
+          people={people}
+          me={session.user.id}
+          onChanged={refresh}
+          onLeft={() => router.replace("/lists/")}
+        />
+      ) : null}
+      {list && isOwner ? (
         <ListSettingsSheet
           open={settings}
           onClose={() => setSettings(false)}
-          householdId={current.householdId}
-          householdName={current.name}
+          householdId={current?.householdId ?? null}
+          householdName={current?.name ?? null}
           others={others}
           list={list}
           onSave={async (s) => {
             await updateList(list.id, s);
             setSettings(false);
-            say(s.visibility === "me" ? "Saved. Only you can see it." : `Saved. Shared with everyone in ${current.name}.`);
-            refresh();
+            say(
+              s.visibility === "me"
+                ? "Saved. Only you can see it."
+                : s.visibility === "group"
+                  ? "Saved. Now invite people with a link."
+                  : `Saved. Shared with everyone in ${current?.name ?? "your household"}.`,
+            );
+            await refresh();
+            if (s.visibility === "group" && list.visibility !== "group") setGroup(true);
           }}
           onDelete={async () => {
             await deleteList(list.id);
