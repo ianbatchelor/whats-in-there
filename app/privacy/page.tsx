@@ -94,9 +94,10 @@ export default function PrivacyPage() {
       <h2>Phone notifications</h2>
       <p>
         If you turn on notifications in the iPhone app, we store your phone&apos;s notification address (a code from Apple), which
-        lists you&apos;ve chosen to hear about, and your quiet hours and time zone. When someone adds to one of those lists, we keep
-        a short note of what was added until it&apos;s sent, then delete it after a week. The message (who added what, and to which
-        list) goes through <b>Apple&apos;s push notification service</b> to your phone. It&apos;s used only to send the notifications
+        lists and places you&apos;ve chosen to hear about, and your quiet hours and time zone. When someone adds to one of those
+        lists or places, or takes something out of a place, we keep a short note of what changed until it&apos;s sent, then delete
+        it after a week. Morning reminders use the dates already saved with your things. The message (who changed what, and in
+        which list or place) goes through <b>Apple&apos;s push notification service</b> to your phone. It&apos;s used only to send the notifications
         you asked for. Signing out stops them, and deleting your account deletes all of it.
       </p>
 

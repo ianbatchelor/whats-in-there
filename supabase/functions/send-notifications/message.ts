@@ -5,16 +5,20 @@
 export type Due = {
   event_ids: number[];
   recipient: string;
-  target_kind: "wish_list" | "list";
+  target_kind: "wish_list" | "list" | "place";
   target_id: string;
   actors: string[];
   things: string[];
   total: number;
+  /** For places: how many of them were taken out (the rest went in). */
+  took?: number;
   list_title: string | null;
   list_kind: string | null;
   for_user: string | null;
   for_name: string | null;
   household_id: string | null;
+  /** A daily summary rather than a message per change. */
+  daily?: boolean;
   devices: { token: string; env: "production" | "sandbox" | null }[];
 };
 
@@ -70,6 +74,35 @@ export function message(d: Due): Message {
       thread: d.target_id,
     };
   }
+  if (d.target_kind === "place") {
+    const took = d.took ?? 0;
+    const verb = took === 0 ? "added" : took === d.total ? "took out" : "changed";
+    const body = d.total <= 1 ? `${who} ${verb} ${short(d.things[0] ?? "something")}` : `${who} ${verb} ${d.total} things: ${some(d.things, d.total)}`;
+    return { title: d.daily ? `Today in ${d.list_title ?? "your place"}` : (d.list_title ?? "Your place"), body, url: `/place/?id=${d.target_id}`, thread: d.target_id };
+  }
   const body = d.total <= 1 ? `${who} added ${short(d.things[0] ?? "something")}` : `${who} added ${d.total} things: ${some(d.things, d.total)}`;
-  return { title: d.list_title ?? "Your list", body, url: `/my-list/?id=${d.target_id}`, thread: d.target_id };
+  const title = d.list_title ?? "Your list";
+  return { title: d.daily ? `Today on ${title}` : title, body, url: `/my-list/?id=${d.target_id}`, thread: d.target_id };
+}
+
+/** One row of public.place_reminders_due(). */
+export type Reminder = {
+  recipient: string;
+  place_id: string;
+  place_name: string;
+  place_type: string;
+  day: string;
+  soon: string[];
+  soon_total: number;
+  frozen: string[];
+  frozen_total: number;
+  devices: Due["devices"];
+};
+
+/** "Garage freezer: Use soon: Mince and Peas. In the freezer over 3 months: Old lamb." */
+export function reminder(r: Reminder): Message {
+  const parts: string[] = [];
+  if (r.soon_total > 0) parts.push(`Use soon: ${some(r.soon, r.soon_total)}.`);
+  if (r.frozen_total > 0) parts.push(`In the freezer over 3 months: ${some(r.frozen, r.frozen_total)}.`);
+  return { title: r.place_name, body: parts.join(" "), url: `/place/?id=${r.place_id}`, thread: `${r.place_id}:reminder` };
 }

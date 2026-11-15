@@ -8,7 +8,7 @@ import { AppShell, SectionLabel } from "@/components/AppShell";
 import { HouseholdLoading, PageHeader } from "@/components/common/PageHeader";
 import { Button } from "@/components/ui/Button";
 import { Notice } from "@/components/ui/Notice";
-import { IconBell, IconBellOff, IconBook, IconGift, IconHouse, IconPeople } from "@/components/ui/icons";
+import { IconBell, IconBook, IconBox, IconGift, IconHouse, IconPeople, IconSnow } from "@/components/ui/icons";
 import { supabase } from "@/lib/supabase/client";
 import { friendlyError } from "@/lib/supabase/errors";
 import { loadLists } from "@/lib/ownLists";
@@ -27,24 +27,26 @@ import {
   type NotifyPrefs,
   type Permission,
 } from "@/lib/notifications";
-import { HOURS, hourLabel, quietLine, startingMode, type NotifyKind, type NotifyMode, type Visibility } from "@/lib/domain/notifications";
+import { HOURS, MODES, hourLabel, quietLine, startingMode, type NotifyKind, type NotifyMode, type Visibility } from "@/lib/domain/notifications";
 
 export default function NotificationsPage() {
   return <AuthGate>{(session) => <Notifications session={session} />}</AuthGate>;
 }
 
-type Row = { kind: NotifyKind; id: string; title: string; sub: string; visibility?: Visibility; icon: "gift" | "book" | "people" | "house"; href: string };
+type Row = { kind: NotifyKind; id: string; title: string; sub: string; visibility?: Visibility; icon: "gift" | "book" | "people" | "house" | "snow" | "box"; href: string };
 
-const ICONS = { gift: IconGift, book: IconBook, people: IconPeople, house: IconHouse } as const;
+const ICONS = { gift: IconGift, book: IconBook, people: IconPeople, house: IconHouse, snow: IconSnow, box: IconBox } as const;
 const first = (n: string) => n.trim().split(/\s+/)[0] || n;
 
-/** Everything you could hear about: other people's wish lists, and lists shared with you or by you. */
+/** Everything you could hear about: other people's wish lists, lists shared with you or by you, and places. */
 async function loadRows(me: string): Promise<Row[]> {
-  const [wish, lists] = await Promise.all([
+  const [wish, lists, places] = await Promise.all([
     supabase().from("wish_lists").select("id, for_user, name, kind, friend"),
     loadLists(),
+    supabase().from("storage_locations").select("id, name, type").is("parent_id", null).is("archived_at", null).order("sort_order"),
   ]);
   if (wish.error) throw wish.error;
+  if (places.error) throw places.error;
   // A friend's own book list lives outside the household, so nobody here is told about it.
   const others = (wish.data ?? []).filter((w) => w.for_user !== me && !w.friend);
   const names = await loadNames(others.map((w) => w.for_user as string).filter(Boolean)).catch(() => new Map<string, string>());
@@ -71,6 +73,16 @@ async function loadRows(me: string): Promise<Row[]> {
       visibility: l.visibility as Visibility,
       icon: l.visibility === "group" ? "people" : l.visibility === "family" ? "gift" : "house",
       href: `/my-list/?id=${l.id}`,
+    });
+  }
+  for (const p of places.data ?? []) {
+    rows.push({
+      kind: "place",
+      id: p.id as string,
+      title: p.name as string,
+      sub: "Things going in or out, and what to use soon",
+      icon: p.type === "freezer" ? "snow" : "box",
+      href: `/place/?id=${p.id}`,
     });
   }
   return rows;
@@ -126,16 +138,15 @@ function Notifications({ session }: { session: Session }) {
     });
 
   const modeOf = (r: Row): NotifyMode => follows.get(`${r.kind}:${r.id}`) ?? startingMode(r.kind, r.visibility);
-  const flip = (r: Row) =>
+  const choose = (r: Row, next: NotifyMode) =>
     run(`row-${r.id}`, async () => {
-      const next: NotifyMode = modeOf(r) === "every" ? "off" : "every";
-      if (next === "every" && native && !(await askToNotify())) {
+      if (next !== "off" && native && !(await askToNotify())) {
         setPerm("denied");
         return;
       }
       await setFollow(r.kind, r.id, next);
       setFollows((m) => new Map(m).set(`${r.kind}:${r.id}`, next));
-      if (next === "every") setPhone(native ? true : phone);
+      if (next !== "off" && native) setPhone(true);
     });
 
   const turnOn = () =>
@@ -183,7 +194,6 @@ function Notifications({ session }: { session: Session }) {
             ) : (
               <ul className="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-card shadow-[var(--shadow-card)]">
                 {rows.map((r) => {
-                  const on = modeOf(r) === "every";
                   const Icon = ICONS[r.icon];
                   return (
                     <li key={`${r.kind}:${r.id}`} className="flex min-h-16 items-center gap-3 px-4 py-2.5">
@@ -192,22 +202,25 @@ function Notifications({ session }: { session: Session }) {
                         <span className="block truncate font-semibold">{r.title}</span>
                         <span className="block truncate text-[13.5px] text-mute">{r.sub}</span>
                       </Link>
-                      <button
-                        onClick={() => flip(r)}
+                      <select
+                        value={modeOf(r)}
+                        onChange={(e) => choose(r, e.target.value as NotifyMode)}
                         disabled={busy === `row-${r.id}` || prefs.paused}
-                        aria-pressed={on}
-                        aria-label={`${on ? "Stop notifications for" : "Notify me about"} ${r.title}`}
-                        className={`inline-flex min-h-10 shrink-0 items-center gap-1.5 rounded-full px-3 font-display text-[13px] font-bold transition disabled:opacity-50 ${on ? "bg-leaf/10 text-leaf ring-1 ring-inset ring-leaf/25" : "text-mute ring-1 ring-inset ring-line"}`}
+                        aria-label={`Notifications for ${r.title}`}
+                        className={`min-h-10 shrink-0 rounded-full border px-3 font-display text-[13px] font-bold disabled:opacity-50 ${modeOf(r) === "off" ? "border-line bg-card text-mute" : "border-leaf/30 bg-leaf/10 text-leaf"}`}
                       >
-                        {on ? <IconBell className="size-4" /> : <IconBellOff className="size-4" />}
-                        {on ? "On" : "Off"}
-                      </button>
+                        {MODES.map((m) => (
+                          <option key={m.mode} value={m.mode}>
+                            {m.mode === "every" ? "Every change" : m.mode === "daily" ? "Daily" : "Off"}
+                          </option>
+                        ))}
+                      </select>
                     </li>
                   );
                 })}
               </ul>
             )}
-            <p className="text-[13.5px] text-mute">Lists you share at home start off, so the shopping list doesn&apos;t buzz all day. Wish lists and family or group lists start on.</p>
+            <p className="text-[13.5px] text-mute">Lists you share at home and places start off, so the shopping list and the freezer don&apos;t buzz all day. Wish lists and family or group lists start on. A daily summary comes at 6 pm, and places you follow also send a 9 am reminder when something needs using soon.</p>
           </section>
 
           <section aria-labelledby="quiet-h" className="flex flex-col gap-2.5">

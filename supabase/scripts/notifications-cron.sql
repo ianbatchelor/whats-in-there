@@ -1,4 +1,5 @@
--- Runs send-notifications every minute, but only calls it when something is waiting.
+-- Runs send-notifications every minute while something is waiting, and every hour on the hour
+-- regardless (for daily summaries and morning reminders).
 -- Run once, after the notifications migrations and after deploying the function. Replace the
 -- project's URL first. The secret is made here and only ever kept in Vault; the function reads it
 -- through notify_cron_secret().
@@ -16,5 +17,5 @@ select cron.schedule('send-notifications', '* * * * *', $cron$
       'Content-Type', 'application/json',
       'x-cron-secret', (select decrypted_secret from vault.decrypted_secrets where name = 'notify_cron_secret')),
     body := '{}'::jsonb)
-  where exists (select 1 from public.notify_events where sent_at is null);
+  where extract(minute from now()) = 0 or exists (select 1 from public.notify_events where sent_at is null);
 $cron$);

@@ -2,9 +2,11 @@
 // Firebase or other service in between.
 //
 // Two ways in:
-//   - Every minute, pg_cron calls it with the x-cron-secret header (supabase/scripts/notifications-cron.sql).
-//     It asks notifications_due() what's ready (lists that have been quiet for a few minutes, outside
-//     each person's quiet hours), sends one message per person and list, and marks them sent.
+//   - pg_cron calls it with the x-cron-secret header (supabase/scripts/notifications-cron.sql): every
+//     minute while something is waiting, and on the hour regardless. It asks notifications_due() what's
+//     ready (lists and places quiet for a few minutes, or daily summaries at 6 pm, outside each person's
+//     quiet hours), sends one message per person and list or place, and marks them sent. Then it sends
+//     the morning reminders from place_reminders_due() (things to use soon).
 //   - The "Send me a test" button on the Notifications page calls it signed in, with {"test": true}.
 //     That sends one message to the caller's own phones and nothing else.
 //
@@ -14,7 +16,7 @@
 // checks the cron secret or the caller's sign-in itself.
 
 import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2.118.0";
-import { message, type Due, type Message } from "./message.ts";
+import { message, reminder, type Due, type Message, type Reminder } from "./message.ts";
 
 const TOPIC = Deno.env.get("APNS_TOPIC") ?? "com.seewhatsinhere.app";
 const HOSTS = { production: "api.push.apple.com", sandbox: "api.sandbox.push.apple.com" } as const;
@@ -118,7 +120,17 @@ async function runQueue(admin: SupabaseClient) {
     const { error: e2 } = await admin.from("notify_events").update({ sent_at: new Date().toISOString() }).in("id", due.event_ids);
     if (e2) throw e2;
   }
-  return { groups: (data ?? []).length, sent };
+  // Morning reminders for places people follow: at most one a day each, noted before sending so a
+  // slow run can't send it twice.
+  const { data: rems, error: e3 } = await admin.rpc("place_reminders_due");
+  if (e3) throw e3;
+  for (const r of (rems ?? []) as Reminder[]) {
+    const { error: e4 } = await admin.from("notify_reminders_sent").insert({ user_id: r.recipient, place_id: r.place_id, day: r.day });
+    if (e4) continue; // already sent today
+    const m = reminder(r);
+    for (const d of r.devices) if (await sendTo(admin, d, m)) sent++;
+  }
+  return { groups: (data ?? []).length, reminders: (rems ?? []).length, sent };
 }
 
 async function sendTest(admin: SupabaseClient, userId: string) {
