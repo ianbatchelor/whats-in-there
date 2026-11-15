@@ -1,5 +1,6 @@
 "use client";
 
+import { NotifyBell } from "@/components/notify/NotifyBell";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -396,6 +397,12 @@ function Place({ me }: { me: string }) {
           <p className="truncate text-[14px] text-[#fffdf8]/90">{summary}</p>
         </div>
       </div>
+
+      {place.parentId ? null : (
+        <div className="-mb-2 flex justify-end">
+          <NotifyBell kind="place" id={place.id} />
+        </div>
+      )}
 
       {error ? <Notice>{error}</Notice> : null}
 

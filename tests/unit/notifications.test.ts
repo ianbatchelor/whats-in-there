@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { message, whoDid, type Due } from "../../supabase/functions/send-notifications/message";
-import { hasBell, hourLabel, quietLine, startingMode } from "@/lib/domain/notifications";
+import { message, reminder, whoDid, type Due } from "../../supabase/functions/send-notifications/message";
+import { hasBell, hourLabel, modeHelp, quietLine, startingMode } from "@/lib/domain/notifications";
 
 const due = (over: Partial<Due>): Due => ({
   event_ids: [1],
@@ -53,6 +53,30 @@ describe("notification wording", () => {
     expect(many.body).toBe("Jo and Carol added 4 things: oat milk, eggs and 2 more");
   });
 
+  it("says what went into or out of a place", () => {
+    const place = { target_kind: "place" as const, list_title: "Garage freezer", list_kind: "freezer", actors: ["Molly Batchelor"], for_user: null, for_name: null };
+    expect(message(due({ ...place, things: ["Chicken"], took: 1 }))).toMatchObject({ title: "Garage freezer", body: "Molly took out Chicken", url: "/place/?id=list-1" });
+    expect(message(due({ ...place, things: ["Peas", "Chips"], total: 2, took: 0 })).body).toBe("Molly added 2 things: Peas and Chips");
+    expect(message(due({ ...place, things: ["Peas", "Chicken", "Chips"], total: 3, took: 1 })).body).toBe("Molly changed 3 things: Peas, Chicken and 1 more");
+  });
+
+  it("titles a daily summary as today's", () => {
+    expect(message(due({ target_kind: "place", list_title: "Garage freezer", daily: true })).title).toBe("Today in Garage freezer");
+    expect(message(due({ target_kind: "list", list_title: "Weekend shop", daily: true })).title).toBe("Today on Weekend shop");
+  });
+
+  it("words the morning reminder", () => {
+    const r = { recipient: "ian", place_id: "p1", place_name: "Garage freezer", place_type: "freezer", day: "2026-11-21", devices: [] };
+    expect(reminder({ ...r, soon: ["Mince"], soon_total: 1, frozen: [], frozen_total: 0 })).toMatchObject({
+      title: "Garage freezer",
+      body: "Use soon: Mince.",
+      url: "/place/?id=p1",
+    });
+    expect(reminder({ ...r, soon: ["Mince", "Peas"], soon_total: 4, frozen: ["Old lamb"], frozen_total: 1 }).body).toBe(
+      "Use soon: Mince, Peas and 2 more. In the freezer over 3 months: Old lamb.",
+    );
+  });
+
   it("keeps long names short", () => {
     const m = message(due({ things: ["A".repeat(100)] }));
     expect(m.body.length).toBeLessThan(80);
@@ -78,6 +102,9 @@ describe("bells", () => {
     expect(startingMode("list", "family")).toBe("every");
     expect(startingMode("list", "group")).toBe("every");
     expect(startingMode("list", "household")).toBe("off");
+    expect(startingMode("place")).toBe("off");
+    expect(hasBell("place")).toBe(true);
+    expect(modeHelp("place", "daily")).toMatch(/6 pm/);
   });
 
   it("says quiet hours plainly", () => {

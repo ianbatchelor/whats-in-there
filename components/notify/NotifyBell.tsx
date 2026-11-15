@@ -2,13 +2,14 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { IconBell, IconBellOff } from "@/components/ui/icons";
+import { Sheet } from "@/components/ui/Sheet";
+import { IconBell, IconBellOff, IconCheck } from "@/components/ui/icons";
 import { askToNotify, canNotify, loadFollow, setFollow } from "@/lib/notifications";
-import { hasBell, type NotifyKind, type NotifyMode, type Visibility } from "@/lib/domain/notifications";
+import { MODES, PLACE_REMINDER_LINE, hasBell, modeHelp, type NotifyKind, type NotifyMode, type Visibility } from "@/lib/domain/notifications";
 import { friendlyError } from "@/lib/supabase/errors";
 
 /**
- * The bell on a list: whether you hear on your phone when something's added. Asking the phone for
+ * The bell on a list or place: every change, a daily summary, or off. Asking the phone for
  * permission happens here, the first time a bell is turned on, never when the app opens.
  */
 export function NotifyBell({
@@ -27,8 +28,8 @@ export function NotifyBell({
   /** The bell's state, for the list it was loaded for (the presents page switches lists in place). */
   const [got, setGot] = useState<{ key: string; mode: NotifyMode } | null>(null);
   const mode = got?.key === key ? got.mode : null;
-  const setMode = (m: NotifyMode) => setGot({ key, mode: m });
-  const [busy, setBusy] = useState(false);
+  const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState<NotifyMode | null>(null);
   const [note, setNote] = useState<React.ReactNode>(null);
 
   useEffect(() => {
@@ -42,41 +43,39 @@ export function NotifyBell({
   }, [key, kind, id, visibility]);
 
   if (!hasBell(kind, visibility) || mode === null) return null;
-  const on = mode === "every";
+  const on = mode !== "off";
 
-  async function toggle() {
-    setBusy(true);
+  async function choose(next: NotifyMode) {
+    if (next === mode) return setOpen(false);
+    setBusy(next);
     setNote(null);
     try {
-      if (!on) {
-        const allowed = await askToNotify();
-        if (!allowed) {
-          setNote("Notifications are switched off for this app on your iPhone. Turn them on in Settings, then Notifications, then See What's in Here.");
-          return;
-        }
+      if (next !== "off" && !(await askToNotify())) {
+        setNote("Notifications are switched off for this app on your iPhone. Turn them on in Settings, then Notifications, then See What's in Here.");
+        return;
       }
-      const next: NotifyMode = on ? "off" : "every";
       await setFollow(kind, id, next);
-      setMode(next);
-      if (next === "every" && !canNotify()) {
+      setGot({ key, mode: next });
+      if (next !== "off" && !canNotify()) {
         setNote(
           <>
             Saved. Notifications arrive on the iPhone app.{" "}
-            <Link href="/notifications/" className="font-semibold underline underline-offset-2">
-              Notifications
+            <Link href="/notifications/" className="font-semibold text-leaf underline underline-offset-2">
+              All notifications
             </Link>
           </>,
         );
+      } else {
+        setOpen(false);
       }
     } catch (e) {
       setNote(friendlyError(e));
     } finally {
-      setBusy(false);
+      setBusy(null);
     }
   }
 
-  const label = on ? "Notifying you" : "Notify me";
-  const what = kind === "wish_list" ? "new ideas" : "new things on this list";
+  const label = mode === "every" ? "Notifying you" : mode === "daily" ? "Daily summary" : "Notify me";
   const look =
     tone === "onWrap"
       ? `bg-black/20 ${on ? "" : "opacity-85"}`
@@ -84,18 +83,45 @@ export function NotifyBell({
         ? "bg-leaf/10 text-leaf ring-1 ring-inset ring-leaf/25"
         : "bg-card text-mute ring-1 ring-inset ring-line";
   return (
-    <div className="flex flex-col items-start gap-1.5">
+    <>
       <button
-        onClick={toggle}
-        disabled={busy}
-        aria-pressed={on}
-        title={on ? `You'll get a notification about ${what}. Tap to stop.` : `Get a notification about ${what}`}
-        className={`inline-flex min-h-10 items-center gap-1.5 rounded-full px-3.5 font-display text-[13.5px] font-bold transition active:scale-[0.98] disabled:opacity-60 ${look}`}
+        onClick={() => {
+          setNote(null);
+          setOpen(true);
+        }}
+        aria-haspopup="dialog"
+        className={`inline-flex min-h-10 items-center gap-1.5 rounded-full px-3.5 font-display text-[13.5px] font-bold transition active:scale-[0.98] ${look}`}
       >
         {on ? <IconBell className="size-[17px]" /> : <IconBellOff className="size-[17px]" />}
         {label}
       </button>
-      {note ? <p className="max-w-xs text-[13px] leading-snug opacity-90">{note}</p> : null}
-    </div>
+      <Sheet open={open} onClose={() => setOpen(false)} title="Notifications">
+        <div className="flex flex-col gap-3">
+          <ul className="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-card">
+            {MODES.map((m) => (
+              <li key={m.mode}>
+                <button
+                  onClick={() => choose(m.mode)}
+                  disabled={busy !== null}
+                  aria-pressed={m.mode === mode}
+                  className="flex min-h-16 w-full items-center gap-3 px-4 py-2.5 text-left transition hover:bg-sunk/50 disabled:opacity-60"
+                >
+                  <span className="min-w-0 flex-1">
+                    <span className="block font-semibold">{m.label}</span>
+                    <span className="block text-[13.5px] text-mute">{modeHelp(kind, m.mode)}</span>
+                  </span>
+                  {m.mode === mode ? <IconCheck className="size-5 shrink-0 text-leaf" /> : null}
+                </button>
+              </li>
+            ))}
+          </ul>
+          {kind === "place" ? <p className="text-[13.5px] text-mute">{PLACE_REMINDER_LINE}</p> : null}
+          {note ? <p className="text-[14px] leading-snug">{note}</p> : null}
+          <Link href="/notifications/" className="self-start text-[14px] font-semibold text-leaf">
+            Quiet hours and all your notifications
+          </Link>
+        </div>
+      </Sheet>
+    </>
   );
 }

@@ -4,16 +4,23 @@ People choose per list whether to hear about it (the **Notify me** bell). Wish l
 family or a group start on; household lists start off; private lists have no bell. Claims ("I'm getting
 this") never send anything, and the person a wish list is for isn't told about ideas added for them.
 
+Step 2 (2026-11-15) adds places: a bell on each top-level place (off to start; a box counts as its
+place), a **Daily summary** choice on any bell (one message at 6 pm), and a 9 am reminder for followed places
+when something is within 2 days of its use-by or best-before date (up to 3 days past), plus on Saturdays
+what's been in a freezer over 90 days.
+
 ## How it works
 
 1. Adding a wish idea or a list entry runs a trigger (`notify_new_idea`, `notify_new_entry`) that writes one
    row per person to tell into `notify_events`, for people whose bell is on, who haven't paused, and who have
-   a phone registered.
-2. pg_cron runs every minute and, only when something is waiting, calls the `send-notifications` Edge
+   a phone registered. Stock going in or out (`stock_movements` add/remove) does the same for places
+   (`notify_stock_movement`); an undo removes the pending row.
+2. pg_cron runs every minute and, when something is waiting or on the hour, calls the `send-notifications` Edge
    Function (`supabase/scripts/notifications-cron.sql`), with a secret kept in Vault.
 3. The function asks `notifications_due()` for lists that have been quiet for 5 minutes (or busy for 30),
    outside each person's quiet hours, sends one message per person and list through Apple (APNs), and marks
-   them sent. A token is tried on production first and then the sandbox (Xcode builds), and the answer is
+   them sent. Daily-summary bells wait for 6 pm local time. Then `place_reminders_due()` gives the morning
+   reminders, each noted in `notify_reminders_sent` so it goes once a day. A token is tried on production first and then the sandbox (Xcode builds), and the answer is
    remembered.
 
 ## One-time setup

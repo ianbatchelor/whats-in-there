@@ -170,9 +170,10 @@ export const HELP_TOPICS: HelpTopic[] = [
     body: (
       <>
         <p>
-          In the iPhone app, tap <b>Notify me</b> on someone&apos;s wish list or on a shared list to hear when something&apos;s added.
-          Wish lists and lists shared with family or a group start on; lists you share at home start off, so the shopping list
-          doesn&apos;t buzz all day. Several things added together come as one message.
+          In the iPhone app, tap <b>Notify me</b> on someone&apos;s wish list, a shared list or a place to hear when something&apos;s added or taken out.
+          Wish lists and lists shared with family or a group start on; lists you share at home and places start off, so the
+          shopping list and the freezer don&apos;t buzz all day. Several things added together come as one message, or choose a
+          daily summary at 6 pm. A place you follow also sends a 9 am reminder when something in it needs using soon.
         </p>
         <p>
           Nothing about who&apos;s getting what is ever sent, and you&apos;re not told when someone adds an idea to your own list. Set
