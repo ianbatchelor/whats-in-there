@@ -8,9 +8,10 @@
 //   - The "Send me a test" button on the Notifications page calls it signed in, with {"test": true}.
 //     That sends one message to the caller's own phones and nothing else.
 //
-// Secrets (Supabase > Edge Functions > Secrets): APNS_KEY (the .p8 file's text), APNS_KEY_ID,
-// APNS_TEAM_ID, CRON_SECRET. APNS_TOPIC defaults to the app's bundle id. Verify JWT is off: the
-// function checks the cron secret or the caller's sign-in itself.
+// Secret (Supabase > Edge Functions > Secrets): APNS_KEY, the .p8 file's whole text. The key's id and
+// the Apple team aren't secret, so they default here (APNS_KEY_ID, APNS_TEAM_ID override them). The
+// cron secret lives in Vault and is read through notify_cron_secret(). Verify JWT is off: the function
+// checks the cron secret or the caller's sign-in itself.
 
 import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2.118.0";
 import { message, type Due, type Message } from "./message.ts";
@@ -46,8 +47,8 @@ let cached: { jwt: string; at: number } | null = null;
 async function appleToken(): Promise<string> {
   if (cached && Date.now() - cached.at < 50 * 60_000) return cached.jwt;
   const pem = Deno.env.get("APNS_KEY") ?? "";
-  const keyId = Deno.env.get("APNS_KEY_ID") ?? "";
-  const team = Deno.env.get("APNS_TEAM_ID") ?? "";
+  const keyId = Deno.env.get("APNS_KEY_ID") ?? "5F74X37223";
+  const team = Deno.env.get("APNS_TEAM_ID") ?? "GS73N238CQ";
   if (!pem || !keyId || !team) throw new Error("apns_not_set_up");
   const der = Uint8Array.from(atob(pem.replace(/-----[^-]+-----/g, "").replace(/\s+/g, "")), (c) => c.charCodeAt(0));
   const key = await crypto.subtle.importKey("pkcs8", der, { name: "ECDSA", namedCurve: "P-256" }, false, ["sign"]);
@@ -129,12 +130,22 @@ async function sendTest(admin: SupabaseClient, userId: string) {
   return { phones: (data ?? []).length, sent };
 }
 
+let cronCached: string | null = null;
+async function cronSecret(admin: SupabaseClient): Promise<string> {
+  if (cronCached) return cronCached;
+  const { data, error } = await admin.rpc("notify_cron_secret");
+  if (error) throw error;
+  cronCached = (data as string | null) ?? "";
+  return cronCached;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   if (req.method !== "POST") return reply(405, { error: "method" });
   const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false } });
   try {
-    if (sameSecret(req.headers.get("x-cron-secret") ?? "", Deno.env.get("CRON_SECRET") ?? "")) {
+    const cron = req.headers.get("x-cron-secret");
+    if (cron && sameSecret(cron, await cronSecret(admin))) {
       return reply(200, await runQueue(admin));
     }
     const body = (await req.json().catch(() => ({}))) as { test?: boolean };

@@ -1,11 +1,11 @@
 "use client";
 
-import { NotificationsLink } from "@/components/notify/NotificationsLink";
-import { forgetDevice } from "@/lib/notifications";
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Session } from "@supabase/supabase-js";
 import { AuthGate } from "@/components/AuthGate";
+import { NotificationsLink } from "@/components/notify/NotificationsLink";
+import { forgetDevice } from "@/lib/notifications";
 import { supabase } from "@/lib/supabase/client";
 import { friendlyError } from "@/lib/supabase/errors";
 import { publicOrigin } from "@/lib/config";
