@@ -7,6 +7,9 @@
 	<array>
 		<string>applinks:seewhatsinhere.com</string>
 	</array>
+	<!-- Phone notifications. Xcode switches this to production for TestFlight and App Store builds. -->
+	<key>aps-environment</key>
+	<string>development</string>
 	<!-- Writing sticker links to NFC stickers (native/sticker-nfc). -->
 	<key>com.apple.developer.nfc.readersession.formats</key>
 	<array>

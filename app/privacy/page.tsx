@@ -6,7 +6,7 @@ export const metadata: Metadata = { title: "Privacy · See What's in Here" };
 
 export default function PrivacyPage() {
   return (
-    <DocPage title="Privacy" updated="11 November 2026">
+    <DocPage title="Privacy" updated="15 November 2026">
       <p>
         See What&apos;s in Here helps you keep track of what you have and where it is. This page explains, in plain English, what
         the app stores, who can see it, and which other companies help run it. There are no ads, no tracking across other apps or
@@ -91,6 +91,15 @@ export default function PrivacyPage() {
         open it.
       </p>
 
+      <h2>Phone notifications</h2>
+      <p>
+        If you turn on notifications in the iPhone app, we store your phone&apos;s notification address (a code from Apple), which
+        lists you&apos;ve chosen to hear about, and your quiet hours and time zone. When someone adds to one of those lists, we keep
+        a short note of what was added until it&apos;s sent, then delete it after a week. The message (who added what, and to which
+        list) goes through <b>Apple&apos;s push notification service</b> to your phone. It&apos;s used only to send the notifications
+        you asked for. Signing out stops them, and deleting your account deletes all of it.
+      </p>
+
       <h2>Reading photos with AI</h2>
       <p>
         When you scan a label, a shelf or a rail, the photo is sent to <b>Claude, an AI made by Anthropic</b>, which reads what&apos;s
@@ -125,6 +134,7 @@ export default function PrivacyPage() {
         <li><b>Anthropic</b> reads photos you choose to scan, as above.</li>
         <li><b>Open Library</b> and <b>Open Food Facts</b> are asked what a scanned barcode is, and Open Library for book covers and book searches, as above.</li>
         <li><b>Resend</b> sends the sign-in code emails.</li>
+        <li><b>Apple</b> delivers phone notifications, if you turn them on.</li>
         <li><b>Vercel</b> hosts the website.</li>
         <li><b>Cloudflare</b> may check that sign-ins come from a person and not a bot.</li>
       </ul>

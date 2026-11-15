@@ -1,5 +1,7 @@
 "use client";
 
+import { NotificationsLink } from "@/components/notify/NotificationsLink";
+import { forgetDevice } from "@/lib/notifications";
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Session } from "@supabase/supabase-js";
@@ -194,6 +196,7 @@ function Household({ session }: { session: Session }) {
 
   const signOut = () =>
     run("signout", async () => {
+      await forgetDevice().catch(() => {});
       await supabase().auth.signOut();
       writeLocal(KEYS.household, null);
       router.replace("/sign-in/");
@@ -253,6 +256,7 @@ function Household({ session }: { session: Session }) {
         <Button variant="ghost" onClick={() => router.push("/welcome/")} className="w-full">
           Set up my own household
         </Button>
+        <NotificationsLink />
         <div className="flex flex-col gap-8 border-t border-line pt-6">
           <Button variant="ghost" busy={busy === "signout"} onClick={signOut} className="w-full">
             Sign out
@@ -428,6 +432,8 @@ function Household({ session }: { session: Session }) {
           </div>
         </section>
       ) : null}
+
+      <NotificationsLink />
 
       <div className="flex flex-col gap-8 border-t border-line pt-6">
         <Button variant="ghost" busy={busy === "signout"} onClick={signOut} className="w-full">

@@ -164,6 +164,24 @@ export const HELP_TOPICS: HelpTopic[] = [
     ),
   },
   {
+    id: "notifications",
+    group: "Lists and presents",
+    title: "Notifications",
+    body: (
+      <>
+        <p>
+          In the iPhone app, tap <b>Notify me</b> on someone&apos;s wish list or on a shared list to hear when something&apos;s added.
+          Wish lists and lists shared with family or a group start on; lists you share at home start off, so the shopping list
+          doesn&apos;t buzz all day. Several things added together come as one message.
+        </p>
+        <p>
+          Nothing about who&apos;s getting what is ever sent, and you&apos;re not told when someone adds an idea to your own list. Set
+          quiet hours, pause everything, or see all your bells under <b>People</b>, then <b>Notifications</b>.
+        </p>
+      </>
+    ),
+  },
+  {
     id: "household",
     group: "Sharing",
     title: "Sharing with your household",
