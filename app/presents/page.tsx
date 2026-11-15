@@ -5,6 +5,7 @@ import type { Session } from "@supabase/supabase-js";
 import { AuthGate } from "@/components/AuthGate";
 import { AppShell, SectionLabel } from "@/components/AppShell";
 import { HouseholdLoading, PageHeader } from "@/components/common/PageHeader";
+import { NotifyBell } from "@/components/notify/NotifyBell";
 import { usePresentCircle } from "@/lib/hooks/usePresentCircle";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase/client";
@@ -309,6 +310,11 @@ function PresentIdeas({ session }: { session: Session }) {
                 >
                   <IconShare className="size-[17px]" /> {mine ? "Share my list" : `Share ${firstName(person.name)}'s list`}
                 </button>
+                {!mine && person.list ? (
+                  <div className="mt-2.5">
+                    <NotifyBell kind="wish_list" id={person.list.id} tone="onWrap" />
+                  </div>
+                ) : null}
                 {canClaim ? (
                   claiming === person.key ? (
                     <div className="mt-3 flex flex-col gap-2 rounded-xl bg-black/20 p-3 text-[14px] leading-snug">

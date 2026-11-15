@@ -8,6 +8,8 @@ const config: CapacitorConfig = {
   webDir: "out",
   ios: { contentInset: "never" },
   android: { allowMixedContent: false },
+  // Show a notification as a banner even while the app is open.
+  plugins: { PushNotifications: { presentationOptions: ["banner", "sound"] } },
 };
 
 export default config;

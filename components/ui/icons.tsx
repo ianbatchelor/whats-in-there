@@ -96,3 +96,5 @@ export const IconLink = ({ className }: P) =>
   svg(<path d="M10 14a4.2 4.2 0 0 0 6 0l3-3a4.2 4.2 0 0 0-6-6l-1 1M14 10a4.2 4.2 0 0 0-6 0l-3 3a4.2 4.2 0 0 0 6 6l1-1" />, className);
 export const IconLock = ({ className }: P) =>
   svg(<><rect x="5" y="10.5" width="14" height="10" rx="2.5" /><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5" /></>, className);
+export const IconBell = ({ className }: P) => svg(<path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15zM10 21h4" />, className);
+export const IconBellOff = ({ className }: P) => svg(<path d="M8.5 6.2A6 6 0 0 1 18 11v4M6 11v5.5l-1.5 2H17M10 21h4M3.5 3.5l17 17" />, className);

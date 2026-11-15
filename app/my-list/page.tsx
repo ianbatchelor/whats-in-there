@@ -6,6 +6,7 @@ import type { Session } from "@supabase/supabase-js";
 import { AuthGate } from "@/components/AuthGate";
 import { AppShell, SectionLabel } from "@/components/AppShell";
 import { HouseholdLoading, PageHeader } from "@/components/common/PageHeader";
+import { NotifyBell } from "@/components/notify/NotifyBell";
 import { ListSettingsSheet } from "@/components/lists/ListSettingsSheet";
 import { useHousehold } from "@/lib/hooks/useHousehold";
 import { useQueryParam } from "@/lib/hooks/useQueryParam";
@@ -206,6 +207,7 @@ function MyList({ session }: { session: Session }) {
             </span>
           ) : undefined
         }
+        action={list && shared ? <NotifyBell kind="list" id={list.id} visibility={list.visibility} /> : undefined}
       />
 
       {list && isGroup ? (

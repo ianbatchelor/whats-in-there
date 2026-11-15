@@ -5,6 +5,7 @@ import type { Session } from "@supabase/supabase-js";
 import { AuthGate } from "@/components/AuthGate";
 import { AppShell, SectionLabel } from "@/components/AppShell";
 import { HouseholdLoading, PageHeader } from "@/components/common/PageHeader";
+import { NotifyBell } from "@/components/notify/NotifyBell";
 import { useHousehold } from "@/lib/hooks/useHousehold";
 import { supabase } from "@/lib/supabase/client";
 import { friendlyError } from "@/lib/supabase/errors";
@@ -360,6 +361,11 @@ function BookWishLists({ session }: { session: Session }) {
                 >
                   <IconShare className="size-[17px]" /> {mine ? "Share my list" : `Share ${firstName(person.name)}'s list`}
                 </button>
+                {!mine && person.list ? (
+                  <div className="mt-2.5">
+                    <NotifyBell kind="wish_list" id={person.list.id} tone="onWrap" />
+                  </div>
+                ) : null}
               </ClothBand>
 
               <BookAdd

@@ -31,4 +31,5 @@ export const KEYS = {
   kindHint: "wit.kindHint",
   lastList: "wit.lastList",
   tips: "wit.tips",
+  pushToken: "wit.pushToken",
 } as const;
