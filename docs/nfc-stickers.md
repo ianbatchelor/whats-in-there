@@ -34,3 +34,9 @@ Tapping a sticker, scanning a QR label or opening an invitation goes straight in
 - `components/NativeLinks.tsx` routes the link, whether the app was open (`appUrlOpen`) or started by it (`getLaunchUrl`).
 
 iOS fetches the association file when the app is installed, so reinstall from Xcode after it goes live. Android app links (`assetlinks.json` with the signing key's SHA-256) are not set up yet.
+
+## People without the app
+
+On the website, `/l/<code>` is served by the `/l/` page (`vercel.json` rewrites it; if the rewrite ever misses, `app/not-found.tsx` forwards `/l/<code>` to `/l/?c=<code>`). Someone who isn't signed in sees a page saying what the sticker is, with **Sign in** and **Get the app**. Nothing about the place is looked up until they sign in, so it never says whose sticker it is or what's inside.
+
+While the app isn't on the public App Store, the page says "Coming soon to the iPhone App Store". At launch, put the app's Apple ID (App Store Connect > App Information > Apple ID) in `APP_STORE_ID` in `lib/config.ts`. That switches on the **Get it on the App Store** button and Safari's Smart App Banner on every page.

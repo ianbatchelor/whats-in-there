@@ -19,3 +19,15 @@ export function publicOrigin(): string {
 
 /** Where people write for help, shown on the Help, Privacy and Terms pages. */
 export const SUPPORT_EMAIL = "seewhatsinhere@findthecool.com"; // an ImprovMX alias on findthecool.com
+
+/**
+ * The app's Apple id once it is on the public App Store (App Store Connect > App Information > Apple ID,
+ * a number like "6739123456"). While it is empty, sticker pages say "Coming soon to the App Store" and
+ * there is no Smart App Banner. Setting it switches on the App Store button and the banner.
+ */
+export const APP_STORE_ID = "";
+
+/** The App Store page for the app, or null while it isn't on the public App Store yet. */
+export function appStoreUrl(id: string = APP_STORE_ID): string | null {
+  return /^\d+$/.test(id) ? `https://apps.apple.com/app/id${id}` : null;
+}

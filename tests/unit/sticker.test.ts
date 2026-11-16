@@ -22,3 +22,12 @@ describe("sticker links", () => {
     expect(stickerRoute("Ab3dE5gH9k")).toBe("/l/?c=Ab3dE5gH9k");
   });
 });
+
+describe("App Store link", () => {
+  it("stays off until the app has an App Store id", async () => {
+    const { appStoreUrl } = await import("@/lib/config");
+    expect(appStoreUrl("")).toBeNull();
+    expect(appStoreUrl("not-a-number")).toBeNull();
+    expect(appStoreUrl("6739123456")).toBe("https://apps.apple.com/app/id6739123456");
+  });
+});
