@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Fraunces, Inter, Plus_Jakarta_Sans } from "next/font/google";
 import { NativeLinks } from "@/components/NativeLinks";
 import { NativePush } from "@/components/notify/NativePush";
+import { APP_STORE_ID, appStoreUrl } from "@/lib/config";
 import "./globals.css";
 
 const jakarta = Plus_Jakarta_Sans({ subsets: ["latin"], weight: ["500", "600", "700", "800"], variable: "--font-jakarta" });
@@ -13,6 +14,8 @@ export const metadata: Metadata = {
   description: "Keep track of everything you have, wherever you store it: freezers, cupboards, attics, wardrobes, gardens and more.",
   applicationName: "See What's in Here",
   appleWebApp: { capable: true, title: "See What's in Here", statusBarStyle: "default" },
+  // Safari's Smart App Banner ("Open" / "Get" at the top of the page), once the app is on the App Store.
+  ...(appStoreUrl() ? { itunes: { appId: APP_STORE_ID } } : {}),
 };
 
 export const viewport: Viewport = {

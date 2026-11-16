@@ -2,12 +2,12 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "rewrites": [
     {
-      "source": "/l/:code([0-9A-Za-z]{10})",
-      "destination": "/l/index.html"
+      "source": "/l/:code",
+      "destination": "/l/"
     },
     {
-      "source": "/l/:code([0-9A-Za-z]{10})/",
-      "destination": "/l/index.html"
+      "source": "/l/:code/",
+      "destination": "/l/"
     }
   ],
   "headers": [
