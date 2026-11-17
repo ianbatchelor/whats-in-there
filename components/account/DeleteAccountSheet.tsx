@@ -28,6 +28,8 @@ export function DeleteAccountSheet({ open, onClose, session }: { open: boolean; 
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [captcha, setCaptcha] = useState<string | null>(null);
+  // If the check can't load, try anyway and let the server decide.
+  const [checkFailed, setCheckFailed] = useState(false);
   const humanCheck = useRef<HumanCheckHandle>(null);
 
   function close() {
@@ -41,7 +43,7 @@ export function DeleteAccountSheet({ open, onClose, session }: { open: boolean; 
 
   async function sendCode() {
     setError(null);
-    if (turnstileSiteKey && !captcha) return setError("Just a moment while we check you're not a robot, then try again.");
+    if (turnstileSiteKey && !captcha && !checkFailed) return setError("Just a moment while we check you're not a robot, then try again.");
     setBusy(true);
     const { error } = await supabase().auth.signInWithOtp({
       email,
@@ -60,7 +62,7 @@ export function DeleteAccountSheet({ open, onClose, session }: { open: boolean; 
     try {
       if (usePassword) {
         if (!password) throw new Error("Enter your password.");
-        if (turnstileSiteKey && !captcha) throw new Error("Just a moment while we check you're not a robot, then try again.");
+        if (turnstileSiteKey && !captcha && !checkFailed) throw new Error("Just a moment while we check you're not a robot, then try again.");
         const { error } = await supabase().auth.signInWithPassword({ email, password, ...(captcha ? { options: { captchaToken: captcha } } : {}) });
         humanCheck.current?.reset();
         if (error) throw new Error(/invalid login credentials/i.test(error.message) ? "That password isn't right." : friendlyError(error));
@@ -126,7 +128,7 @@ export function DeleteAccountSheet({ open, onClose, session }: { open: boolean; 
           )}
           <Button type="button" variant="quiet" onClick={close}>Keep my account</Button>
           {usePassword || !codeSent ? (
-            <HumanCheck ref={humanCheck} onToken={setCaptcha} onError={() => setError("We couldn't check you're not a robot. Check your connection and try again.")} />
+            <HumanCheck ref={humanCheck} onToken={setCaptcha} onError={() => setCheckFailed(true)} />
           ) : null}
         </form>
       )}
