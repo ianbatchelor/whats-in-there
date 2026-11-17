@@ -32,6 +32,8 @@ export default function SignInPage() {
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [captcha, setCaptcha] = useState<string | null>(null);
+  // If the check can't load (no connection to Cloudflare, or inside the app), try anyway and let the server decide.
+  const [checkFailed, setCheckFailed] = useState(false);
   const humanCheck = useRef<HumanCheckHandle>(null);
 
   useEffect(() => {
@@ -59,7 +61,7 @@ export default function SignInPage() {
       setError("Enter a valid email address.");
       return;
     }
-    if (turnstileSiteKey && !captcha) {
+    if (turnstileSiteKey && !captcha && !checkFailed) {
       setError("Just a moment while we check you're not a robot, then try again.");
       return;
     }
@@ -94,7 +96,7 @@ export default function SignInPage() {
     setError(null);
     const address = email.trim().toLowerCase();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(address) || !password) return setError("Enter your email and password.");
-    if (turnstileSiteKey && !captcha) {
+    if (turnstileSiteKey && !captcha && !checkFailed) {
       setError("Just a moment while we check you're not a robot, then try again.");
       return;
     }
@@ -214,7 +216,7 @@ export default function SignInPage() {
       <HumanCheck
         ref={humanCheck}
         onToken={setCaptcha}
-        onError={() => setError("We couldn't check you're not a robot. Check your connection and reload the page.")}
+        onError={() => setCheckFailed(true)}
       />
 
       <p className="text-center text-xs text-mute lg:hidden">Your household&apos;s list is private to the people you invite.</p>
