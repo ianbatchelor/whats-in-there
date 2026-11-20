@@ -196,8 +196,12 @@ export default function SharedWishPage() {
   const wrap = books ? { paper: BOOK_LOOK.ribbon, ink: "#ffffff", ribbon: BOOK_LOOK.ribbon, soft: BOOK_LOOK.soft } : gift;
   const getting = books ? "I'll get this" : "I'm getting this";
   const first = list ? firstName(list.name) : "";
-  const ideas = list?.ideas ?? [];
-  const free = ideas.filter((i) => !i.taken).length;
+  const all = list?.ideas ?? [];
+  const free = all.filter((i) => !i.taken).length;
+  // Givers on a present list see only what's still free, and the ones they're getting themselves.
+  const hideTaken = !books && role === "giver";
+  const ideas = hideTaken ? all.filter((i) => !i.taken || !!tokens[i.id]) : all;
+  const hidden = all.length - ideas.length;
 
   return (
     <div className="min-h-dvh bg-bg">
@@ -241,7 +245,7 @@ export default function SharedWishPage() {
             ) : <IconGift className="size-8 text-[#8f2d2d]" />}
             <h2 className="font-serif text-[1.7rem] leading-tight font-semibold">Before you peek…</h2>
             <p className="text-[15.5px] text-mute">
-              This page shows which {books ? "books" : "presents"} people are already getting for {first}. So that {first} doesn&apos;t spoil the surprise, which are you?
+              This page shows {books ? "which books people are already getting" : "the presents nobody is getting yet"} for {first}. So that {first} doesn&apos;t spoil the surprise, which are you?
             </p>
             <div className="flex flex-col gap-2 sm:flex-row">
               <Button onClick={() => choose("giver")} className="sm:flex-1" style={{ background: wrap.paper, color: wrap.ink }}>
@@ -270,7 +274,7 @@ export default function SharedWishPage() {
               ) : (
                 <p className="text-mute">
                   Tap <b className="text-fg">{getting}</b> on the one you choose, so nobody buys the same {books ? "book" : "thing"} twice. {first} won&apos;t see.{" "}
-                  {ideas.length > 0 ? <span className="whitespace-nowrap">{free === 0 ? "Everything's taken." : `${free} still free.`}</span> : null}
+                  {all.length > 0 ? <span className="whitespace-nowrap">{free === 0 ? "Everything's taken." : `${free} still free.`}</span> : null}
                 </p>
               )}
             </div>
@@ -289,7 +293,11 @@ export default function SharedWishPage() {
 
             {ideas.length === 0 ? (
               <p className="rounded-[var(--radius-card)] border-2 border-dashed border-line p-6 text-center text-mute">
-                {key ? "Nothing on your list yet. Search for a book above, or scan the barcode on the back of one." : "Nothing on the list yet. Check back soon."}
+                {key
+                  ? "Nothing on your list yet. Search for a book above, or scan the barcode on the back of one."
+                  : hidden > 0
+                    ? `Everything on ${first}'s list is already being got by someone. Check back later in case more ideas are added.`
+                    : "Nothing on the list yet. Check back soon."}
               </p>
             ) : (
               <ul className="flex flex-col gap-2.5">
@@ -400,6 +408,12 @@ export default function SharedWishPage() {
                 })}
               </ul>
             )}
+
+            {hidden > 0 && ideas.length > 0 ? (
+              <p className="px-2 text-center text-[14px] text-mute">
+                {hidden === 1 ? "1 idea is" : `${hidden} ideas are`} already being got by someone else, so {hidden === 1 ? "it's" : "they're"} not shown.
+              </p>
+            ) : null}
 
             {key && code && list ? <OwnListTools code={code} name={list.name} onRemove={removeOwnList} /> : null}
 

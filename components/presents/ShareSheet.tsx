@@ -11,6 +11,7 @@ import { friendlyError } from "@/lib/supabase/errors";
 import { firstName, shareMessage, wishShareUrl, type WishList } from "@/lib/domain/presents";
 import { bookShareMessage } from "@/lib/domain/books";
 import { removeList, shareList, unshareList } from "@/lib/presents";
+import { InviteToList } from "@/components/presents/InviteToList";
 
 /**
  * Share a list with family outside the household: a private link that opens a page anyone can
@@ -24,6 +25,7 @@ export function ShareSheet({
   mine,
   onChanged,
   onRemoved,
+  canInvite = false,
 }: {
   open: boolean;
   onClose: () => void;
@@ -33,6 +35,8 @@ export function ShareSheet({
   onChanged: () => void;
   /** Only for lists for someone without an account, which can be removed. */
   onRemoved?: () => void;
+  /** Lives in the household (not family), so may invite someone into the app for this list. */
+  canInvite?: boolean;
 }) {
   const [code, setCode] = useState<string | null>(list.shareCode);
   const [busy, setBusy] = useState<string | null>(null);
@@ -150,6 +154,9 @@ export function ShareSheet({
         )}
 
         {error ? <Notice>{error}</Notice> : null}
+
+        {canInvite && !books && !list.friend ? <InviteToList listId={list.id} first={first} open={open} /> : null}
+
         <PeopleLink />
 
         {onRemoved ? (
