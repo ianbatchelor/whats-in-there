@@ -75,3 +75,20 @@ export function progressLine(p: PersonPresents, own: boolean): string {
   const parts = [p.yours > 0 ? `You're getting ${p.yours}` : null, `${p.taken} of ${p.ideas} taken`];
   return parts.filter(Boolean).join(" · ");
 }
+
+/** From 1 to 26 December Home gives Christmas a card of its own, instead of one line. */
+export function isChristmasRun(now: Date = new Date()): boolean {
+  return now.getMonth() === 11 && now.getDate() <= 26;
+}
+
+/**
+ * For Home's December card: the lists still with ideas nobody has said they're getting, most to
+ * sort first, as "Mia: 2 of 3 still free". Your own list is left out, so it never gives anything away.
+ */
+export function stillToSort(progress: PersonPresents[], me: string, max = 3): string[] {
+  return progress
+    .filter((p) => p.userId !== me && p.ideas > p.taken)
+    .sort((a, b) => b.ideas - b.taken - (a.ideas - a.taken) || a.name.localeCompare(b.name))
+    .slice(0, max)
+    .map((p) => `${p.name.trim().split(/\s+/)[0]}: ${p.ideas - p.taken} of ${p.ideas} still free`);
+}

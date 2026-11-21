@@ -68,7 +68,7 @@ describe("who sees what", () => {
   });
 });
 
-import { countdown, daysToChristmas, isChristmasTime, isChristmassy, presentProgress, progressLine } from "@/lib/domain/christmas";
+import { countdown, daysToChristmas, isChristmasRun, isChristmasTime, isChristmassy, presentProgress, progressLine, stillToSort } from "@/lib/domain/christmas";
 
 describe("Christmas", () => {
   it("counts the days", () => {
@@ -123,5 +123,20 @@ describe("check before you buy", () => {
     ], (id) => names.get(id));
     expect(h && haveLine(h)).toBe("You have 2 in Garage freezer");
     expect(haveAlready("Lemons", [], () => undefined)).toBeNull();
+  });
+});
+
+describe("Christmas on Home in December", () => {
+  it("runs from 1 to 26 December", () => {
+    expect(isChristmasRun(new Date(2026, 10, 30))).toBe(false);
+    expect(isChristmasRun(new Date(2026, 11, 1))).toBe(true);
+    expect(isChristmasRun(new Date(2026, 11, 26))).toBe(true);
+    expect(isChristmasRun(new Date(2026, 11, 27))).toBe(false);
+  });
+
+  it("lists who still has ideas free, most first, never your own", () => {
+    const p = (userId: string | null, name: string, ideas: number, taken: number) => ({ userId, name, ideas, taken, yours: 0 });
+    const lines = stillToSort([p("me", "Ian", 5, 0), p("u2", "Michele Smith", 2, 1), p(null, "Mia", 3, 0), p("u3", "Carol", 2, 2)], "me");
+    expect(lines).toEqual(["Mia: 3 of 3 still free", "Michele: 1 of 2 still free"]);
   });
 });

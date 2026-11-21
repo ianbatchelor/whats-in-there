@@ -43,7 +43,7 @@ function Tile({
       <Link href={href} className="group flex flex-col gap-2">
         <span className={`lift relative block overflow-hidden rounded-2xl bg-sunk ${feature ? "aspect-[2/1] sm:aspect-[4/3]" : "aspect-[4/3]"}`}>
           {cover ?? <PlacePhoto type={type} imagePath={imagePath} className="transition duration-700 ease-out group-hover:scale-[1.04]" eager={index < 6} />}
-          {late > 0 || soon > 0 ? <UrgencyBadge late={late} soon={soon} /> : null}
+          {late > 0 || soon > 0 ? <UrgencyBadge late={late} soon={soon} wine={type === "wine"} /> : null}
           {shared && shared.length > 0 ? (
             <span className="absolute bottom-2 left-2 flex h-6 max-w-[calc(100%-1rem)] items-center gap-1 truncate rounded-full bg-white/95 px-2.5 text-[12.5px] font-semibold text-[#1e4a38]">
               <IconPeople className="size-3.5 shrink-0" />
@@ -71,7 +71,7 @@ function BigTile({ href, type, imagePath, title, sub, late, soon, index, shared 
       <Link href={href} className="group lift relative block aspect-[4/5] overflow-hidden rounded-[20px] bg-sunk shadow-[var(--shadow-card)] sm:aspect-[5/4]">
         <PlacePhoto type={type} imagePath={imagePath} className="transition duration-700 ease-out group-hover:scale-[1.04]" eager={index < 6} />
         <span className="absolute inset-x-0 bottom-0 h-[58%] bg-gradient-to-t from-black/75 via-black/30 to-transparent" aria-hidden="true" />
-        {late > 0 || soon > 0 ? <UrgencyBadge late={late} soon={soon} short /> : null}
+        {late > 0 || soon > 0 ? <UrgencyBadge late={late} soon={soon} wine={type === "wine"} short /> : null}
         <span className="absolute inset-x-0 bottom-0 flex flex-col gap-1.5 px-3.5 pb-3 text-white">
           {shared && shared.length > 0 ? (
             <span className="flex h-6 max-w-full items-center gap-1 self-start truncate rounded-full bg-white/95 px-2.5 text-[12.5px] font-semibold text-[#1e4a38]">
@@ -91,19 +91,21 @@ function BigTile({ href, type, imagePath, title, sub, late, soon, index, shared 
 }
 
 /** The most urgent count leads, in its own colour: "1 past its date · 4 soon", or "4 to use soon". */
-function UrgencyBadge({ late, soon, short = false }: { late: number; soon: number; /** Fewer words, for Home's narrower cards. */ short?: boolean }) {
+function UrgencyBadge({ late, soon, short = false, wine = false }: { late: number; soon: number; /** Fewer words, for Home's narrower cards. */ short?: boolean; /** Bottles are drunk, not used: "1 to drink this year". */ wine?: boolean }) {
   return (
     <span className="absolute top-2 left-2 flex h-6 max-w-[calc(100%-1rem)] items-center gap-1.5 truncate rounded-full bg-white/95 px-2.5 text-[12.5px] font-semibold">
       <span className={`size-1.5 shrink-0 rounded-full ${late > 0 ? "bg-[#c4502c]" : "bg-[#c98a14]"}`} aria-hidden="true" />
       {late > 0 ? (
         <>
           <span className="text-[#a63b1a]">
-            {late} past {short ? "date" : late === 1 ? "its date" : "a date"}
+            {wine ? `${late} past ${short ? "best" : "their best"}` : `${late} past ${short ? "date" : late === 1 ? "its date" : "a date"}`}
           </span>
           {soon > 0 ? <span className="text-[#855a0b]">· {soon} soon</span> : null}
         </>
       ) : (
-        <span className="text-[#855a0b]">{soon} to use soon</span>
+        <span className="text-[#855a0b]">
+          {soon} {wine ? "to drink this year" : "to use soon"}
+        </span>
       )}
     </span>
   );

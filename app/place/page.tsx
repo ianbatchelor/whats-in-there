@@ -322,7 +322,7 @@ function Place({ me }: { me: string }) {
       placeId={place.id}
       type={place.type}
       have={(items ?? []).map((i) => i.productName)}
-      label="Quick add"
+      label={items && items.length === 0 ? "Tap the things you have" : "Quick add"}
       onAdded={(item, movementId) => {
         refresh(place.id);
         announce(`Added ${item.productName}`, movementId);
@@ -338,7 +338,8 @@ function Place({ me }: { me: string }) {
         ref={heroHeader}
         className="reveal relative z-20 -mx-4 -mt-[max(16px,env(safe-area-inset-top))] overflow-hidden max-sm:sticky max-sm:top-0 max-sm:shadow-[0_10px_24px_-18px_rgba(0,0,0,0.5)] sm:mx-0 sm:mt-0 sm:rounded-[24px]"
       >
-        <div className="h-56 sm:h-64 lg:h-72">
+        {/* Shorter once there are things in it, so more of them fit on the first screen. */}
+        <div className={items && items.length > 0 ? "h-44 sm:h-56 lg:h-64" : "h-56 sm:h-64 lg:h-72"}>
           {place.parentId ? (
             <BoxCover
               id={place.id}
@@ -371,8 +372,10 @@ function Place({ me }: { me: string }) {
           <span ref={heroSmall} aria-hidden="true" className="min-w-0 flex-1 truncate font-serif text-[18px] font-semibold text-[#fffdf8] opacity-0 sm:hidden">
             {place.name}
           </span>
-          <div className={`flex shrink-0 gap-2 ${guest ? "hidden" : ""}`}>
+          <div className="flex shrink-0 gap-2">
+            {place.parentId ? null : <NotifyBell kind="place" id={place.id} tone="onPhoto" />}
             <button
+              hidden={guest}
               onClick={() => setSticker(true)}
               aria-label={`Sticker and QR label for ${place.name}`}
               className="grid size-11 place-items-center rounded-full bg-[#fffdf8]/92 text-[#17242a] shadow-[var(--shadow-card)] backdrop-blur transition hover:bg-[#fffdf8]"
@@ -380,6 +383,7 @@ function Place({ me }: { me: string }) {
               <IconSticker className="size-5" />
             </button>
             <button
+              hidden={guest}
               onClick={() => setEditing("edit")}
               aria-label={`Edit ${place.name}`}
               className="grid size-11 place-items-center rounded-full bg-[#fffdf8]/92 text-[#17242a] shadow-[var(--shadow-card)] backdrop-blur transition hover:bg-[#fffdf8]"
@@ -397,12 +401,6 @@ function Place({ me }: { me: string }) {
           <p className="truncate text-[14px] text-[#fffdf8]/90">{summary}</p>
         </div>
       </div>
-
-      {place.parentId ? null : (
-        <div className="-mb-2 flex justify-end">
-          <NotifyBell kind="place" id={place.id} />
-        </div>
-      )}
 
       {error ? <Notice>{error}</Notice> : null}
 
@@ -509,29 +507,19 @@ function Place({ me }: { me: string }) {
           <div>
             <h2 className="font-display text-lg font-bold">Empty for now</h2>
             <p className="mt-0.5 text-[14.5px] text-mute">
-              {shelfFirst ? `One photo of the ${place.type === "wardrobe" ? "rail" : "shelf"} lists everything on it.` : `Add things as you put them in, like “${info.thing}”.`}
+              {shelfFirst
+                ? `One photo of the ${place.type === "wardrobe" ? "rail" : "shelf"} lists everything on it.`
+                : `The quickest start: one photo of a ${place.type === "freezer" ? "drawer or shelf" : "shelf"} lists everything on it. Or tap the things below that you have.`}
             </p>
           </div>
-          {/* One clear next step; the other ways in are quieter links. */}
-          {shelfFirst ? (
-            <Button onClick={() => setMany(true)} className="self-start">
-              <IconStack /> {place.type === "wardrobe" ? "Snap the rail" : "Snap the shelf"}
-            </Button>
-          ) : (
-            <Button onClick={() => setAdding(true)} className="self-start">
-              <IconPlus /> Add the first thing
-            </Button>
-          )}
+          {/* One clear next step, the fastest way to fill a place; the other ways in are quieter links. */}
+          <Button onClick={() => setMany(true)} className="self-start">
+            <IconStack /> {place.type === "wardrobe" ? "Snap the rail" : place.type === "freezer" ? "Snap a drawer" : "Snap the shelf"}
+          </Button>
           <div className="flex flex-wrap gap-x-5 gap-y-1 text-[14.5px] font-semibold text-leaf">
-            {shelfFirst ? (
-              <button onClick={() => setAdding(true)} className="min-h-10">
-                Add one by one
-              </button>
-            ) : place.type === "freezer" || place.type === "fridge" ? null : (
-              <button onClick={() => setMany(true)} className="min-h-10">
-                Snap a whole shelf
-              </button>
-            )}
+            <button onClick={() => setAdding(true)} className="min-h-10">
+              Add one thing
+            </button>
             {canHoldBoxes && !guest ? (
               <button onClick={() => setAddingBox(true)} className="min-h-10">
                 Add a box or shelf inside
@@ -576,7 +564,7 @@ function Place({ me }: { me: string }) {
       ) : (
         <section aria-labelledby="items-h" className="flex flex-col gap-2.5">
           {guest || filtering ? null : (
-            <Tip id="place-minus">
+            <Tip id="place-minus" once>
               Tap <b>&minus;</b> to take one out. Tap a thing to move it, lend it or change it.
             </Tip>
           )}

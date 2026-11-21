@@ -58,11 +58,15 @@ export function useCollapsingHeader(enabled: boolean) {
     };
 
     measure();
+    // The photo gets shorter once a place has things in it, so measure again when its size changes.
+    const resized = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(() => measure());
+    if (resized && header.current) resized.observe(header.current);
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", measure);
     phone.addEventListener("change", measure);
     return () => {
       if (frame) cancelAnimationFrame(frame);
+      resized?.disconnect();
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", measure);
       phone.removeEventListener("change", measure);

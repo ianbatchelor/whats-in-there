@@ -82,14 +82,19 @@ export async function loadUseFirst(householdId: string, limit = 4): Promise<Stoc
   return sortUseFirst((data ?? []).map(toItem)).slice(0, limit);
 }
 
-export async function searchItems(householdId: string, query: string): Promise<StockItem[]> {
+/**
+ * Things matching what was typed by name, brand, kind or what a bottle is saved for, plus everything
+ * in `alsoIn`: the places and boxes whose own name matched ("christmas" finds what's in the Christmas box).
+ */
+export async function searchItems(householdId: string, query: string, alsoIn: string[] = []): Promise<StockItem[]> {
   const pattern = likePattern(query);
+  const inPlaces = alsoIn.length > 0 ? `,location_id.in.(${alsoIn.join(",")})` : "";
   const { data, error } = await supabase()
     .from("stock_items")
     .select(COLUMNS)
     .eq("household_id", householdId)
     .eq("status", "in_stock")
-    .or(`product_name.ilike.${pattern},brand.ilike.${pattern},category.ilike.${pattern}`)
+    .or(`product_name.ilike.${pattern},brand.ilike.${pattern},category.ilike.${pattern},saved_for.ilike.${pattern}${inPlaces}`)
     .limit(50);
   if (error) throw error;
   return sortUseFirst((data ?? []).map(toItem));

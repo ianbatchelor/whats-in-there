@@ -17,12 +17,14 @@ function dismissed(): string[] {
  * A small tip on the screen where it helps, shown until it's closed. Each tip is closed once, on
  * this device, so the help is there when it's new and gone once it's known.
  */
-export function Tip({ id, children }: { id: string; children: React.ReactNode }) {
+export function Tip({ id, children, once = false }: { id: string; children: React.ReactNode; /** Shown on one visit only, closed or not. */ once?: boolean }) {
   const [show, setShow] = useState(false);
   useEffect(() => {
+    const seen = dismissed().includes(id);
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setShow(!dismissed().includes(id));
-  }, [id]);
+    setShow(!seen);
+    if (!seen && once) writeLocal(KEYS.tips, JSON.stringify([...dismissed(), id]));
+  }, [id, once]);
   if (!show) return null;
   return (
     <aside className="flex items-start gap-3 rounded-[var(--radius-card)] bg-check/70 py-2.5 pr-1.5 pl-3.5 text-[14px] leading-snug text-fg/85" aria-label="Tip">

@@ -39,11 +39,12 @@ const SBD = SB.replace('sb w', 'sb');
 const ICON = {
   home: '<path d="M4 11 12 4l8 7v9h-5v-6H9v6H4z"/>',
   search: '<circle cx="11" cy="11" r="6.5"/><path d="m20 20-4-4"/>',
+  list: '<path d="M9 6.5h11M9 12h11M9 17.5h11M4.5 6.5h.5M4.5 12h.5M4.5 17.5h.5"/>',
   act: '<path d="M3 12h4l3-7 4 14 3-7h4"/>',
   hh: '<circle cx="9" cy="8" r="3.2"/><path d="M3 19c.6-3.4 3-5 6-5s5.4 1.6 6 5"/><circle cx="17" cy="9" r="2.4"/><path d="M16 14c2.6 0 4.4 1.4 5 4"/>',
 };
 const tab = (k, l, on) => `<div class="tab${on ? ' on' : ''}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICON[k]}</svg>${l}</div>`;
-const TABS = (on) => `<div class="tabs">${tab('home', 'Home', on === 'home')}${tab('search', 'Search')}<div class="tab"><div class="addbtn" data-add><svg width="22" height="22" viewBox="0 0 24 24" stroke="#fff" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></div></div>${tab('act', 'Activity')}${tab('hh', 'Household')}</div>`;
+const TABS = (on) => `<div class="tabs">${tab('home', 'Home', on === 'home')}${tab('list', 'Lists', on === 'lists')}<div class="tab"><div class="addbtn" data-add><svg width="22" height="22" viewBox="0 0 24 24" stroke="#fff" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></div></div>${tab('act', 'Activity')}${tab('hh', 'People')}</div>`;
 const row = (n, s, pill) => `<div class="row"><div><div class="rn">${n}</div><div class="rs">${s}</div></div>${pill || ''}</div>`;
 const placeHTML = (id) => `
   <div class="phead" style="background-image:url(${IMG('freezer-wide')})">${SB}<div class="ptitle"><div class="k">Freezer</div><div class="n">Garage freezer</div></div></div>
@@ -105,7 +106,7 @@ $('aLists').innerHTML = `${SBD}
     ${lcard('gift', 'Present ideas', "Everyone's wish lists", '')}
     ${lcard('book', 'Book wish lists', 'What everyone wants to read next', '')}
     ${lcard('list', 'Jobs before Gran visits', 'Just you', '3')}
-  </div>${TABS()}
+  </div>${TABS('lists')}
   <div class="dim layer" id="aDim" data-a></div>
   <div class="sheet abs" id="aSheet" data-a><div class="grab"></div>
     <div class="disp" style="font-size:22px;font-weight:800">New list</div>
@@ -171,7 +172,7 @@ $('aXmas').innerHTML = `<div class="sb" style="background:var(--bg)"><span>9:41<
       ${gi(ic('snow', '#3b6e8f'), 'Leg of lamb', 'Garage freezer · frozen 7 months')}
       ${gi(ic('snow', '#3b6e8f'), 'Blackberries', 'Garage freezer · frozen in September')}
     </div></div>
-  </div>${TABS('home')}`;
+  </div>${TABS('lists')}`;
 
 // ---------- Timeline helpers ----------
 const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));

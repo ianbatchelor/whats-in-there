@@ -5,9 +5,9 @@ import type { LocationType } from "@/lib/household";
  * the first entries take seconds. Plain, common names only; people rename or remove them as they like.
  */
 export const STARTER_THINGS: Record<LocationType, string[]> = {
-  freezer: ["Frozen peas", "Ice cream", "Bread", "Chips"],
-  fridge: ["Milk", "Butter", "Cheese", "Eggs"],
-  pantry: ["Pasta", "Rice", "Tinned tomatoes", "Olive oil"],
+  freezer: ["Frozen peas", "Ice cream", "Bread", "Chips", "Fish fingers", "Chicken breasts", "Mince", "Pizza"],
+  fridge: ["Milk", "Butter", "Cheese", "Eggs", "Yoghurt", "Ham", "Orange juice", "Salad"],
+  pantry: ["Pasta", "Rice", "Tinned tomatoes", "Olive oil", "Baked beans", "Cereal", "Flour", "Tea bags"],
   cupboard: ["Light bulbs", "Batteries", "Bin bags", "Washing-up liquid"],
   wine: ["Red wine", "White wine", "Prosecco"],
   attic: ["Christmas decorations", "Suitcases", "Photo albums", "Camping gear"],
