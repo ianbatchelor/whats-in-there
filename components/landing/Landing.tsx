@@ -2,7 +2,7 @@ import Link from "next/link";
 import { LegalLinks } from "@/components/common/LegalLinks";
 import { BrandMark, Wordmark } from "@/components/brand/BrandMark";
 import { PlacePhoto } from "@/components/art/PlacePhoto";
-import { IconBasket, IconGift, IconHandOver, IconLeaf, IconScan, IconSearch } from "@/components/ui/icons";
+import { IconBasket, IconGift, IconHandOver, IconLeaf, IconPlay, IconScan, IconSearch } from "@/components/ui/icons";
 import type { LocationType } from "@/lib/household";
 
 const EXAMPLES: { type: LocationType; title: string; text: string }[] = [
@@ -59,6 +59,16 @@ export function Landing() {
                 I already have an account
               </Link>
             </div>
+            <Link
+              href="/how-it-works/"
+              className="rise mt-6 inline-flex min-h-11 items-center gap-2.5 font-display text-[15px] font-semibold text-[#fffdf8]/85 hover:text-white"
+              style={{ animationDelay: "240ms" }}
+            >
+              <span className="grid size-9 place-items-center rounded-full border border-white/30 bg-black/15 backdrop-blur" aria-hidden="true">
+                <IconPlay className="size-4 translate-x-px" />
+              </span>
+              Watch how it works · 1 min
+            </Link>
           </div>
         </div>
       </section>

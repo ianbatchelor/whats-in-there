@@ -1,9 +1,12 @@
 // Records index.html to an MP4, one exact frame at a time.
-// node render.cjs <out.mp4> [music.wav]        full video
-// node render.cjs --stills <dir> 3.2 14.5 ...   PNG stills at given seconds
-const { chromium } = require('playwright');
-const { spawn } = require('child_process');
-const path = require('path');
+// node render.mjs <out.mp4> [music.wav]        full video
+// node render.mjs --stills <dir> 3.2 14.5 ...   PNG stills at given seconds
+import { createRequire } from 'node:module';
+import { spawn } from 'node:child_process';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+const { chromium } = createRequire(import.meta.url)('playwright'); // the copy installed with the browser
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const FPS = 30;
 (async () => {
   const args = process.argv.slice(2);

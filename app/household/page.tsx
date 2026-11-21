@@ -21,7 +21,7 @@ import { Button } from "@/components/ui/Button";
 import { Notice } from "@/components/ui/Notice";
 import { Field } from "@/components/ui/Field";
 import { Sheet } from "@/components/ui/Sheet";
-import { IconCheck, IconChevronRight, IconCopy, IconMore } from "@/components/ui/icons";
+import { IconCheck, IconChevronRight, IconCopy, IconMore, IconPlay } from "@/components/ui/icons";
 import Link from "next/link";
 import { DeleteAccountSheet } from "@/components/account/DeleteAccountSheet";
 import { LegalLinks } from "@/components/common/LegalLinks";
@@ -328,6 +328,19 @@ function Household({ session }: { session: Session }) {
         <span className="min-w-0 flex-1">
           <b className="font-semibold">Help</b>
           <span className="text-mute"> · how everything works, and how to reach us</span>
+        </span>
+        <IconChevronRight className="size-4 shrink-0 text-mute/70" />
+      </Link>
+      <Link
+        href="/how-it-works/"
+        className="-mt-2 flex min-h-12 items-center gap-3 rounded-2xl border border-line bg-card px-4 text-[14.5px] transition hover:bg-sunk/50"
+      >
+        <span className="grid size-7 shrink-0 place-items-center rounded-full bg-sunk text-leaf" aria-hidden="true">
+          <IconPlay className="size-3.5 translate-x-px" />
+        </span>
+        <span className="min-w-0 flex-1">
+          <b className="font-semibold">How it works</b>
+          <span className="text-mute"> · a one-minute video</span>
         </span>
         <IconChevronRight className="size-4 shrink-0 text-mute/70" />
       </Link>

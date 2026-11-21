@@ -4,7 +4,7 @@ A 71-second, 1920×1080 explainer clip for See What's in Here, drawn in code so 
 
 - `index.html`: the whole video as one page. `renderAt(t)` draws the frame at `t` seconds; the scene times are in `T` and in each scene function. Uses the app's colours, fonts, brand mark and the place photos in `public/places/`.
 - `music.py`: the soundtrack (music bed plus tap, shutter, chime and typing sounds timed to the picture). Needs Python 3 with numpy.
-- `render.cjs`: records the page frame by frame with Playwright and encodes it with ffmpeg.
+- `render.mjs`: records the page frame by frame with Playwright and encodes it with ffmpeg.
 
 ## Scenes
 
@@ -27,8 +27,14 @@ A 71-second, 1920×1080 explainer clip for See What's in Here, drawn in code so 
 ```bash
 cd marketing/explainer
 python3 music.py music.wav
-node render.cjs explainer.mp4 music.wav        # about 2 minutes
-node render.cjs --stills . 14.4 23.4 41.5      # PNG stills, for checking a moment
+node render.mjs explainer.mp4 music.wav        # about 2 minutes
+node render.mjs --stills . 14.4 23.4 41.5      # PNG stills, for checking a moment
 ```
 
 Fonts load from Google Fonts, so rendering needs a network connection.
+
+The app's How it works page (`/how-it-works/`) plays a smaller copy at `public/video/how-it-works.mp4`. After changing the video, make that copy again and update the chapter times in `lib/domain/howItWorks.ts`:
+
+```bash
+ffmpeg -i explainer.mp4 -c:v libx264 -preset slow -crf 28 -pix_fmt yuv420p -c:a aac -b:a 96k -movflags +faststart ../../public/video/how-it-works.mp4
+```
