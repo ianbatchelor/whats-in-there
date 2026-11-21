@@ -10,10 +10,21 @@
 html,body{width:1080px;height:1920px;overflow:hidden;background:var(--bg)}
 #stage{position:relative;width:1080px;height:1920px;overflow:hidden}
 #hook.night,#brand.night{background:radial-gradient(circle at 50% 30%,#2b5e45 0%,#183f32 40%,#0b1d16 100%)}
-#hookCol{position:absolute;left:90px;right:90px;top:0;bottom:120px;display:flex;flex-direction:column;justify-content:center;gap:26px}
-#hook .ln{font-family:Fraunces,Georgia,serif;font-weight:600;color:#fffdf8;letter-spacing:-.015em;line-height:1.04}
-#hook .big{font-size:132px}
-#hook .q{font-size:64px;color:#f6c65b;font-style:italic}
+/* Split-flap countdown: each card is a static top and bottom half plus two leaves that fold over. */
+#counter{position:absolute;left:0;right:0;top:300px;display:flex;justify-content:center;gap:28px;perspective:1600px}
+.card{position:relative;width:310px;height:420px;border-radius:30px;box-shadow:0 50px 70px -36px rgba(0,0,0,.75)}
+.card::after{content:"";position:absolute;left:0;right:0;top:50%;height:5px;margin-top:-2.5px;background:#0a1912;z-index:6}
+.card::before{content:"";position:absolute;left:-7px;right:-7px;top:50%;height:22px;margin-top:-11px;border-radius:6px;background:linear-gradient(90deg,#3a3a2a 0 14px,transparent 14px calc(100% - 14px),#3a3a2a calc(100% - 14px));z-index:7}
+.half{position:absolute;left:0;right:0;height:50%;overflow:hidden;backface-visibility:hidden}
+.half.top{top:0;border-radius:30px 30px 0 0;background:linear-gradient(180deg,#235741,#1b4635);transform-origin:50% 100%}
+.half.bot{bottom:0;border-radius:0 0 30px 30px;background:linear-gradient(180deg,#173b2c,#122f23);transform-origin:50% 0}
+.half span{position:absolute;left:0;right:0;height:420px;line-height:420px;text-align:center;font-family:"Plus Jakarta Sans",sans-serif;font-weight:800;font-size:310px;letter-spacing:-.04em;color:#f6c65b}
+.half.top span{top:0}
+.half.bot span{top:-210px}
+.leaf{z-index:4}
+#clabel{position:absolute;left:0;right:0;top:770px;text-align:center;font-family:Fraunces,Georgia,serif;font-style:italic;font-weight:600;font-size:78px;color:#fffdf8;letter-spacing:-.01em}
+#qs{position:absolute;left:60px;right:60px;top:960px;display:flex;flex-direction:column;align-items:center;gap:22px}
+#hook .q{font-family:Fraunces,Georgia,serif;font-weight:600;font-size:62px;color:#f6c65b;letter-spacing:-.01em;text-align:center;padding:10px 30px;border-radius:999px;background:rgba(0,0,0,.18)}
 .glow{position:absolute;left:50%;top:38%;width:1200px;height:1200px;margin:-600px 0 0 -600px;border-radius:50%;background:radial-gradient(circle,rgba(246,198,91,.16),rgba(246,198,91,0) 60%)}
 #light{background:var(--bg)}
 #light::before{content:"";position:absolute;right:-300px;top:-300px;width:1100px;height:1100px;border-radius:50%;background:radial-gradient(circle,#f6e3dd 0%,rgba(246,227,221,0) 68%)}
@@ -34,11 +45,12 @@ html,body{width:1080px;height:1920px;overflow:hidden;background:var(--bg)}
 <div id="stage">
   <div id="hook" class="layer night">
     <div class="glow"></div>
-    <div id="hookCol">
-      <div class="ln big" id="k0" data-a style="margin-bottom:34px">34 days to<br>Christmas.</div>
-      <div class="ln q" id="k1" data-a>Who's getting what?</div>
-      <div class="ln q" id="k2" data-a>Where are the decorations?</div>
-      <div class="ln q" id="k3" data-a>Is there room in the freezer?</div>
+    <div id="counter" data-a><div class="card" id="d0"></div><div class="card" id="d1"></div></div>
+    <div id="clabel" data-a>days to Christmas</div>
+    <div id="qs">
+      <div class="q" id="k1" data-a>Who's getting what?</div>
+      <div class="q" id="k2" data-a>Where are the decorations?</div>
+      <div class="q" id="k3" data-a>Room in the freezer?</div>
     </div>
   </div>
 
@@ -98,7 +110,9 @@ html,body{width:1080px;height:1920px;overflow:hidden;background:var(--bg)}
 <script>
 window.SIZE = { w: 1080, h: 1920 };
 const T = { logo: 4.6, light: 7.7, end: 23.0, total: 28.5 };
-window.DURATION = T.total;
+// The countdown opening runs 1.4 s longer than the scenes after it were timed for, so they run on t - SHIFT.
+const SHIFT = 1.4;
+window.DURATION = T.total + SHIFT;
 // The presents and Christmas part of the explainer (50 s to 65 s there) plays from 8 s here.
 const OFF = 42.0;
 
@@ -121,10 +135,42 @@ function snow(t, o) {
   });
 }
 
+// Countdown: 24 days down to 1, flipping faster and faster, so it never claims a real date.
+const FROM = 24, FLIPS = FROM - 1, FLIP0 = 0.55, SPAN = 4.0;
+const flipStart = k => FLIP0 + SPAN * (1 - Math.pow(1 - k / FLIPS, 1.5));
+const LEAF = '<div class="half top"><span></span></div><div class="half bot"><span></span></div><div class="half top leaf"><span></span></div><div class="half bot leaf"><span></span></div>';
+$('d0').innerHTML = LEAF; $('d1').innerHTML = LEAF;
+function countAt(t) {
+  let k = 0; while (k < FLIPS && flipStart(k) <= t) k++;
+  if (k === 0) return { cur: FROM, nxt: FROM, p: null };
+  const s0 = flipStart(k - 1), s1 = k < FLIPS ? flipStart(k) : s0 + .3;
+  const p = (t - s0) / Math.min(.28, (s1 - s0) * .95), from = FROM - k + 1, to = FROM - k;
+  return p >= 1 ? { cur: to, nxt: to, p: null } : { cur: from, nxt: to, p };
+}
+function setCard(id, cur, nxt, p) {
+  const [st, sb, l1, l2] = $(id).children;
+  const flipping = p !== null && cur !== nxt;
+  st.firstChild.textContent = flipping ? nxt : cur;
+  sb.firstChild.textContent = cur;
+  l1.firstChild.textContent = cur; l2.firstChild.textContent = nxt;
+  const a = flipping ? Math.min(p, .5) * 2 : 1, b = flipping ? Math.max(p - .5, 0) * 2 : 1;
+  l1.style.visibility = flipping && p < .5 ? 'visible' : 'hidden';
+  l1.style.transform = `rotateX(${-90 * a}deg)`; l1.style.filter = `brightness(${1 - .45 * a})`;
+  l2.style.visibility = flipping && p >= .5 ? 'visible' : 'hidden';
+  l2.style.transform = `rotateX(${90 * (1 - b)}deg)`; l2.style.filter = `brightness(${.6 + .4 * b})`;
+}
 function hook(t) {
-  const on = t < T.logo + 1; $('hook').style.display = on ? '' : 'none'; if (!on) return;
-  [[0.2, 'k0', 50], [1.2, 'k1', 34], [1.9, 'k2', 34], [2.6, 'k3', 34]].forEach(([a, id, rise]) => {
-    const w = win(t, a, T.logo + .1, .6, .45, rise); S(id, w.o, 0, w.y);
+  const end = T.logo + SHIFT, on = t < end + 1; $('hook').style.display = on ? '' : 'none'; if (!on) return;
+  const c = countAt(t), tens = v => Math.floor(v / 10), ones = v => v % 10;
+  setCard('d0', tens(c.cur), tens(c.nxt), c.p);
+  setCard('d1', ones(c.cur), ones(c.nxt), c.p);
+  const landed = c.p === null && c.cur === 1;
+  $('clabel').textContent = c.cur === 1 && (c.p === null || c.p > .5) ? 'day to Christmas' : 'days to Christmas';
+  const ci = eo(P(t, 0, .5)), bump = landed ? Math.sin(P(t, flipStart(FLIPS - 1) + .2, flipStart(FLIPS - 1) + .6) * Math.PI) : 0;
+  S('counter', ci, 0, (1 - ci) * 40, L(.92, 1, ci) * (1 + .05 * bump));
+  const lw = win(t, .2, end + .1, .6, .4, 24); S('clabel', lw.o, 0, lw.y);
+  [[1.5, 'k1'], [2.4, 'k2'], [3.2, 'k3']].forEach(([a, id]) => {
+    const w = win(t, a, end + .1, .45, .4, 30); S(id, w.o, 0, w.y, L(.9, 1, back(P(t, a, a + .5))));
   });
 }
 
@@ -171,10 +217,11 @@ function phones(t) {
 
 function renderAt(t) {
   hook(t);
-  const lightOn = t > T.light - .3 && t < T.end + .9; $('light').style.display = lightOn ? '' : 'none';
-  if (lightOn) { captions(t); phones(t); }
-  brand(t);
-  const dark = Math.max(1 - P(t, T.light, T.light + .5), P(t, T.end, T.end + .6));
+  const u = t - SHIFT;
+  const lightOn = u > T.light - .3 && u < T.end + .9; $('light').style.display = lightOn ? '' : 'none';
+  if (lightOn) { captions(u); phones(u); }
+  brand(u);
+  const dark = Math.max(1 - P(u, T.light, T.light + .5), P(u, T.end, T.end + .6));
   snow(t, dark);
 }
 window.renderAt = renderAt;

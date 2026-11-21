@@ -98,7 +98,7 @@ const opt = (id, t, sub) => `<div class="opt" id="${id}"><span class="radio"></s
 $('aLists').innerHTML = `${SBD}
   <div class="lhead"><div><h3>Lists</h3><p>Shared with the people you choose</p></div><div class="newbtn" id="newBtn">+ New list</div></div>
   <div class="lbody">
-    <div class="lcard c xmas" data-a><div class="lic" style="background:rgba(255,255,255,.14);color:#f6c65b">${svgI('tree')}</div><div class="m"><div class="rn">Christmas</div><div class="rs" style="color:#f3d9d4">34 days to go</div></div></div>
+    <div class="lcard c xmas" data-a><div class="lic" style="background:rgba(255,255,255,.14);color:#f6c65b">${svgI('tree')}</div><div class="m"><div class="rn">Christmas</div><div class="rs" style="color:#f3d9d4">Presents, lists and decorations</div></div></div>
     <div class="newwrap" id="lNew"><div class="lcard" id="lNewRow"><div class="lic">${svgI('gift')}</div><div class="m"><div class="rn">Christmas dinner</div><div class="rs">Everyone at home and family</div></div><span class="pill newp">New</span></div></div>
     ${lcard('cart', 'Shopping list', 'Everyone at home', '6')}
     ${lcard('gift', 'Present ideas', "Everyone's wish lists", '')}
@@ -151,7 +151,7 @@ const gi = (lead, n, sub, { col = '', count = '' } = {}) => `<div class="gi">${l
 const ic = (k, c = '#2f6b50') => `<span class="lic" style="width:32px;height:32px;border-radius:9px;color:${c}">${svgI(k, 'currentColor', 18)}</span>`;
 $('aXmas').innerHTML = `<div class="sb" style="background:var(--bg)"><span>9:41</span><span class="sbi"><i style="height:6px"></i><i style="height:9px"></i><i style="height:12px"></i><span class="batt"></span></span></div>
   <div id="xScroll">
-    <div class="xhead xs" data-a><h3>Christmas</h3><p>34 days to go. Presents, lists, decorations and room in the freezer, all in one place.</p></div>
+    <div class="xhead xs" data-a><h3>Christmas</h3><p>Presents, lists, decorations and room in the freezer, all in one place.</p></div>
     <div class="xs" data-a><div class="sl">Presents</div><div class="grp">
       ${gi(av('M', '#8f2d2d'), 'Mia', "You're getting 1 · 2 of 5 taken", { col: '#2f6b50' })}
       ${gi(av('G', '#22355c'), 'Grandad', '1 of 4 taken')}

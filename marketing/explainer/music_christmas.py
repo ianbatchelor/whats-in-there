@@ -1,5 +1,5 @@
 """Soundtrack for the Christmas short (christmas.html): bells, sleigh bells, a bouncy bass and soft pad,
-plus sounds timed to the picture. An original tune, not a carol. Writes a 28.5-second stereo WAV.
+plus sounds timed to the picture. An original tune, not a carol. Writes a 29.9-second stereo WAV.
 
 python3 music_christmas.py out.wav
 """
@@ -9,7 +9,9 @@ import wave
 import numpy as np
 
 SR = 44100
-DUR = 28.5
+# The countdown opening is 1.4 s longer than the scenes after it were timed for (SHIFT in christmas.html).
+SHIFT = 1.4
+DUR = 28.5 + SHIFT
 N = int(SR * DUR)
 t_all = np.arange(N) / SR
 rng = np.random.default_rng(25)
@@ -88,7 +90,7 @@ TUNE = [
     [72, None, 69, 72, 77, None, 76, 74],
     [74, None, 71, 74, 79, None, 77, 74],
 ]
-GROOVE = 4.6  # the full band starts with the logo
+GROOVE = 4.6 + SHIFT  # the full band starts with the logo
 
 for b in range(int(DUR / 2) + 1):
     start = b * 2.0
@@ -121,30 +123,36 @@ for d, g in ((0.375, 0.25), (0.75, 0.1)):
     music[:, i:] += g * music[::-1, :-i]
 music *= np.clip(t_all / 0.8, 0, 1) * np.clip((DUR - t_all) / 2.5, 0, 1)
 
-# Opening: a bell for each line.
-for at, note in ((0.2, 72), (1.2, 76), (1.9, 79), (2.6, 84)):
-    add(sfx, at, glock(note, 0.16, 2.0))
+# Opening: a click for every flip of the countdown (same timing as christmas.html), a bell per question,
+# and a bell when it lands on 1.
+for k in range(23):
+    at = 0.55 + 4.0 * (1 - (1 - k / 23) ** 1.5)
+    add(sfx, at, mix(noise(0.03, 120, 0.11, 2), tone([1800 + 40 * k], 0.03, 90, 0.04)), pan=0.1)
+for at, note in ((1.5, 76), (2.4, 79), (3.2, 83)):
+    add(sfx, at, glock(note, 0.14, 2.0))
+add(sfx, 4.7, glock(84, 0.18, 2.2))
+add(sfx, 4.72, glock(91, 0.08, 2.0))
 # Logo: a swell and a warm bell chord.
 n = int(1.0 * SR)
-add(sfx, 4.4, noise(1.0, 0, 0.05, 30) * np.linspace(0, 1, n) ** 2 * env(n, 0.01, 0.15))
+add(sfx, 4.4 + SHIFT, noise(1.0, 0, 0.05, 30) * np.linspace(0, 1, n) ** 2 * env(n, 0.01, 0.15))
 for k, note in enumerate((60, 64, 67, 72)):
-    add(sfx, 4.9 + k * 0.05, glock(note + 12, 0.08, 2.5))
+    add(sfx, 4.9 + SHIFT + k * 0.05, glock(note + 12, 0.08, 2.5))
 # Presents: paste, details arriving, tap, "you're getting this".
-add(sfx, 8.95, mix(noise(0.05, 80, 0.12, 2), tone([1400], 0.06, 50, 0.06)))
-add(sfx, 9.95, tone([987.8, 1975.5], 0.5, 7, 0.15))
-add(sfx, 10.9, mix(noise(0.05, 80, 0.12, 2), tone([2200], 0.05, 60, 0.05)))
-add(sfx, 11.15, tone([1318.5, 2637], 0.9, 4.5, 0.16))
-add(sfx, 11.27, tone([1975.5, 3951], 0.9, 4.5, 0.12))
+add(sfx, 8.95 + SHIFT, mix(noise(0.05, 80, 0.12, 2), tone([1400], 0.06, 50, 0.06)))
+add(sfx, 9.95 + SHIFT, tone([987.8, 1975.5], 0.5, 7, 0.15))
+add(sfx, 10.9 + SHIFT, mix(noise(0.05, 80, 0.12, 2), tone([2200], 0.05, 60, 0.05)))
+add(sfx, 11.15 + SHIFT, tone([1318.5, 2637], 0.9, 4.5, 0.16))
+add(sfx, 11.27 + SHIFT, tone([1975.5, 3951], 0.9, 4.5, 0.12))
 # Mia's phone slides in; her note glows.
-add(sfx, 12.2, noise(0.6, 0, 0.05, 12) * np.sin(np.linspace(0, np.pi, int(0.6 * SR))), pan=-0.4)
-add(sfx, 13.5, tone([1174.7, 1568], 0.8, 5, 0.12), pan=-0.3)
+add(sfx, 12.2 + SHIFT, noise(0.6, 0, 0.05, 12) * np.sin(np.linspace(0, np.pi, int(0.6 * SR))), pan=-0.4)
+add(sfx, 13.5 + SHIFT, tone([1174.7, 1568], 0.8, 5, 0.12), pan=-0.3)
 # Christmas page: a sleigh-bell run.
 for k in range(12):
-    add(sfx, 16.4 + k * 0.08, sleigh(0.06), pan=rng.uniform(-0.5, 0.5))
+    add(sfx, 16.4 + SHIFT + k * 0.08, sleigh(0.06), pan=rng.uniform(-0.5, 0.5))
 # End card: a big bell chord.
 for k, note in enumerate((60, 64, 67, 72, 76)):
-    add(sfx, 23.3 + k * 0.06, glock(note + 12, 0.09, 4.0))
-add(sfx, 23.3, tone([130.8, 196], 3.0, 1.2, 0.12))
+    add(sfx, 23.3 + SHIFT + k * 0.06, glock(note + 12, 0.09, 4.0))
+add(sfx, 23.3 + SHIFT, tone([130.8, 196], 3.0, 1.2, 0.12))
 
 mix_ = music + sfx
 mix_ /= np.max(np.abs(mix_)) / 0.85

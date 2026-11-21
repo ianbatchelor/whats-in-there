@@ -42,11 +42,9 @@ ffmpeg -i explainer.mp4 -c:v libx264 -preset slow -crf 28 -pix_fmt yuv420p -c:a 
 
 ## Christmas short
 
-A 28.5-second portrait (1080×1920) cut for Reels, TikTok and Shorts: a snowy opening ("34 days to Christmas."), the logo, Mia's wish list (paste a link, "I'm getting this"), Mia's own view without it, the Christmas page, and an end card. It reuses the presents and Christmas part of the explainer, mapped onto its own clock in `christmas.html`.
+A 30-second portrait (1080×1920) cut for Reels, TikTok and Shorts: a snowy split-flap countdown racing from 24 days to 1 while the questions pile up (so it never shows a date that goes out of date), the logo, Mia's wish list (paste a link, "I'm getting this"), Mia's own view without it, the Christmas page, and an end card. It reuses the presents and Christmas part of the explainer, mapped onto its own clock in `christmas.html`.
 
 ```bash
 python3 music_christmas.py christmas.wav
 node render.mjs --page christmas.html christmas.mp4 christmas.wav
 ```
-
-The opening says "34 days to Christmas", which is right on 21 November. Change that line in `christmas.html` (and "34 days to go" in `screens.js`) before rendering on another day.
