@@ -9,6 +9,7 @@ import { IconGift, IconHouse, IconLock, IconPeople } from "@/components/ui/icons
 import { friendlyError } from "@/lib/supabase/errors";
 import { KINDS, type ListKind, type ListVisibility, type OwnList } from "@/lib/domain/ownLists";
 import type { ListSettings } from "@/lib/ownLists";
+import { whoHave } from "@/lib/domain/names";
 
 type Option = { value: ListVisibility; title: string; body: string; Icon: (p: { className?: string }) => React.ReactNode; group?: boolean };
 
@@ -99,7 +100,7 @@ export function ListSettingsSheet({
             title: "Everyone at home and family",
             body:
               family.length > 0
-                ? `Plus ${joinNames(family)}, who have their own homes. They see this list only.`
+                ? `Plus ${joinNames(family)}, ${whoHave(family.length)} their own home${family.length === 1 ? "" : "s"}. They see this list only.`
                 : "Plus family with their own homes, once you add them on the People page. They see this list only.",
             Icon: IconGift,
           },
