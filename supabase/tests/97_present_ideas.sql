@@ -68,7 +68,7 @@ select tests.fails($$select * from public.wish_ideas$$, 'permission denied', 'th
 insert into tests.vars select 'tok', public.claim_shared_wish((select v from tests.vars where k = 'code'), (select (public.shared_wish_list(v) -> 'ideas' -> 1 ->> 'id')::uuid from tests.vars where k = 'code'), ' Auntie Sue ');
 select tests.fails($$select public.claim_shared_wish((select v from tests.vars where k = 'code'), (select (public.shared_wish_list(v) -> 'ideas' -> 1 ->> 'id')::uuid from tests.vars where k = 'code'), 'Bob')$$,
                    'already_taken', 'nobody can get the same thing twice');
-select tests.ok((select public.shared_wish_list(v) -> 'ideas' -> 1 ->> 'takenBy' = 'Auntie Sue' from tests.vars where k = 'code'), 'the link shows who''s getting it');
+select tests.ok((select (public.shared_wish_list(v) -> 'ideas' -> 1 ->> 'taken')::boolean and public.shared_wish_list(v) -> 'ideas' -> 1 ->> 'takenBy' is null from tests.vars where k = 'code'), 'the link shows it''s taken, but not by whom');
 select tests.fails($$select public.unclaim_shared_wish((select v from tests.vars where k = 'code'), (select (public.shared_wish_list(v) -> 'ideas' -> 1 ->> 'id')::uuid from tests.vars where k = 'code'), 'wrong')$$,
                    'not_found', 'only the person who claimed it can take it back');
 

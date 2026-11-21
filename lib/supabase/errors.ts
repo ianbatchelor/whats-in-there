@@ -21,6 +21,10 @@ const messages: Record<string, string> = {
   too_many_books: "That list is full for now. Take a few books off, or try again later.",
   too_many_lists: "This household already has lots of friends' lists. Ask them to make room first.",
   list_not_empty: "You already have ideas on a list of your own here. Move them across or take them off first.",
+  bad_email: "That doesn't look like an email address. Check it and try again.",
+  own_list: "That's the email of the person whose list it is. They can't see what's being got, so they can't be invited onto it.",
+  wrong_email: "This invitation was sent to a different email address. Sign out, then sign in with the email it was sent to.",
+  too_many_invites: "That's a lot of invitations for one day. Try again tomorrow.",
   last_owner: "You're the only owner. Make someone else an owner before you leave.",
 };
 

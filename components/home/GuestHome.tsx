@@ -16,6 +16,8 @@ import { familiesOf, loadMemberships, type Membership } from "@/lib/household";
 import { loadEntries, loadLists } from "@/lib/ownLists";
 import { listCaption, splitEntries, type ListEntry, type OwnList } from "@/lib/domain/ownLists";
 import { loadSharedWithMe, type SharedPlace } from "@/lib/sharedPlaces";
+import { loadListsSharedWithMe, type SharedPresentList } from "@/lib/listViewers";
+import { SharedPresentLists } from "@/components/presents/SharedLists";
 import { KEYS, readLocal, writeLocal } from "@/lib/storage";
 
 const KIND_ICON = { todo: IconList, ideas: IconBulb, buy: IconBasket } as const;
@@ -27,7 +29,7 @@ const KIND_ICON = { todo: IconList, ideas: IconBulb, buy: IconBasket } as const;
  */
 export function GuestHome({ session }: { session: Session }) {
   const router = useRouter();
-  const [state, setState] = useState<{ name: string | null; families: Membership[]; places: SharedPlace[]; lists: OwnList[]; entries: ListEntry[] } | null>(null);
+  const [state, setState] = useState<{ name: string | null; families: Membership[]; places: SharedPlace[]; lists: OwnList[]; entries: ListEntry[]; gifts: SharedPresentList[] } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -39,18 +41,19 @@ export function GuestHome({ session }: { session: Session }) {
     let live = true;
     (async () => {
       try {
-        const [profile, memberships, places, lists] = await Promise.all([
+        const [profile, memberships, places, lists, gifts] = await Promise.all([
           supabase().from("profiles").select("display_name").eq("user_id", session.user.id).maybeSingle(),
           loadMemberships(session.user.id),
           loadSharedWithMe().catch(() => [] as SharedPlace[]),
           loadLists().catch(() => [] as OwnList[]),
+          loadListsSharedWithMe().catch(() => [] as SharedPresentList[]),
         ]);
         const families = familiesOf(memberships);
         if (!live) return;
-        if (families.length === 0 && places.length === 0 && lists.length === 0) return router.replace("/welcome/");
+        if (families.length === 0 && places.length === 0 && lists.length === 0 && gifts.length === 0) return router.replace("/welcome/");
         const entries = await loadEntries(lists.map((l) => l.id)).catch(() => [] as ListEntry[]);
         if (!live) return;
-        setState({ name: (profile.data?.display_name as string | undefined) ?? null, families, places, lists, entries });
+        setState({ name: (profile.data?.display_name as string | undefined) ?? null, families, places, lists, entries, gifts });
       } catch (e) {
         if (live) setError(friendlyError(e));
       }
@@ -87,6 +90,8 @@ export function GuestHome({ session }: { session: Session }) {
       </header>
 
       <SharedPlaces places={state.places} />
+
+      <SharedPresentLists lists={state.gifts} />
 
       {state.families.length > 0 ? (
         <section className="flex flex-col gap-3" aria-labelledby="family-h">

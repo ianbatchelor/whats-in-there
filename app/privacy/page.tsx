@@ -80,6 +80,13 @@ export default function PrivacyPage() {
         list is for never sees who is getting what. You can stop sharing at any time, and the old link stops working.
       </p>
       <p>
+        Someone who lives in a household can also invite a person by email to see one present list in the app. We store that email
+        address with the invitation, and send one email with the link, through our email provider <b>Resend</b>. The invitation works
+        once, only for that email address, and lasts 7 days. Once they join, they see only that list&apos;s ideas that nobody is getting
+        yet, and the names of the people in its household; nothing else. The household sees their name, and that they can see the list.
+        Either side can end it at any time.
+      </p>
+      <p>
         Someone with a book wish list link can also suggest a book for it, or start a book list of their own, giving only a first
         name. We store that name with the books they add, and their list shows in the household that sent the link, so the
         household can get them a book. Their list is kept from the same browser with a private key; they can remove it at any time.
