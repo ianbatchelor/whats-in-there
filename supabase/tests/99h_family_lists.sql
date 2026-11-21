@@ -23,6 +23,13 @@ insert into public.lists (title, visibility, household_id) values ('Christmas Da
 insert into public.lists (title, visibility, household_id) values ('Jobs at home', 'household', (select v::uuid from tests.vars where k = 'fl'));
 insert into public.list_entries (list_id, text) select id, 'Turkey' from public.lists where title = 'Christmas Day: who brings what';
 select tests.fails($$insert into public.lists (title, visibility) values ('Broken', 'family')$$, 'check', 'a family list needs its household');
+-- The app asks for the new list back (insert ... returning id), so the owner must be able to read it straight away.
+with n as (insert into public.lists (title, kind, visibility, household_id)
+            values ('Christmas food', 'buy', 'family', (select v::uuid from tests.vars where k = 'fl')) returning id)
+select tests.ok(count(*) = 1, 'a new family list comes back to its maker') from n;
+with n as (insert into public.lists (title, visibility) values ('Just mine', 'me') returning id)
+select tests.ok(count(*) = 1, 'a new just-me list comes back to its maker') from n;
+delete from public.lists where title in ('Christmas food', 'Just mine');
 
 select tests.login(:shel);
 select tests.ok((select count(*) = 2 from public.lists), 'people at home see the family list and the home one');
