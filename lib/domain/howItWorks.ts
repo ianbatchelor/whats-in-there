@@ -4,6 +4,14 @@
  */
 export const HOW_IT_WORKS = { src: "/video/how-it-works.mp4", poster: "/video/how-it-works.jpg", seconds: 71 };
 
+/** The 30-second portrait Christmas video (marketing/explainer/christmas.html). */
+export const CHRISTMAS_SHORT = {
+  src: "/video/christmas.mp4",
+  poster: "/video/christmas.jpg",
+  title: "Christmas in 30 seconds",
+  sub: "Wish lists that keep the surprise, and everything for the day in one place",
+};
+
 export type Chapter = { id: string; title: string; text: string; start: number };
 
 export const CHAPTERS: Chapter[] = [

@@ -159,7 +159,7 @@ export const HELP_TOPICS: HelpTopic[] = [
     body: (
       <p>
         From November, the Christmas page shows who&apos;s getting what, lists for the day, where the decorations are, and what to
-        use up to make room in the freezer.
+        use up to make room in the freezer. <Link href="/how-it-works/#christmas">Watch the 30-second video</Link>.
       </p>
     ),
   },
