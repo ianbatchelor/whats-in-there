@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars -- these helpers are used by the pages that load this script */
 // Shared by index.html and christmas.html: the app screens drawn inside the phones, and the animation
 // helpers. A page includes the containers these fill (lmark, emark, qr, peas, aPlace, bPlace, aUse, grid,
 // aLists, aWish, bWish, aXmas); a page that doesn't show one keeps an empty hidden stand-in.
