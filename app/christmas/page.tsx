@@ -8,6 +8,8 @@ import { AppShell, SectionLabel } from "@/components/AppShell";
 import { HouseholdLoading, PageHeader } from "@/components/common/PageHeader";
 import { Avatar } from "@/components/ui/Avatar";
 import { Notice } from "@/components/ui/Notice";
+import { ShortVideo } from "@/components/help/ShortVideo";
+import { CHRISTMAS_SHORT } from "@/lib/domain/howItWorks";
 import { IconChevronRight, IconGift, IconList, IconPlus, IconSnow } from "@/components/ui/icons";
 import { useHousehold } from "@/lib/hooks/useHousehold";
 import { usePresentCircle } from "@/lib/hooks/usePresentCircle";
@@ -105,6 +107,8 @@ function Christmas({ session }: { session: Session }) {
         sub={`${countdown(days)}. Presents, lists, decorations and room in the freezer, all in one place.`}
       />
       {error ? <Notice>{error}</Notice> : null}
+
+      <ShortVideo {...CHRISTMAS_SHORT} />
 
       <section aria-labelledby="xp-h" className="flex flex-col gap-2.5">
         <div className="flex items-baseline justify-between">

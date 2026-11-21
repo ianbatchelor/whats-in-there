@@ -15,6 +15,7 @@ export const IconCupboard = ({ className }: P) =>
   svg(<><rect x="3.5" y="3.5" width="17" height="17" rx="2.5" /><path d="M12 3.5v17M9.5 11v2M14.5 11v2" /></>, className);
 export const IconWine = ({ className }: P) => svg(<path d="M8 3h8l-.5 6a3.5 3.5 0 0 1-7 0zM12 12.5V20M8.5 20.5h7" />, className);
 export const IconBox = ({ className }: P) => svg(<path d="M3.5 7.5 12 3l8.5 4.5v9L12 21l-8.5-4.5zM3.5 7.5 12 12l8.5-4.5M12 12v9" />, className);
+export const IconPlay = ({ className }: P) => svg(<path d="M7 4.5v15l12.5-7.5z" />, className);
 export const IconMinus = ({ className }: P) => svg(<path d="M5 12h14" />, className);
 export const IconPlus = ({ className }: P) => svg(<path d="M12 5v14M5 12h14" />, className);
 export const IconChevronLeft = ({ className }: P) => svg(<path d="m15 5-7 7 7 7" />, className);

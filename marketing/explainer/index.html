@@ -1,0 +1,370 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<title>See What's in Here explainer</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&family=Fraunces:wght@700&display=swap">
+<link rel="stylesheet" href="shared.css">
+<style>
+html,body{width:1920px;height:1080px;overflow:hidden;background:var(--bg)}
+#stage{position:relative;width:1920px;height:1080px;overflow:hidden}
+</style>
+</head>
+<body>
+<div id="stage">
+
+  <!-- 1. Hook -->
+  <div id="hook" class="layer">
+    <img class="himg" data-a id="h0" src="../../public/places/freezer-wide.webp" alt="">
+    <img class="himg" data-a id="h1" src="../../public/places/attic-wide.webp" alt="">
+    <img class="himg" data-a id="h2" src="../../public/places/shed-wide.webp" alt="">
+    <img class="himg" data-a id="h3" src="../../public/places/wardrobe-wide.webp" alt="">
+    <img class="himg" data-a id="h4" src="../../public/places/pantry-wide.webp" alt="">
+    <div id="hookShade" class="layer"></div>
+    <div id="hookDark" class="layer" data-a></div>
+    <div id="hookText" class="abs disp" data-a>
+      <div>What's in</div>
+      <div id="hookWords">
+        <span class="hw" data-a id="w0">the freezer?</span>
+        <span class="hw" data-a id="w1">the attic?</span>
+        <span class="hw" data-a id="w2">the shed?</span>
+        <span class="hw" data-a id="w3">the wardrobe?</span>
+      </div>
+    </div>
+    <div id="hook2" class="abs">
+      <div class="a disp" data-a id="h2a">Bought pasta again?</div>
+      <div class="b" data-a id="h2b">There were three bags at the back.</div>
+    </div>
+  </div>
+
+  <!-- 2-6. App walkthrough -->
+  <div id="light" class="layer" data-a>
+    <div class="cap abs" id="c1">
+      <div class="chip" data-a><b>1</b>Tap</div>
+      <h2 data-a>Tap the sticker</h2>
+      <p data-a>Every freezer, cupboard or box gets its own sticker. Hold your phone to it and that place opens.</p>
+    </div>
+    <div class="cap abs" id="c2">
+      <div class="chip" data-a><b>2</b>Snap</div>
+      <h2 data-a>Snap the label</h2>
+      <p data-a>Take a photo of the pack. The name, size and dates fill themselves in. You check, then add.</p>
+    </div>
+    <div class="cap abs" id="c3">
+      <div class="chip" data-a><b>3</b>Share</div>
+      <h2 data-a>Everyone sees it, live</h2>
+      <p data-a>The whole household shares one list. Add something in the garage and it's on everyone's phone.</p>
+    </div>
+    <div class="cap abs" id="c4">
+      <div class="chip" data-a><b>4</b>Use</div>
+      <h2 data-a>Use the oldest first</h2>
+      <p data-a>The Use first list shows what's close to its date, or has been in the freezer the longest.</p>
+    </div>
+    <div class="cap abs" id="c5">
+      <div class="chip" data-a><b>5</b>Find</div>
+      <h2 data-a>Not just the freezer</h2>
+      <p data-a>The attic, the shed, the wardrobe. Search once and find anything, wherever it's kept.</p>
+    </div>
+
+    <div class="cap abs" id="c6">
+      <div class="chip" data-a><b>6</b>Lists</div>
+      <h2 data-a>Lists for everything</h2>
+      <p data-a>Shopping, jobs, Christmas dinner. Keep a list to yourself, share it at home, or with family and friends.</p>
+    </div>
+    <div class="cap abs" id="c7">
+      <div class="chip" data-a><b>7</b>Presents</div>
+      <h2 data-a>Present ideas</h2>
+      <p data-a>A wish list for everyone, kids too. Paste a shop link to add an idea. Say you're getting it, and the person it's for never finds out.</p>
+    </div>
+    <div class="cap abs" id="c8">
+      <div class="chip" data-a><b>8</b>Christmas</div>
+      <h2 data-a>Christmas, sorted</h2>
+      <p data-a>Who's getting what, lists for the day, where the decorations are, and room in the freezer.</p>
+    </div>
+
+    <div id="fcard" class="abs" data-a>
+      <img src="../../public/places/freezer-wide.webp" alt="">
+      <div id="sticker" class="abs"><div id="qr"></div><div class="sl">Garage freezer</div></div>
+    </div>
+    <div class="ring abs" data-a id="r0"></div>
+    <div class="ring abs" data-a id="r1"></div>
+    <div class="ring abs" data-a id="r2"></div>
+
+    <svg id="live" class="abs"><path id="livePath" d="" fill="none" stroke="#2f6b50" stroke-width="4" stroke-dasharray="2 14" stroke-linecap="round"/><circle id="liveDot" r="11" fill="#f6c65b" stroke="#183f32" stroke-width="4"/></svg>
+    <div class="livetag abs" id="livetag" data-a><i></i>Live</div>
+    <div class="ptag abs" id="tagA" data-a><i style="background:#1f4d3d">A</i>Alex</div>
+    <div class="ptag abs" id="tagB" data-a><i style="background:#8f2d2d">M</i>Mia</div>
+
+    <div id="phoneB" class="phone abs" data-a><div class="screen"><div class="island abs"></div>
+      <div class="scr" id="bPlace"></div>
+      <div class="scr" id="bWish" data-a></div>
+      <div class="banner abs" id="bBanner" data-a><div class="ic">MARK</div><div><div class="t">Alex added Garden peas</div><div class="s">Garage freezer · just now</div></div></div>
+    </div></div>
+
+    <div id="phoneA" class="phone abs" data-a><div class="screen"><div class="island abs"></div>
+      <div class="scr" id="aPlace"></div>
+      <div class="scr lock" id="aLock" data-a>
+        <div class="sb w"><span>9:41</span><span class="sbi"><i style="height:6px"></i><i style="height:9px"></i><i style="height:12px"></i><span class="batt"></span></span></div>
+        <div class="clock">9:41</div><div class="date">Saturday 21 November</div>
+        <div class="hint">Hold near a sticker</div>
+      </div>
+      <div class="scr cam" id="aCam" data-a>
+        <div class="sb w"><span>9:42</span><span class="sbi"><i style="height:6px"></i><i style="height:9px"></i><i style="height:12px"></i><span class="batt"></span></span></div>
+        <div class="camx">×</div><div class="camtitle">Scan a label</div>
+        <div class="camview">
+          <div id="bag" class="abs">
+            <div class="bname" id="bn"><small>FROZEN</small>Garden<br>peas</div>
+            <div class="peas" id="peas"></div>
+            <div class="bw" id="bw">750g</div>
+            <div class="bdate" id="bd">BEST BEFORE END 08 2027</div>
+          </div>
+          <div class="brk abs" style="left:28px;top:40px;border-top-width:5px;border-left-width:5px;border-top-left-radius:14px"></div>
+          <div class="brk abs" style="right:28px;top:40px;border-top-width:5px;border-right-width:5px;border-top-right-radius:14px"></div>
+          <div class="brk abs" style="left:28px;bottom:40px;border-bottom-width:5px;border-left-width:5px;border-bottom-left-radius:14px"></div>
+          <div class="brk abs" style="right:28px;bottom:40px;border-bottom-width:5px;border-right-width:5px;border-bottom-right-radius:14px"></div>
+          <div class="scanline abs" id="scan" data-a></div>
+        </div>
+        <div class="campill" id="campill"><span id="campillT">Reading the label…</span></div>
+        <div class="shutter" id="shutter" data-a><i></i></div>
+      </div>
+      <div class="scr form" id="aForm" data-a>
+        <div class="sb"><span>9:42</span><span class="sbi"><i style="height:6px"></i><i style="height:9px"></i><i style="height:12px"></i><span class="batt"></span></span></div>
+        <div class="ftop">
+          <h3>Check and add</h3>
+          <div class="ainote" data-a id="ainote"><span class="th"></span>Filled in from your photo</div>
+          <div class="field"><div class="fl">Name</div><div class="fv" id="fv0"><span id="f0"></span></div></div>
+          <div class="two">
+            <div class="field"><div class="fl">How many</div><div class="fv" id="fv1"><span id="f1"></span></div></div>
+            <div class="field"><div class="fl">Pack size</div><div class="fv" id="fv2"><span id="f2"></span></div></div>
+          </div>
+          <div class="field"><div class="fl">Best before</div><div class="fv" id="fv3"><span id="f3"></span></div></div>
+          <div class="field"><div class="fl">Where</div><div class="fv" id="fv4"><span id="f4"></span></div></div>
+        </div>
+        <div class="fbtn" id="fbtn" data-a>Add to Garage freezer</div>
+      </div>
+      <div class="scr" id="aUse" data-a></div>
+      <div class="scr" id="aLists" data-a></div>
+      <div class="scr" id="aWish" data-a></div>
+      <div class="scr" id="aXmas" data-a></div>
+      <div class="flash abs layer" id="flash" data-a></div>
+      <div class="banner abs" id="aBanner" data-a><div class="ic">MARK</div><div><div class="t">See What's in Here</div><div class="s">Opening Garage freezer</div></div></div>
+      <div class="toast abs" id="aToast" data-a><span><span class="tick">✓</span>Added</span><span class="u">Undo</span></div>
+      <div class="touch abs" id="touchA" data-a></div>
+    </div></div>
+
+    <div id="gsearch" class="abs" data-a>
+      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#66706b" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
+      <span class="ph" id="gph">Search everything</span><span id="gq"></span><i class="caret" id="gcaret" style="height:30px"></i>
+    </div>
+    <div id="grid"></div>
+    <div id="found" class="abs" data-a>Camping tent<small>Attic · top shelf</small></div>
+  </div>
+
+  <!-- Brand cards (logo and ending) -->
+  <div id="brand" class="layer" data-a>
+    <div class="bgroup abs" id="logoG">
+      <div class="markwrap" data-a id="lm"><svg width="190" height="190" viewBox="0 0 64 64" id="lmark"></svg></div>
+      <div class="btitle disp" data-a id="lt">See What's in Here</div>
+      <div class="bsub" data-a id="ls">Know what you've got, wherever you keep it.</div>
+    </div>
+    <div class="bgroup abs" id="endG">
+      <div class="markwrap" data-a id="em" style="width:200px;height:200px;border-radius:48px"><svg width="146" height="146" viewBox="0 0 64 64" id="emark"></svg></div>
+      <div class="btitle disp" data-a id="et" style="font-size:96px;margin-top:44px">See What's in Here</div>
+      <div class="btag disp" data-a id="eg">Tap. Snap. Sorted.</div>
+      <div class="burl" data-a id="eu">seewhatsinhere.com</div>
+    </div>
+  </div>
+</div>
+
+<script src="screens.js"></script>
+<script>
+// ---------- Scenes ----------
+const T = { hookEnd: 7.2, logoIn: 6.8, lightIn: 10.6, s1: 11.0, tap: 14.2, s2: 18.0, s3: 26.0, s4: 32.0, s5: 38.0, s6: 43.6, s7: 50.0, s8: 58.5, end: 65.0, total: 70.6 };
+window.DURATION = T.total;
+
+function hook(t) {
+  const on = t < 7.6; $('hook').style.display = on ? '' : 'none'; if (!on) return;
+  const starts = [0, 1.25, 2.5, 3.75, 5.0];
+  starts.forEach((a, i) => S('h' + i, i === 0 ? 1 : eo(P(t, a, a + .4)), 0, 0, L(1.12, 1.0, eo(P(t, a, a + 2.6)))));
+  S('hookDark', P(t, 4.9, 5.4));
+  const ht = win(t, 0.15, 5.05, .6, .35, 30); S('hookText', ht.o, 0, ht.y);
+  for (let i = 0; i < 4; i++) {
+    const a = starts[i], b = i < 3 ? starts[i + 1] : 9;
+    const ii = eo(P(t, a + (i ? 0 : .2), a + (i ? .3 : .7))), uu = eio(P(t, b - .25, b));
+    S('w' + i, Math.min(ii, 1 - uu), 0, (1 - ii) * 70 - uu * 70);
+  }
+  const a = win(t, 5.15, 9, .5, .3, 40); S('h2a', a.o, 0, a.y);
+  const b = win(t, 5.75, 9, .5, .3, 30); S('h2b', b.o, 0, b.y);
+}
+
+function brand(t) {
+  const o = Math.max(Math.min(P(t, 6.8, 7.3), 1 - P(t, 10.6, 11.2)), P(t, T.end, T.end + .6));
+  S('brand', o); if (o <= 0) return;
+  const logo = t < 20; $('logoG').style.display = logo ? '' : 'none'; $('endG').style.display = logo ? 'none' : '';
+  if (logo) {
+    S('lm', eo(P(t, 7.0, 7.4)), 0, 0, L(.8, 1, back(P(t, 7.0, 7.7))));
+    drawMark($('lmark'), 7.15, t);
+    const a = win(t, 8.0, 99, .6, .3, 36); S('lt', a.o, 0, a.y);
+    const b = win(t, 8.5, 99, .6, .3, 26); S('ls', b.o, 0, b.y);
+  } else {
+    const e = T.end;
+    S('em', eo(P(t, e + .3, e + .7)), 0, 0, L(.8, 1, back(P(t, e + .3, e + 1.0))));
+    drawMark($('emark'), e + .4, t);
+    const a = win(t, e + 1.0, 99, .6, .3, 36); S('et', a.o, 0, a.y);
+    const b = win(t, e + 1.6, 99, .5, .3, 26); S('eg', b.o, 0, b.y, L(.9, 1, back(P(t, e + 1.6, e + 2.1))));
+    const c = win(t, e + 2.2, 99, .6, .3, 20); S('eu', c.o, 0, c.y);
+  }
+}
+
+function captions(t) {
+  const W = [[T.s1, T.s2 - .1], [T.s2, T.s3 - .1], [T.s3, T.s4 - .1], [T.s4, T.s5 - .1], [T.s5, T.s6 - .1], [T.s6, T.s7 - .1], [T.s7, T.s8 - .1], [T.s8, 99]];
+  W.forEach(([a, b], i) => {
+    const kids = $('c' + (i + 1)).children;
+    [0, .12, .26].forEach((d, k) => { const w = win(t, a + d, b, .6, .4, 44); S(kids[k], w.o, 0, w.y); });
+  });
+}
+
+function stepTap(t) {
+  // Freezer card with its sticker.
+  const ci = eo(P(t, T.s1, T.s1 + .7)), co = eio(P(t, 15.0, 15.7));
+  S('fcard', Math.min(ci, 1 - co), (1 - ci) * 80 - co * 80, 0, L(.97, 1, ci));
+  // Rings pulse out of the sticker centre (card left 960 + 441, top 240 + 462).
+  for (let k = 0; k < 3; k++) {
+    const p = P(t, T.tap + k * .22, T.tap + k * .22 + .9);
+    S('r' + k, p > 0 && p < 1 ? (1 - p) * .95 : 0, 960 + 441, 240 + 462, L(.4, 2.6, eo(p)));
+  }
+}
+
+function phoneA(t) {
+  const el = $('phoneA');
+  if (t < 11.5 || (t > 38.6 && t < 43.3)) { S(el, 0); return; }
+  let cx, cy, s, r;
+  const rest = [1390, 540, 1, 0];
+  if (t < 15.0) {
+    const up = eo(P(t, 11.8, 12.8)), go = eio(P(t, 13.1, 14.1));
+    const A = [1690, 1420, .78, 10], B = [1690, 700, .78, 9], C = [1430, 960, .78, -7];
+    const from = up < 1 ? A : B, to = up < 1 ? B : C, x = up < 1 ? up : go;
+    [cx, cy, s, r] = from.map((v, i) => L(v, to[i], x));
+    if (t > T.tap && t < 14.6) cy += -6 * Math.sin(P(t, T.tap, 14.5) * Math.PI); // tiny press
+  } else if (t < T.s3) {
+    const x = eio(P(t, 15.0, 15.9));
+    [cx, cy, s, r] = [1430, 960, .78, -7].map((v, i) => L(v, rest[i], x));
+  } else if (t < T.s4) {
+    const x = eio(P(t, T.s3, T.s3 + .8)), back_ = eio(P(t, 31.5, 32.3));
+    const side = [1525, 545, .92, 3];
+    [cx, cy, s, r] = rest.map((v, i) => L(L(v, side[i], x), v, back_));
+  } else if (t < 43) {
+    const x = eio(P(t, 37.7, 38.5));
+    [cx, cy, s, r] = rest.map((v, i) => L(v, [1500, 1500, 1, 10][i], x));
+  } else {
+    const en = eo(P(t, 43.35, 44.3)), sx = eio(P(t, 54.0, 54.8)) * (1 - eio(P(t, 57.9, 58.6)));
+    [cx, cy, s, r] = rest.map((v, i) => L(L([1560, 1400, 1, 12][i], v, en), [1525, 545, .92, 3][i], sx));
+  }
+  phone(el, 1, cx, cy, s, r);
+
+  // Screens.
+  const lockO = 1 - P(t, 14.85, 15.25);
+  S('aLock', lockO);
+  const bn = eo(P(t, 14.3, 14.65)), bu = eio(P(t, 15.35, 15.7));
+  S('aBanner', Math.min(bn, 1 - bu), 0, (1 - bn) * -110 - bu * 40);
+  // Camera: slides up after tapping Add.
+  const camIn = eo(P(t, 18.15, 18.6)), camOut = P(t, 21.5, 21.8);
+  S('aCam', camIn > 0 && t < 21.9 ? 1 : 0, 0, (1 - camIn) * 800);
+  const sw = P(t, 19.0, 20.6);
+  S('scan', sw > 0 && sw < 1 ? 1 : 0, 0, 40 + 440 * (0.5 - 0.5 * Math.cos(sw * Math.PI * 2)));
+  const det = P(t, 20.2, 20.6);
+  ['bn', 'bw', 'bd'].forEach(id => $(id).style.boxShadow = `0 0 0 ${det > 0 ? 4 : 0}px rgba(246,198,91,${det})`);
+  $('campillT').textContent = t < 20.3 ? 'Reading the label…' : 'Found name, size and date';
+  const sp = P(t, 20.85, 21.1); S('shutter', 1, 0, 0, 1 - .12 * Math.sin(sp * Math.PI));
+  const fl = P(t, 21.0, 21.45); S('flash', fl > 0 && fl < 1 ? .9 * (1 - fl) : 0);
+  // Form.
+  const fi = eo(P(t, 21.3, 21.75)), fo = P(t, 25.0, 25.35);
+  S('aForm', Math.min(fi, 1 - fo), 0, (1 - fi) * 40);
+  S('ainote', eo(P(t, 21.6, 22.0)), 0, 0, L(.85, 1, back(P(t, 21.6, 22.1))));
+  const vals = ['Garden peas', '1 pack', '750 g', 'August 2027', 'Garage freezer'];
+  vals.forEach((v, k) => {
+    const a = 21.9 + k * .34, x = P(t, a, a + .3);
+    typed('f' + k, v, x); $('fv' + k).classList.toggle('hl', x > 0 && t < a + .6);
+  });
+  const bp = P(t, 24.05, 24.3); S('fbtn', 1, 0, 0, 1 - .05 * Math.sin(bp * Math.PI));
+  const ti = eo(P(t, 24.3, 24.6)), to = P(t, 25.6, 25.9);
+  S('aToast', Math.min(ti, 1 - to), 0, (1 - ti) * 30);
+  // New row in the list.
+  $('aNew').style.height = 70 * eio(P(t, 25.3, 25.8)) + 'px';
+  $('aNewRow').style.background = `rgba(255,244,214,${1 - P(t, 29, 31)})`;
+  // Use first.
+  const ui = P(t, 31.9, 32.4); S('aUse', ui);
+  $('aUse').querySelectorAll('.urow').forEach((r, k) => { const x = eo(P(t, 32.4 + k * .14, 32.9 + k * .14)); S(r, x, (1 - x) * 40); });
+  // Touches: Add button, shutter, Add button on the form.
+  const touches = [[17.45, 17.95, 183, 735], [20.7, 21.15, 183, 722], [23.85, 24.35, 183, 739],
+    [45.45, 45.95, 'newBtn'], [47.15, 47.65, 'opt2'], [52.65, 53.15, 'getNew']];
+  let tch = null; touches.forEach(([a, b, x, y]) => { if (t >= a && t <= b) { if (typeof x === 'string') [x, y] = centreIn(x); tch = [P(t, a, b), x, y]; } });
+  if (tch) S('touchA', Math.sin(tch[0] * Math.PI), tch[1], tch[2], L(1.2, .85, tch[0])); else S('touchA', 0);
+  listScreens(t);
+  const addP = P(t, 17.6, 17.9); $('aPlace').querySelector('[data-add]').style.transform = `scale(${1 - .14 * Math.sin(addP * Math.PI)})`;
+}
+
+function phoneB(t) {
+  const el = $('phoneB');
+  liveLink(t);
+  S('bWish', t > 40 ? 1 : 0);
+  const pi = eo(P(t, 54.2, 55.0)), pu = eio(P(t, 57.6, 58.3));
+  S('tagA', Math.min(P(t, 54.6, 55.1), 1 - P(t, 57.5, 57.9)), 1464, 118);
+  S('tagB', Math.min(P(t, 54.8, 55.3), 1 - P(t, 57.5, 57.9)), 1082, 104);
+  if (t > 53.9 && t < 58.6) {
+    phone(el, 1, 1135, L(1450, 535, pi) + pu * 900, .92, L(-12, -4, pi));
+    S('bBanner', 0);
+    const nh = Math.sin(P(t, 55.5, 56.5) * Math.PI);
+    $('wnote').style.boxShadow = `inset 0 0 0 1px #e9c46a, 0 0 0 ${5 * nh}px rgba(246,198,91,.55)`;
+    $('bWish').querySelectorAll('.idea').forEach((r, k) => { const x = eo(P(t, 55.0 + k * .08, 55.4 + k * .08)); S(r, x, 0, (1 - x) * 20); });
+    return;
+  }
+  if (t < T.s3 || t > 32.6) { S(el, 0); return; }
+  const i = eo(P(t, T.s3 + .2, T.s3 + 1.0)), u = eio(P(t, 31.4, 32.1));
+  phone(el, 1, 1135, L(1450, 535, i) + u * 900, .92, L(-12, -4, i));
+  const bn = eo(P(t, 27.55, 27.9)), bu = eio(P(t, 29.6, 30.0));
+  S('bBanner', Math.min(bn, 1 - bu), 0, (1 - bn) * -110 - bu * 40);
+  $('bNew').style.height = 70 * eio(P(t, 27.75, 28.25)) + 'px';
+  $('bNewRow').style.background = `rgba(255,244,214,${1 - P(t, 30, 31.4)})`;
+}
+function liveLink(t) {
+  // The change travels from Alex's phone to the other one.
+  const lo = Math.min(P(t, 26.9, 27.2), 1 - P(t, 30.6, 31.1));
+  const x0 = 1440, y0 = 215, x1 = 1220, y1 = 215, cx = 1330, cy = 90;
+  $('livePath').setAttribute('d', `M${x0} ${y0} Q${cx} ${cy} ${x1} ${y1}`);
+  $('live').style.opacity = lo;
+  const d = eio(P(t, 27.0, 27.6)), q = 1 - d;
+  $('liveDot').setAttribute('cx', q * q * x0 + 2 * q * d * cx + d * d * x1);
+  $('liveDot').setAttribute('cy', q * q * y0 + 2 * q * d * cy + d * d * y1);
+  S('livetag', lo, 1280, 40 - (1 - eo(P(t, 26.9, 27.3))) * 20);
+}
+
+function stepFind(t) {
+  const sOn = t > T.s5 - .5;
+  const gout = 1 - eio(P(t, 43.1, 43.6));
+  const si = eo(P(t, 38.3, 38.85)); S('gsearch', sOn ? si * gout : 0, 0, (1 - si) * -24);
+  const q = 'tent', tp = P(t, 39.7, 40.4);
+  $('gq').textContent = q.slice(0, Math.round(q.length * tp));
+  $('gph').style.display = tp > 0 ? 'none' : '';
+  $('gcaret').style.opacity = (t > 39.2 && (Math.floor(t * 2.2) % 2 === 0 || (tp > 0 && tp < 1))) ? 1 : 0;
+  const f = eio(P(t, 40.6, 41.0));
+  for (let k = 0; k < 6; k++) {
+    const a = 38.5 + k * .09, x = eo(P(t, a, a + .55));
+    const hit = k === 3;
+    S('g' + k, sOn ? x * gout * (hit ? 1 : L(1, .28, f)) : 0, 0, (1 - x) * 50 - (hit ? 10 * f : 0), L(.94, 1, x) * (hit ? L(1, 1.05, f) : L(1, .96, f)));
+  }
+  $('g3').style.boxShadow = `0 0 0 ${4 * f}px #f6c65b, 0 30px 50px -26px rgba(21,33,28,.5)`;
+  const fi = P(t, 40.9, 41.4);
+  S('found', fi > 0 ? eo(fi) * gout : 0, GX + 22, GY + 2 * GH + GG + 22 - (1 - eo(fi)) * 10, L(.6, 1, back(fi)));
+}
+
+function renderAt(t) {
+  hook(t);
+  const lightOn = t > 10.3 && t < T.end + .9; $('light').style.display = lightOn ? '' : 'none';
+  if (lightOn) { captions(t); stepTap(t); phoneA(t); phoneB(t); stepFind(t); }
+  brand(t);
+}
+window.renderAt = renderAt;
+renderAt(0);
+</script>
+</body>
+</html>
