@@ -2,6 +2,7 @@
 
 A 71-second, 1920×1080 explainer clip for See What's in Here, drawn in code so it can be edited and re-rendered.
 
+- `shared.css` and `screens.js`: the colours, phone frames, app screens and animation helpers both videos use.
 - `index.html`: the whole video as one page. `renderAt(t)` draws the frame at `t` seconds; the scene times are in `T` and in each scene function. Uses the app's colours, fonts, brand mark and the place photos in `public/places/`.
 - `music.py`: the soundtrack (music bed plus tap, shutter, chime and typing sounds timed to the picture). Needs Python 3 with numpy.
 - `render.mjs`: records the page frame by frame with Playwright and encodes it with ffmpeg.
@@ -38,3 +39,14 @@ The app's How it works page (`/how-it-works/`) plays a smaller copy at `public/v
 ```bash
 ffmpeg -i explainer.mp4 -c:v libx264 -preset slow -crf 28 -pix_fmt yuv420p -c:a aac -b:a 96k -movflags +faststart ../../public/video/how-it-works.mp4
 ```
+
+## Christmas short
+
+A 28.5-second portrait (1080×1920) cut for Reels, TikTok and Shorts: a snowy opening ("34 days to Christmas."), the logo, Mia's wish list (paste a link, "I'm getting this"), Mia's own view without it, the Christmas page, and an end card. It reuses the presents and Christmas part of the explainer, mapped onto its own clock in `christmas.html`.
+
+```bash
+python3 music_christmas.py christmas.wav
+node render.mjs --page christmas.html christmas.mp4 christmas.wav
+```
+
+The opening says "34 days to Christmas", which is right on 21 November. Change that line in `christmas.html` (and "34 days to go" in `screens.js`) before rendering on another day.

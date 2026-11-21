@@ -1,6 +1,7 @@
 // Records index.html to an MP4, one exact frame at a time.
 // node render.mjs <out.mp4> [music.wav]        full video
 // node render.mjs --stills <dir> 3.2 14.5 ...   PNG stills at given seconds
+// Add --page christmas.html (first) to record another page; its size comes from window.SIZE.
 import { createRequire } from 'node:module';
 import { spawn } from 'node:child_process';
 import path from 'node:path';
@@ -9,10 +10,13 @@ const { chromium } = createRequire(import.meta.url)('playwright'); // the copy i
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const FPS = 30;
 (async () => {
-  const args = process.argv.slice(2);
+  let args = process.argv.slice(2), file = 'index.html';
+  if (args[0] === '--page') { file = args[1]; args = args.slice(2); }
   const browser = await chromium.launch();
   const page = await browser.newPage({ viewport: { width: 1920, height: 1080 }, deviceScaleFactor: 1 });
-  await page.goto('file://' + path.join(__dirname, 'index.html'));
+  await page.goto('file://' + path.join(__dirname, file));
+  const size = await page.evaluate(() => window.SIZE || { w: 1920, h: 1080 });
+  await page.setViewportSize({ width: size.w, height: size.h });
   await page.evaluate(() => document.fonts.ready);
   await page.waitForLoadState('networkidle');
   if (args[0] === '--stills') {
