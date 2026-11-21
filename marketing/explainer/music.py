@@ -1,5 +1,5 @@
 """Soundtrack for the explainer: a gentle pad, bass and plucked arpeggio, plus sound effects
-timed to the on-screen actions in index.html. Writes a 49-second stereo WAV.
+timed to the on-screen actions in index.html. Writes a 70.6-second stereo WAV.
 
 python3 music.py out.wav
 """
@@ -9,7 +9,7 @@ import wave
 import numpy as np
 
 SR = 44100
-DUR = 49.0
+DUR = 70.6
 N = int(SR * DUR)
 t_all = np.arange(N) / SR
 rng = np.random.default_rng(7)
@@ -74,7 +74,7 @@ for b in range(bars):
         bass *= env(nb, 0.02, 0.5) * np.exp(-tb * 0.5) * 0.09
         add(music, start, bass)
     # Plucked arpeggio in eighths once the walkthrough starts.
-    if 6.8 <= start < 46:
+    if 6.8 <= start < DUR - 3:
         step = BAR / 8
         pattern = [0, 2, 1, 3, 4, 3, 2, 1]
         for k, idx in enumerate(pattern):
@@ -100,6 +100,13 @@ def tone(freqs, dur, decay, amp):
     tt = np.arange(n) / SR
     s = sum(np.sin(2 * np.pi * f * tt) for f in freqs) / len(freqs)
     return s * np.exp(-tt * decay) * env(n, 0.003, 0.02) * amp
+
+
+def mix(*parts):
+    out = np.zeros(max(len(x) for x in parts))
+    for x in parts:
+        out[: len(x)] += x
+    return out
 
 
 def noise(dur, decay, amp, smooth=4):
@@ -137,12 +144,37 @@ for k in range(4):
 add(sfx, 40.95, tone([784, 1568], 0.5, 7, 0.2))
 add(sfx, 41.08, tone([1046.5, 2093], 0.6, 6, 0.16))
 # Logo and end card: soft swell and a warm chord.
-for at in (6.8, 43.4):
+for at in (6.8, 65.0):
     n = int(1.2 * SR)
     sw = noise(1.2, 0, 0.05, 30) * np.linspace(0, 1, n) ** 2 * env(n, 0.01, 0.15)
     add(sfx, at, sw)
 add(sfx, 7.4, tone([523.3, 659.3, 784, 1046.5], 2.5, 1.6, 0.16))
-add(sfx, 43.9, tone([523.3, 659.3, 784, 987.8, 1174.7], 4.0, 1.0, 0.16))
+add(sfx, 65.5, tone([523.3, 659.3, 784, 987.8, 1174.7], 4.0, 1.0, 0.16))
+
+# Lists: cards landing, New list, the sheet, typing, choosing who sees it, the new list.
+for k in range(6):
+    add(sfx, 44.15 + k * 0.12, tone([700 + 50 * k], 0.08, 40, 0.045))
+add(sfx, 45.7, noise(0.05, 80, 0.12, 2) + tone([2200], 0.05, 60, 0.05))
+add(sfx, 45.85, noise(0.4, 6, 0.04, 20), pan=0.2)
+for k in range(8):
+    add(sfx, 46.3 + k * 0.08, noise(0.03, 100, 0.08, 2), pan=0.25)
+add(sfx, 47.4, noise(0.05, 80, 0.12, 2))
+add(sfx, 47.42, tone([1760], 0.12, 25, 0.1))
+add(sfx, 48.4, noise(0.4, 6, 0.035, 20), pan=-0.2)
+add(sfx, 48.8, tone([784, 1568], 0.5, 7, 0.17))
+# Presents: paste, details arriving, "I'm getting this".
+add(sfx, 50.95, mix(noise(0.05, 80, 0.12, 2), tone([1400], 0.06, 50, 0.06)))
+add(sfx, 51.95, tone([987.8, 1975.5], 0.5, 7, 0.16))
+add(sfx, 52.9, noise(0.05, 80, 0.12, 2) + tone([2200], 0.05, 60, 0.05))
+add(sfx, 53.15, tone([1318.5, 2637], 0.9, 4.5, 0.17))
+add(sfx, 53.27, tone([1975.5, 3951], 0.9, 4.5, 0.13))
+add(sfx, 54.2, noise(0.6, 0, 0.05, 12) * np.sin(np.linspace(0, np.pi, int(0.6 * SR))), pan=-0.4)
+add(sfx, 55.5, tone([1174.7, 1568], 0.8, 5, 0.12), pan=-0.3)
+# Christmas: a little sleigh-bell shimmer.
+for k in range(14):
+    f = rng.uniform(3200, 6200)
+    bell = mix(tone([f, f * 1.51], 0.25, 18, 0.07), noise(0.03, 120, 0.04, 1))
+    add(sfx, 58.45 + k * 0.085 + rng.uniform(0, 0.03), bell, pan=rng.uniform(-0.5, 0.5))
 
 mix = music + sfx
 mix /= np.max(np.abs(mix)) / 0.85
