@@ -78,7 +78,7 @@ export const HELP_TOPICS: HelpTopic[] = [
       <p>
         Shared with everyone at home. Add things with the + button, on the list itself, or from a thing&apos;s details with{" "}
         <b>Add to shopping list</b>. Tick things off as you shop, choose where each one goes, then tap <b>Put it away</b> to add
-        them to their places. If you already have something at home, it says how many and where, so you don&apos;t buy more.
+        them to their places. Back home, Home shows what you bought with a <b>Put them away</b> button, so it&apos;s one tap. If you already have something at home, it says how many and where, so you don&apos;t buy more.
       </p>
     ),
   },
@@ -170,7 +170,7 @@ export const HELP_TOPICS: HelpTopic[] = [
     body: (
       <>
         <p>
-          In the iPhone app, tap <b>Notify me</b> on someone&apos;s wish list, a shared list or a place to hear when something&apos;s added or taken out.
+          In the iPhone app, tap <b>Notify me</b> on someone&apos;s wish list or a shared list, or the bell at the top of a place, to hear when something&apos;s added or taken out.
           Wish lists and lists shared with family or a group start on; lists you share at home and places start off, so the
           shopping list and the freezer don&apos;t buzz all day. Several things added together come as one message, or choose a
           daily summary at 6 pm. A place you follow also sends a 9 am reminder when something in it needs using soon.

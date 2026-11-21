@@ -38,9 +38,11 @@ import { Tip } from "@/components/ui/Tip";
 import { Button } from "@/components/ui/Button";
 import { Toast } from "@/components/ui/Toast";
 import { IconCheck, IconChevronRight, IconHandOver, IconLeaf, IconScan, IconSearch, IconStar } from "@/components/ui/icons";
-import { countdown, daysToChristmas, isChristmasTime } from "@/lib/domain/christmas";
+import { countdown, daysToChristmas, isChristmasRun, isChristmasTime } from "@/lib/domain/christmas";
 import { AddPlaceSheet } from "@/components/home/AddPlaceSheet";
 import { AddPlaceTile, GroupCard } from "@/components/home/PlaceCard";
+import { BasketCard } from "@/components/home/BasketCard";
+import { ChristmasCard } from "@/components/home/ChristmasCard";
 import { FirstThingsTip, StarterPlaces } from "@/components/home/StarterPlaces";
 import { SharedPlaceCards, useSharedWithMe } from "@/components/home/SharedPlaces";
 import { GuestHome } from "@/components/home/GuestHome";
@@ -122,8 +124,9 @@ function HouseholdHome({ session, hh }: { session: Session; hh: ReturnType<typeo
 
   // Home shows the places that aren't inside anything; a box's things count towards its place.
   const topPlaces = places ? rollUp(places) : null;
-  const sections = topPlaces ? usedSections(topPlaces) : [];
-  const shownPlaces = topPlaces && section !== "all" ? topPlaces.filter((p) => sectionOf(p.type) === section) : topPlaces;
+  // Filters only help once there are enough places to look through.
+  const sections = topPlaces && topPlaces.length >= 6 ? usedSections(topPlaces) : [];
+  const shownPlaces = topPlaces && section !== "all" && sections.length > 1 ? topPlaces.filter((p) => sectionOf(p.type) === section) : topPlaces;
   const groups = shownPlaces ? groupPlaces(shownPlaces) : null;
   // Places other people let you into sit with your own, each saying whose it is.
   const sharedShown = (shared ?? []).filter((p) => section === "all" || sectionOf(p.type) === section);
@@ -217,6 +220,7 @@ function HouseholdHome({ session, hh }: { session: Session; hh: ReturnType<typeo
           <div>
             <p className="text-[13.5px] text-mute">
               {current.name} · {new Date().toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })}
+              {isChristmasRun() ? <IconStar className="ml-1.5 inline-block size-3.5 -translate-y-px text-[#c98a14]" /> : null}
             </p>
             <h1 className="font-display text-[1.75rem] leading-tight font-bold tracking-[-0.025em] sm:text-[2rem]">
               {greeting()}
@@ -255,6 +259,17 @@ function HouseholdHome({ session, hh }: { session: Session; hh: ReturnType<typeo
 
       {error ? <Notice>{error}</Notice> : null}
 
+      {places && places.length > 0 ? (
+        <BasketCard
+          householdId={current.householdId}
+          placeIds={new Set(places.map((p) => p.id))}
+          version={version}
+          onDone={(message) => {
+            refresh();
+            announce(message, null);
+          }}
+        />
+      ) : null}
 
       {places && places.length > 0 && total === 0 ? (
         <FirstThingsTip />
@@ -292,6 +307,8 @@ function HouseholdHome({ session, hh }: { session: Session; hh: ReturnType<typeo
           <Reminders lent={lent} longLent={longLent} seasonal={seasonal} />
         </section>
       ) : null}
+
+      {places && places.length > 0 && isChristmasRun() ? <ChristmasCard householdId={current.householdId} members={members} me={session.user.id} version={version} /> : null}
 
       <section className="flex flex-col gap-3" aria-labelledby="places-h">
         <h2 id="places-h" className="sr-only">
@@ -388,7 +405,8 @@ function Reminders({ lent, longLent, seasonal }: { lent: StockItem[]; longLent: 
           : `${longLent} things have been lent over a month`,
     });
   }
-  if (isChristmasTime()) lines.push({ href: "/christmas/", Icon: IconStar, text: `Christmas: ${countdown(daysToChristmas()).toLowerCase()}` });
+  // In December Christmas has a card of its own on Home.
+  if (isChristmasTime() && !isChristmasRun()) lines.push({ href: "/christmas/", Icon: IconStar, text: `Christmas: ${countdown(daysToChristmas()).toLowerCase()}` });
   const jobs = seasonal.shown ?? [];
   if (jobs.length > 0) {
     lines.push({

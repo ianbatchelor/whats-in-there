@@ -21,8 +21,9 @@ export function NotifyBell({
   kind: NotifyKind;
   id: string;
   visibility?: Visibility;
-  /** "onWrap" sits on a coloured present band and takes its colours from it. */
-  tone?: "plain" | "onWrap";
+  /** "onWrap" sits on a coloured present band and takes its colours from it. "onPhoto" is a round
+   * icon button for a place's photo header, beside the sticker and edit buttons. */
+  tone?: "plain" | "onWrap" | "onPhoto";
 }) {
   const key = `${kind}:${id}:${visibility ?? ""}`;
   /** The bell's state, for the list it was loaded for (the presents page switches lists in place). */
@@ -90,10 +91,22 @@ export function NotifyBell({
           setOpen(true);
         }}
         aria-haspopup="dialog"
-        className={`inline-flex min-h-10 items-center gap-1.5 rounded-full px-3.5 font-display text-[13.5px] font-bold transition active:scale-[0.98] ${look}`}
+        aria-label={tone === "onPhoto" ? `Notifications: ${label}` : undefined}
+        title={tone === "onPhoto" ? label : undefined}
+        className={tone === "onPhoto" ? `relative grid size-11 place-items-center rounded-full bg-[#fffdf8]/92 shadow-[var(--shadow-card)] backdrop-blur transition hover:bg-[#fffdf8] ${on ? "text-leaf" : "text-[#17242a]"}` : `inline-flex min-h-10 items-center gap-1.5 rounded-full px-3.5 font-display text-[13.5px] font-bold transition active:scale-[0.98] ${look}`}
       >
-        {on ? <IconBell className="size-[17px]" /> : <IconBellOff className="size-[17px]" />}
-        {label}
+        {tone === "onPhoto" ? (
+          on ? (
+            <IconBell className="size-5" />
+          ) : (
+            <IconBellOff className="size-5" />
+          )
+        ) : (
+          <>
+            {on ? <IconBell className="size-[17px]" /> : <IconBellOff className="size-[17px]" />}
+            {label}
+          </>
+        )}
       </button>
       <Sheet open={open} onClose={() => setOpen(false)} title="Notifications">
         <div className="flex flex-col gap-3">

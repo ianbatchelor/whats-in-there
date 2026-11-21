@@ -65,7 +65,9 @@ function Search({ session }: { session: Session }) {
     const t = setTimeout(async () => {
       setBusy(true);
       try {
-        const found = await searchItems(current.householdId, q);
+        // What's in a place or box whose name matches comes up too.
+        const named = (places ?? []).filter((p) => matches(q, p.name)).map((p) => p.id);
+        const found = await searchItems(current.householdId, q, named);
         if (active) setResults(found);
       } catch (e) {
         if (active) setError(friendlyError(e));
@@ -77,7 +79,7 @@ function Search({ session }: { session: Session }) {
       active = false;
       clearTimeout(t);
     };
-  }, [current, q, version, setError]);
+  }, [current, q, version, setError, places]);
 
   const matchingPlaces = useMemo(() => {
     if (q.length < 2 || !places) return [];

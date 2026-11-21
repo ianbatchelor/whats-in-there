@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
 import { friendlyError } from "@/lib/supabase/errors";
 import type { LocationType } from "@/lib/household";
@@ -18,6 +19,7 @@ export const STARTERS: LocationType[] = ["freezer", "fridge", "pantry", "wardrob
  * like theirs. Each starts with the plain name of its kind ("Freezer"), which can be changed later.
  */
 export function StarterPlaces({ householdId, onAdded, onOwn }: { householdId: string; onAdded: () => void; onOwn: () => void }) {
+  const router = useRouter();
   const [picked, setPicked] = useState<LocationType[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -29,10 +31,13 @@ export function StarterPlaces({ householdId, onAdded, onOwn }: { householdId: st
     setBusy(true);
     // Added in the order shown, so Home lists them the same way.
     const rows = STARTERS.filter((t) => picked.includes(t)).map((type) => ({ household_id: householdId, name: placeType(type).label, type }));
-    const { error } = await supabase().from("storage_locations").insert(rows);
+    const { data, error } = await supabase().from("storage_locations").insert(rows).select("id, type");
     setBusy(false);
     if (error) return setError(friendlyError(error));
     onAdded();
+    // Straight into the first one, where filling it up starts, rather than back to an empty Home.
+    const first = STARTERS.map((t) => (data ?? []).find((r) => r.type === t)).find(Boolean);
+    if (first) router.push(`/place/?id=${first.id as string}`);
   }
 
   return (
@@ -86,7 +91,7 @@ export function StarterPlaces({ householdId, onAdded, onOwn }: { householdId: st
 export function FirstThingsTip() {
   return (
     <p className="rounded-2xl border border-line bg-card px-4 py-3.5 text-[15px]">
-      <b>Next, add what&apos;s in them.</b> Tap the green scan button and photograph a label, a barcode or a whole shelf. Or open a place and tap <b>Add</b>.
+      <b>Next, add what&apos;s in them.</b> Open a place and snap a whole shelf in one photo, or tap <b>+</b> to scan a label or barcode.
     </p>
   );
 }

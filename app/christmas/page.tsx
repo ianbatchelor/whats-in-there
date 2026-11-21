@@ -108,7 +108,6 @@ function Christmas({ session }: { session: Session }) {
       />
       {error ? <Notice>{error}</Notice> : null}
 
-      <ShortVideo {...CHRISTMAS_SHORT} />
 
       <section aria-labelledby="xp-h" className="flex flex-col gap-2.5">
         <div className="flex items-baseline justify-between">
@@ -228,6 +227,11 @@ function Christmas({ session }: { session: Session }) {
           </ul>
         </section>
       ) : null}
+      {/* Last: the people on this page already use the app, so the video is for showing someone else. */}
+      <section aria-labelledby="xv-h" className="flex flex-col gap-2.5">
+        <SectionLabel id="xv-h">Show someone how it works</SectionLabel>
+        <ShortVideo {...CHRISTMAS_SHORT} />
+      </section>
     </AppShell>
   );
 }

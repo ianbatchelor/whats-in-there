@@ -78,6 +78,20 @@ export function searchLists(query: string, s: ListSources): ListHit[] {
     });
   }
 
+  // A list whose own name matches: "christmas" finds "Christmas dinner".
+  for (const list of s.own.lists) {
+    if (!matches(query, list.title)) continue;
+    const left = s.own.entries.filter((e) => e.listId === list.id && !e.doneAt).length;
+    hits.push({
+      id: `ownlist:${list.id}`,
+      kind: "list",
+      title: list.title,
+      where: left === 0 ? "A list, all done" : `A list · ${left} to do`,
+      href: `/my-list/?id=${list.id}`,
+      done: false,
+    });
+  }
+
   const listById = new Map(s.own.lists.map((l) => [l.id, l]));
   for (const e of s.own.entries) {
     const list = listById.get(e.listId);

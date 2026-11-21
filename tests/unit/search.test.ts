@@ -74,6 +74,10 @@ describe("searchLists", () => {
     expect(searchLists("pinot", sources)[0]).toMatchObject({ kind: "shopping", where: "On the shopping list", done: false });
   });
 
+  it("finds a list by its own name, with how much is left on it", () => {
+    expect(searchLists("camping", sources)[0]).toMatchObject({ kind: "list", title: "Camping", where: "A list · 1 to do", href: "/my-list/?id=l1" });
+  });
+
   it("needs two letters", () => {
     expect(searchLists("p", sources)).toEqual([]);
   });
