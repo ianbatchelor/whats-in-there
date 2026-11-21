@@ -24,6 +24,7 @@ import { Sheet } from "@/components/ui/Sheet";
 import { IconCheck, IconChevronRight, IconCopy, IconMore, IconPlay } from "@/components/ui/icons";
 import Link from "next/link";
 import { DeleteAccountSheet } from "@/components/account/DeleteAccountSheet";
+import { YourName } from "@/components/account/YourName";
 import { LegalLinks } from "@/components/common/LegalLinks";
 import { loadAccess } from "@/lib/access";
 import type { Access } from "@/lib/domain/access";
@@ -265,7 +266,8 @@ function Household({ session }: { session: Session }) {
         <section aria-labelledby="account-h" className="flex flex-col gap-2.5">
           <SectionLabel id="account-h">Your account</SectionLabel>
           <div className="flex flex-col gap-1 rounded-[var(--radius-card)] border border-line bg-card px-3.5 py-3 shadow-[var(--shadow-card)]">
-            <p className="truncate text-sm text-mute">Signed in as {session.user.email}</p>
+            <YourName session={session} onSaved={() => load().catch(() => {})} />
+            <p className="truncate border-t border-line pt-2 text-sm text-mute">Signed in as {session.user.email}</p>
             <Button variant="danger" className="min-h-10 self-start px-0! text-[13.5px] font-semibold" onClick={() => setDeleting(true)}>
               Delete my account
             </Button>
@@ -460,7 +462,8 @@ function Household({ session }: { session: Session }) {
       <section aria-labelledby="account-h" className="flex flex-col gap-2.5">
         <SectionLabel id="account-h">Your account</SectionLabel>
         <div className="flex flex-col gap-1 rounded-[var(--radius-card)] border border-line bg-card px-3.5 py-3 shadow-[var(--shadow-card)]">
-          <p className="truncate text-sm text-mute">Signed in as {session.user.email}</p>
+          <YourName session={session} onSaved={() => load().catch(() => {})} />
+          <p className="truncate border-t border-line pt-2 text-sm text-mute">Signed in as {session.user.email}</p>
           <Button variant="danger" className="min-h-10 self-start px-0! text-[13.5px] font-semibold" onClick={() => setDeleting(true)}>
             Delete my account
           </Button>
