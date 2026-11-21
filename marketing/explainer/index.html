@@ -1,0 +1,592 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<title>See What's in Here explainer</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap">
+<style>
+/* Explainer clip, 1920x1080. Every frame is drawn by renderAt(t) below, so the recording is exact. */
+:root{
+  --bg:#f6f5f1;--card:#fff;--sunk:#eeede8;--fg:#15211c;--mute:#66706b;--line:#e5e3dd;
+  --go:#1e4a38;--leaf:#2f6b50;--tape:#f6c65b;--ontape:#2a2112;--brand:#183f32;
+  --late:#a63b1a;--latebg:#fbe6de;--soon:#855a0b;--soonbg:#fbefd6;--ok:#2c6a4c;--okbg:#e4f0e8;--check:#fff4d6;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1920px;height:1080px;overflow:hidden;background:var(--bg)}
+body{font-family:Inter,system-ui,sans-serif;color:var(--fg);-webkit-font-smoothing:antialiased}
+.disp{font-family:"Plus Jakarta Sans",Inter,sans-serif}
+.abs{position:absolute}
+.layer{position:absolute;inset:0}
+#stage{position:relative;width:1920px;height:1080px;overflow:hidden}
+[data-a]{will-change:transform,opacity}
+
+/* Hook */
+#hook{background:#0b1310}
+.himg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+#hookShade{background:linear-gradient(90deg,rgba(8,16,12,.86) 0%,rgba(8,16,12,.55) 50%,rgba(8,16,12,.12) 100%)}
+#hookDark{background:rgba(8,16,12,.55)}
+#hookText{left:150px;top:330px;color:#fff;font-size:132px;font-weight:800;letter-spacing:-.035em;line-height:1}
+#hookWords{position:relative;height:150px;margin-top:6px}
+.hw{position:absolute;left:0;top:0;white-space:nowrap;color:var(--tape)}
+#hook2{left:150px;top:360px;color:#fff}
+#hook2 .a{font-size:120px;font-weight:800;letter-spacing:-.035em;line-height:1}
+#hook2 .b{font-family:Inter;font-size:54px;font-weight:500;color:var(--tape);margin-top:28px}
+
+/* Brand */
+#brand{background:radial-gradient(circle at 50% 42%,#27593f 0%,#183f32 42%,#0e231b 100%)}
+.bgroup{left:0;right:0;top:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+.markwrap{width:260px;height:260px;border-radius:62px;background:radial-gradient(circle at 50% 38%,#22543f,#132f25);box-shadow:0 40px 80px -30px rgba(0,0,0,.6),inset 0 0 0 1.5px rgba(246,198,91,.14);display:grid;place-items:center}
+.btitle{font-size:104px;font-weight:800;color:#fff;letter-spacing:-.035em;margin-top:52px}
+.bsub{font-size:40px;color:#cfe0d6;margin-top:18px;font-weight:500}
+.btag{font-size:60px;color:var(--tape);font-weight:800;margin-top:22px;letter-spacing:-.02em}
+.burl{margin-top:44px;font-size:32px;font-weight:600;color:#fff;padding:16px 34px;border-radius:999px;background:rgba(255,255,255,.1);box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.18)}
+
+/* Light scene */
+#light{background:var(--bg)}
+#light::before{content:"";position:absolute;right:-220px;top:-260px;width:1100px;height:1100px;border-radius:50%;background:radial-gradient(circle,#e8eee3 0%,rgba(232,238,227,0) 70%)}
+.cap{left:150px;top:0;bottom:0;width:740px;display:flex;flex-direction:column;justify-content:center}
+.chip{align-self:flex-start;display:inline-flex;align-items:center;gap:12px;padding:10px 20px 10px 10px;border-radius:999px;background:var(--brand);color:#fff;font-weight:600;font-size:24px}
+.chip b{width:40px;height:40px;border-radius:50%;background:var(--tape);color:var(--ontape);display:grid;place-items:center;font-family:"Plus Jakarta Sans";font-weight:800;font-size:22px}
+.cap h2{font-family:"Plus Jakarta Sans";font-size:92px;font-weight:800;letter-spacing:-.035em;line-height:1;margin-top:30px}
+.cap p{font-size:34px;line-height:1.42;color:var(--mute);margin-top:30px;max-width:680px}
+
+#fcard{left:960px;top:240px;width:820px;height:547px;border-radius:28px;overflow:hidden;box-shadow:0 2px 4px rgba(21,33,28,.06),0 40px 70px -40px rgba(21,33,28,.5)}
+#fcard img{width:100%;height:100%;object-fit:cover}
+#sticker{left:382px;top:396px;width:118px;height:132px;border-radius:12px;background:var(--tape);box-shadow:0 6px 14px -6px rgba(0,0,0,.45);padding:10px;display:flex;flex-direction:column;align-items:center;transform:rotate(-3deg)}
+#qr{width:78px;height:78px;display:grid;grid-template-columns:repeat(9,1fr);gap:0;background:#fff;padding:5px;border-radius:4px}
+#qr i{display:block}
+#sticker .sl{font-size:12px;font-weight:700;color:var(--ontape);margin-top:6px;white-space:nowrap}
+.ring{border:5px solid var(--tape);border-radius:50%;width:120px;height:120px;margin:-60px 0 0 -60px}
+
+/* Phones */
+.phone{left:0;top:0;width:390px;height:820px;border-radius:62px;background:#0c1310;padding:12px;box-shadow:inset 0 0 0 2px #34413b,0 50px 90px -40px rgba(21,33,28,.65),0 10px 24px -12px rgba(21,33,28,.35)}
+.screen{position:relative;width:100%;height:100%;border-radius:50px;overflow:hidden;background:var(--bg)}
+.island{left:50%;top:11px;width:112px;height:33px;margin-left:-56px;border-radius:20px;background:#000;z-index:60}
+.scr{position:absolute;inset:0;background:var(--bg);overflow:hidden;isolation:isolate;z-index:0}
+.sb{position:relative;z-index:5;height:54px;display:flex;justify-content:space-between;align-items:center;padding:12px 32px 0 36px;font:600 16px Inter;color:var(--fg)}
+.sb.w{color:#fff}
+.sbi{display:flex;gap:5px;align-items:center}
+.sbi i{display:block;width:4px;border-radius:1px;background:currentColor}
+.batt{width:24px;height:12px;border-radius:3px;border:1.5px solid currentColor;padding:1.5px;margin-left:4px}
+.batt::after{content:"";display:block;height:100%;width:80%;background:currentColor;border-radius:1px}
+
+.lock{background:linear-gradient(170deg,#2a5d46 0%,#183f32 45%,#0d2119 100%);color:#fff;text-align:center}
+.lock .clock{font-family:"Plus Jakarta Sans";font-size:86px;font-weight:700;margin-top:40px;letter-spacing:-.02em}
+.lock .date{font-size:18px;font-weight:500;opacity:.85;margin-top:2px}
+.lock .hint{position:absolute;left:0;right:0;bottom:70px;font-size:15px;opacity:.7}
+
+.phead{position:absolute;left:0;right:0;top:0;height:200px;background-size:cover;background-position:center}
+.phead::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.25) 0%,rgba(0,0,0,0) 35%,rgba(10,20,15,.72) 100%)}
+.ptitle{position:absolute;left:20px;bottom:16px;color:#fff;z-index:2}
+.ptitle .k{font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;opacity:.85}
+.ptitle .n{font-family:"Plus Jakarta Sans";font-size:30px;font-weight:800;letter-spacing:-.02em}
+.pbody{position:absolute;left:0;right:0;top:200px;padding:14px 14px 0}
+.search{height:42px;border-radius:12px;background:#fff;box-shadow:inset 0 0 0 1px var(--line);display:flex;align-items:center;gap:8px;padding:0 13px;color:var(--mute);font-size:15px}
+.chips{display:flex;gap:6px;margin:12px 0 12px}
+.chips span{padding:7px 12px;border-radius:999px;background:#fff;box-shadow:inset 0 0 0 1px var(--line);font-size:13.5px;font-weight:600;color:var(--fg);white-space:nowrap}
+.chips span.on{background:var(--go);color:#fff;box-shadow:none}
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px;background:#fff;border-radius:14px;padding:11px 14px;margin-bottom:8px;box-shadow:0 1px 2px rgba(21,33,28,.06),inset 0 0 0 1px rgba(229,227,221,.7)}
+.rn{font-family:"Plus Jakarta Sans";font-size:17px;font-weight:700;letter-spacing:-.01em}
+.rs{font-size:13px;color:var(--mute);margin-top:2px}
+.pill{font-size:12px;font-weight:700;padding:5px 9px;border-radius:999px;white-space:nowrap}
+.late{color:var(--late);background:var(--latebg)}
+.soon{color:var(--soon);background:var(--soonbg)}
+.ok{color:var(--ok);background:var(--okbg)}
+.newp{color:var(--ontape);background:var(--tape)}
+.newwrap{height:0;overflow:hidden}
+.tabs{position:absolute;left:0;right:0;bottom:0;height:86px;background:rgba(255,255,255,.96);box-shadow:inset 0 1px 0 var(--line);display:flex;justify-content:space-around;align-items:flex-start;padding-top:10px;z-index:4}
+.tab{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11px;font-weight:600;color:var(--mute);width:60px}
+.tab.on{color:var(--go)}
+.tab svg{width:24px;height:24px}
+.addbtn{width:46px;height:46px;border-radius:50%;background:var(--go);display:grid;place-items:center;margin-top:-6px;box-shadow:0 6px 14px -6px rgba(30,74,56,.7)}
+
+.banner{left:10px;right:10px;top:52px;z-index:30;background:rgba(255,255,255,.97);border-radius:22px;padding:12px 14px;display:flex;gap:12px;align-items:center;box-shadow:0 18px 30px -14px rgba(0,0,0,.45)}
+.banner .ic{width:42px;height:42px;border-radius:11px;flex:none;background:radial-gradient(circle at 50% 38%,#22543f,#132f25);display:grid;place-items:center}
+.banner .t{font-size:14.5px;font-weight:700}
+.banner .s{font-size:13.5px;color:var(--mute);margin-top:1px}
+.touch{width:56px;height:56px;margin:-28px 0 0 -28px;border-radius:50%;background:rgba(255,255,255,.55);box-shadow:0 0 0 2px rgba(21,33,28,.35);z-index:40}
+
+.cam{background:#070b09;color:#fff}
+.camtitle{position:absolute;left:0;right:0;top:62px;text-align:center;font-size:17px;font-weight:600}
+.camx{position:absolute;left:22px;top:58px;width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.16);display:grid;place-items:center;font-size:18px}
+.camview{position:absolute;left:0;right:0;top:110px;height:520px;background:radial-gradient(ellipse at 50% 45%,#5a6d69 0%,#2c3a37 55%,#121a18 100%);overflow:hidden}
+.camview::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(115deg,rgba(255,255,255,.025) 0 18px,rgba(255,255,255,0) 18px 40px)}
+#bag{left:58px;top:70px;width:250px;height:350px;border-radius:30px 30px 22px 22px;background:linear-gradient(160deg,#5bb262 0%,#2f7c3c 70%,#25652f 100%);box-shadow:0 30px 40px -20px rgba(0,0,0,.6),inset 0 2px 0 rgba(255,255,255,.25);transform:rotate(-5deg);overflow:hidden}
+#bag::before{content:"";position:absolute;left:0;right:0;top:0;height:26px;background:repeating-linear-gradient(90deg,rgba(0,0,0,.12) 0 4px,transparent 4px 9px)}
+.bname{position:absolute;left:18px;right:18px;top:44px;background:#fff;border-radius:10px;padding:10px 12px;color:#1f5a29;font-family:"Plus Jakarta Sans";font-weight:800;font-size:31px;line-height:.95;letter-spacing:-.01em}
+.bname small{display:block;font-size:12px;letter-spacing:.14em;color:#4b8a52;font-weight:700;margin-bottom:4px}
+.peas{position:absolute;left:30px;top:168px;width:190px;height:90px}
+.peas i{position:absolute;border-radius:50%;background:radial-gradient(circle at 35% 35%,#b9ec8a,#5fae3f 60%,#3d822a)}
+.bw{position:absolute;left:20px;bottom:56px;font-family:"Plus Jakarta Sans";font-weight:800;color:#fff;font-size:30px}
+.bdate{position:absolute;left:16px;right:16px;bottom:14px;background:#fff;border-radius:6px;color:#111;font:600 13px/1 ui-monospace,Menlo,monospace;padding:8px 8px;letter-spacing:.02em;white-space:nowrap}
+.brk{width:34px;height:34px;border-color:#fff;border-style:solid;border-width:0}
+.scanline{left:30px;right:30px;height:4px;border-radius:2px;background:linear-gradient(90deg,rgba(246,198,91,0),#f6c65b 20%,#fff3c8 50%,#f6c65b 80%,rgba(246,198,91,0));box-shadow:0 0 18px 4px rgba(246,198,91,.55)}
+.campill{position:absolute;left:50%;top:648px;transform:translateX(-50%);background:rgba(255,255,255,.14);padding:9px 16px;border-radius:999px;font-size:14px;font-weight:600;white-space:nowrap;display:flex;gap:8px;align-items:center}
+.shutter{position:absolute;left:50%;bottom:34px;width:72px;height:72px;margin-left:-36px;border-radius:50%;border:4px solid #fff;padding:4px}
+.shutter i{display:block;width:100%;height:100%;border-radius:50%;background:#fff}
+.flash{background:#fff;z-index:50}
+
+.form .ftop{padding:6px 20px 0}
+.form h3{font-family:"Plus Jakarta Sans";font-size:28px;font-weight:800;letter-spacing:-.02em}
+.ainote{display:inline-flex;gap:8px;align-items:center;margin-top:10px;padding:7px 12px 7px 7px;border-radius:999px;background:var(--check);box-shadow:inset 0 0 0 1px #e9c46a;font-size:13px;font-weight:600;color:var(--ontape)}
+.ainote .th{width:26px;height:26px;border-radius:7px;background:linear-gradient(160deg,#5bb262,#2f7c3c)}
+.field{margin-top:12px}
+.fl{font-size:12.5px;font-weight:600;color:var(--mute);margin-bottom:5px}
+.fv{height:44px;border-radius:12px;background:#fff;box-shadow:inset 0 0 0 1px var(--line);display:flex;align-items:center;padding:0 13px;font-size:16px;font-weight:600}
+.fv.hl{box-shadow:inset 0 0 0 2px var(--tape)}
+.two{display:flex;gap:10px}.two>div{flex:1}
+.caret{display:inline-block;width:2px;height:20px;background:var(--go);margin-left:2px}
+.fbtn{position:absolute;left:20px;right:20px;bottom:30px;height:54px;border-radius:14px;background:var(--go);color:#fff;font-weight:700;font-size:17px;display:grid;place-items:center}
+.toast{left:50%;bottom:100px;width:300px;margin-left:-150px;z-index:35;background:#15211c;color:#fff;border-radius:16px;padding:13px 16px;display:flex;align-items:center;justify-content:space-between;font-size:14.5px;font-weight:600;box-shadow:0 16px 30px -12px rgba(0,0,0,.5)}
+.toast .u{color:var(--tape)}
+.tick{width:22px;height:22px;border-radius:50%;background:#8cc7a5;display:inline-grid;place-items:center;margin-right:8px;color:#0d1f17;font-size:13px;font-weight:800}
+
+.usehead{padding:8px 20px 6px}
+.usehead h3{font-family:"Plus Jakarta Sans";font-size:32px;font-weight:800;letter-spacing:-.02em}
+.usehead p{font-size:14px;color:var(--mute);margin-top:2px}
+.ulist{padding:10px 14px 0}
+.urow{display:flex;align-items:center;gap:11px;background:#fff;border-radius:14px;padding:9px 12px 9px 9px;margin-bottom:8px;box-shadow:0 1px 2px rgba(21,33,28,.06),inset 0 0 0 1px rgba(229,227,221,.7)}
+.urow img{width:44px;height:44px;border-radius:10px;object-fit:cover;flex:none}
+.urow .m{flex:1;min-width:0}
+
+#live{left:0;top:0;width:1920px;height:1080px;overflow:visible;pointer-events:none}
+.livetag{background:var(--brand);color:#fff;border-radius:999px;padding:8px 16px 8px 12px;font-weight:700;font-size:20px;display:flex;gap:10px;align-items:center;white-space:nowrap;box-shadow:0 12px 24px -12px rgba(0,0,0,.4)}
+.livetag i{width:12px;height:12px;border-radius:50%;background:#8cc7a5;box-shadow:0 0 0 4px rgba(140,199,165,.3)}
+
+#gsearch{left:980px;top:150px;width:808px;height:76px;border-radius:20px;background:#fff;box-shadow:0 1px 2px rgba(21,33,28,.06),0 20px 40px -26px rgba(21,33,28,.35),inset 0 0 0 1px var(--line);display:flex;align-items:center;gap:14px;padding:0 24px;font-size:28px;font-weight:500}
+#gsearch .ph{color:var(--mute)}
+.gcard{width:258px;height:250px;border-radius:20px;background:#fff;overflow:hidden;box-shadow:0 1px 2px rgba(21,33,28,.06),0 20px 40px -30px rgba(21,33,28,.45),inset 0 0 0 1px rgba(229,227,221,.7)}
+.gcard img{width:100%;height:168px;object-fit:cover;display:block}
+.gcard .gn{font-family:"Plus Jakarta Sans";font-weight:800;font-size:21px;padding:12px 16px 0;letter-spacing:-.01em}
+.gcard .gs{font-size:15px;color:var(--mute);padding:2px 16px 0}
+#found{z-index:5;background:var(--tape);color:var(--ontape);border-radius:14px;padding:10px 16px;font-weight:700;font-size:19px;white-space:nowrap;box-shadow:0 16px 30px -14px rgba(0,0,0,.45)}
+#found small{display:block;font-weight:600;font-size:14px;opacity:.8}
+</style>
+</head>
+<body>
+<div id="stage">
+
+  <!-- 1. Hook -->
+  <div id="hook" class="layer">
+    <img class="himg" data-a id="h0" src="../../public/places/freezer-wide.webp" alt="">
+    <img class="himg" data-a id="h1" src="../../public/places/attic-wide.webp" alt="">
+    <img class="himg" data-a id="h2" src="../../public/places/shed-wide.webp" alt="">
+    <img class="himg" data-a id="h3" src="../../public/places/wardrobe-wide.webp" alt="">
+    <img class="himg" data-a id="h4" src="../../public/places/pantry-wide.webp" alt="">
+    <div id="hookShade" class="layer"></div>
+    <div id="hookDark" class="layer" data-a></div>
+    <div id="hookText" class="abs disp" data-a>
+      <div>What's in</div>
+      <div id="hookWords">
+        <span class="hw" data-a id="w0">the freezer?</span>
+        <span class="hw" data-a id="w1">the attic?</span>
+        <span class="hw" data-a id="w2">the shed?</span>
+        <span class="hw" data-a id="w3">the wardrobe?</span>
+      </div>
+    </div>
+    <div id="hook2" class="abs">
+      <div class="a disp" data-a id="h2a">Bought pasta again?</div>
+      <div class="b" data-a id="h2b">There were three bags at the back.</div>
+    </div>
+  </div>
+
+  <!-- 2-6. App walkthrough -->
+  <div id="light" class="layer" data-a>
+    <div class="cap abs" id="c1">
+      <div class="chip" data-a><b>1</b>Tap</div>
+      <h2 data-a>Tap the sticker</h2>
+      <p data-a>Every freezer, cupboard or box gets its own sticker. Hold your phone to it and that place opens.</p>
+    </div>
+    <div class="cap abs" id="c2">
+      <div class="chip" data-a><b>2</b>Snap</div>
+      <h2 data-a>Snap the label</h2>
+      <p data-a>Take a photo of the pack. The name, size and dates fill themselves in. You check, then add.</p>
+    </div>
+    <div class="cap abs" id="c3">
+      <div class="chip" data-a><b>3</b>Share</div>
+      <h2 data-a>Everyone sees it, live</h2>
+      <p data-a>The whole household shares one list. Add something in the garage and it's on everyone's phone.</p>
+    </div>
+    <div class="cap abs" id="c4">
+      <div class="chip" data-a><b>4</b>Use</div>
+      <h2 data-a>Use the oldest first</h2>
+      <p data-a>The Use first list shows what's close to its date, or has been in the freezer the longest.</p>
+    </div>
+    <div class="cap abs" id="c5">
+      <div class="chip" data-a><b>5</b>Find</div>
+      <h2 data-a>Not just the freezer</h2>
+      <p data-a>The attic, the shed, the wardrobe. Search once and find anything, wherever it's kept.</p>
+    </div>
+
+    <div id="fcard" class="abs" data-a>
+      <img src="../../public/places/freezer-wide.webp" alt="">
+      <div id="sticker" class="abs"><div id="qr"></div><div class="sl">Garage freezer</div></div>
+    </div>
+    <div class="ring abs" data-a id="r0"></div>
+    <div class="ring abs" data-a id="r1"></div>
+    <div class="ring abs" data-a id="r2"></div>
+
+    <svg id="live" class="abs"><path id="livePath" d="" fill="none" stroke="#2f6b50" stroke-width="4" stroke-dasharray="2 14" stroke-linecap="round"/><circle id="liveDot" r="11" fill="#f6c65b" stroke="#183f32" stroke-width="4"/></svg>
+    <div class="livetag abs" id="livetag" data-a><i></i>Live</div>
+
+    <div id="phoneB" class="phone abs" data-a><div class="screen"><div class="island abs"></div>
+      <div class="scr" id="bPlace"></div>
+      <div class="banner abs" id="bBanner" data-a><div class="ic">MARK</div><div><div class="t">Alex added Garden peas</div><div class="s">Garage freezer · just now</div></div></div>
+    </div></div>
+
+    <div id="phoneA" class="phone abs" data-a><div class="screen"><div class="island abs"></div>
+      <div class="scr" id="aPlace"></div>
+      <div class="scr lock" id="aLock" data-a>
+        <div class="sb w"><span>9:41</span><span class="sbi"><i style="height:6px"></i><i style="height:9px"></i><i style="height:12px"></i><span class="batt"></span></span></div>
+        <div class="clock">9:41</div><div class="date">Saturday 21 November</div>
+        <div class="hint">Hold near a sticker</div>
+      </div>
+      <div class="scr cam" id="aCam" data-a>
+        <div class="sb w"><span>9:42</span><span class="sbi"><i style="height:6px"></i><i style="height:9px"></i><i style="height:12px"></i><span class="batt"></span></span></div>
+        <div class="camx">×</div><div class="camtitle">Scan a label</div>
+        <div class="camview">
+          <div id="bag" class="abs">
+            <div class="bname" id="bn"><small>FROZEN</small>Garden<br>peas</div>
+            <div class="peas" id="peas"></div>
+            <div class="bw" id="bw">750g</div>
+            <div class="bdate" id="bd">BEST BEFORE END 08 2027</div>
+          </div>
+          <div class="brk abs" style="left:28px;top:40px;border-top-width:5px;border-left-width:5px;border-top-left-radius:14px"></div>
+          <div class="brk abs" style="right:28px;top:40px;border-top-width:5px;border-right-width:5px;border-top-right-radius:14px"></div>
+          <div class="brk abs" style="left:28px;bottom:40px;border-bottom-width:5px;border-left-width:5px;border-bottom-left-radius:14px"></div>
+          <div class="brk abs" style="right:28px;bottom:40px;border-bottom-width:5px;border-right-width:5px;border-bottom-right-radius:14px"></div>
+          <div class="scanline abs" id="scan" data-a></div>
+        </div>
+        <div class="campill" id="campill"><span id="campillT">Reading the label…</span></div>
+        <div class="shutter" id="shutter" data-a><i></i></div>
+      </div>
+      <div class="scr form" id="aForm" data-a>
+        <div class="sb"><span>9:42</span><span class="sbi"><i style="height:6px"></i><i style="height:9px"></i><i style="height:12px"></i><span class="batt"></span></span></div>
+        <div class="ftop">
+          <h3>Check and add</h3>
+          <div class="ainote" data-a id="ainote"><span class="th"></span>Filled in from your photo</div>
+          <div class="field"><div class="fl">Name</div><div class="fv" id="fv0"><span id="f0"></span></div></div>
+          <div class="two">
+            <div class="field"><div class="fl">How many</div><div class="fv" id="fv1"><span id="f1"></span></div></div>
+            <div class="field"><div class="fl">Pack size</div><div class="fv" id="fv2"><span id="f2"></span></div></div>
+          </div>
+          <div class="field"><div class="fl">Best before</div><div class="fv" id="fv3"><span id="f3"></span></div></div>
+          <div class="field"><div class="fl">Where</div><div class="fv" id="fv4"><span id="f4"></span></div></div>
+        </div>
+        <div class="fbtn" id="fbtn" data-a>Add to Garage freezer</div>
+      </div>
+      <div class="scr" id="aUse" data-a></div>
+      <div class="flash abs layer" id="flash" data-a></div>
+      <div class="banner abs" id="aBanner" data-a><div class="ic">MARK</div><div><div class="t">See What's in Here</div><div class="s">Opening Garage freezer</div></div></div>
+      <div class="toast abs" id="aToast" data-a><span><span class="tick">✓</span>Added</span><span class="u">Undo</span></div>
+      <div class="touch abs" id="touchA" data-a></div>
+    </div></div>
+
+    <div id="gsearch" class="abs" data-a>
+      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#66706b" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
+      <span class="ph" id="gph">Search everything</span><span id="gq"></span><i class="caret" id="gcaret" style="height:30px"></i>
+    </div>
+    <div id="grid"></div>
+    <div id="found" class="abs" data-a>Camping tent<small>Attic · top shelf</small></div>
+  </div>
+
+  <!-- Brand cards (logo and ending) -->
+  <div id="brand" class="layer" data-a>
+    <div class="bgroup abs" id="logoG">
+      <div class="markwrap" data-a id="lm"><svg width="190" height="190" viewBox="0 0 64 64" id="lmark"></svg></div>
+      <div class="btitle disp" data-a id="lt">See What's in Here</div>
+      <div class="bsub" data-a id="ls">Know what you've got, wherever you keep it.</div>
+    </div>
+    <div class="bgroup abs" id="endG">
+      <div class="markwrap" data-a id="em" style="width:200px;height:200px;border-radius:48px"><svg width="146" height="146" viewBox="0 0 64 64" id="emark"></svg></div>
+      <div class="btitle disp" data-a id="et" style="font-size:96px;margin-top:44px">See What's in Here</div>
+      <div class="btag disp" data-a id="eg">Tap. Snap. Sorted.</div>
+      <div class="burl" data-a id="eu">seewhatsinhere.com</div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ---------- Static content ----------
+const IMG = n => `../../public/places/${n}.webp`;
+const MARK = (stroke, fo) => `
+  <path class="rays" d="M32 6v7M17 10l3.5 6M47 10l-3.5 6M9 21l6 3M55 21l-6 3" stroke="${stroke}" stroke-width="3.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <path class="lid" d="M14 30 32 23l18 7-18 7z" fill="${stroke}" fill-opacity="${fo}" stroke="${stroke}" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>
+  <path class="box" d="M14 30v17l18 8 18-8V30M32 37v18" stroke="${stroke}" stroke-width="3.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
+document.getElementById('lmark').innerHTML = MARK('#f6c65b', .22);
+document.getElementById('emark').innerHTML = MARK('#f6c65b', .22);
+document.querySelectorAll('.banner .ic').forEach(e => e.innerHTML = `<svg width="30" height="30" viewBox="0 0 64 64">${MARK('#f6c65b', .22)}</svg>`);
+
+// A fixed QR-like pattern for the sticker.
+(() => {
+  const q = document.getElementById('qr'); let s = 7;
+  const finder = (r, c) => (r < 3 && c < 3) || (r < 3 && c > 5) || (r > 5 && c < 3);
+  for (let r = 0; r < 9; r++) for (let c = 0; c < 9; c++) {
+    s = (s * 9301 + 49297) % 233280;
+    let on = s / 233280 > 0.5;
+    if (finder(r, c)) { const rr = r % 6, cc = c % 6; on = !(rr === 1 && cc === 1) ; }
+    const i = document.createElement('i'); i.style.background = on ? '#15211c' : 'transparent'; q.appendChild(i);
+  }
+})();
+// Peas on the bag.
+(() => {
+  const p = document.getElementById('peas'); let s = 3;
+  for (let k = 0; k < 16; k++) {
+    s = (s * 9301 + 49297) % 233280; const a = s / 233280; s = (s * 9301 + 49297) % 233280; const b = s / 233280;
+    const d = 24 + Math.round(a * 12); const i = document.createElement('i');
+    Object.assign(i.style, { width: d + 'px', height: d + 'px', left: Math.round(((k % 8) / 8) * 170 + b * 8) + 'px', top: Math.round((k < 8 ? 6 : 44) + a * 18) + 'px' });
+    p.appendChild(i);
+  }
+})();
+
+const SB = `<div class="sb w"><span>9:41</span><span class="sbi"><i style="height:6px"></i><i style="height:9px"></i><i style="height:12px"></i><span class="batt"></span></span></div>`;
+const SBD = SB.replace('sb w', 'sb');
+const ICON = {
+  home: '<path d="M4 11 12 4l8 7v9h-5v-6H9v6H4z"/>',
+  search: '<circle cx="11" cy="11" r="6.5"/><path d="m20 20-4-4"/>',
+  act: '<path d="M3 12h4l3-7 4 14 3-7h4"/>',
+  hh: '<circle cx="9" cy="8" r="3.2"/><path d="M3 19c.6-3.4 3-5 6-5s5.4 1.6 6 5"/><circle cx="17" cy="9" r="2.4"/><path d="M16 14c2.6 0 4.4 1.4 5 4"/>',
+};
+const tab = (k, l, on) => `<div class="tab${on ? ' on' : ''}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICON[k]}</svg>${l}</div>`;
+const TABS = (on) => `<div class="tabs">${tab('home', 'Home', on === 'home')}${tab('search', 'Search')}<div class="tab"><div class="addbtn" data-add><svg width="22" height="22" viewBox="0 0 24 24" stroke="#fff" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></div></div>${tab('act', 'Activity')}${tab('hh', 'Household')}</div>`;
+const row = (n, s, pill) => `<div class="row"><div><div class="rn">${n}</div><div class="rs">${s}</div></div>${pill || ''}</div>`;
+const placeHTML = (id) => `
+  <div class="phead" style="background-image:url(${IMG('freezer-wide')})">${SB}<div class="ptitle"><div class="k">Freezer</div><div class="n">Garage freezer</div></div></div>
+  <div class="pbody">
+    <div class="search"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#66706b" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>Search the garage freezer</div>
+    <div class="chips"><span class="on">All</span><span>Meat</span><span>Veg</span><span>Ready meals</span><span>Sweet</span></div>
+    <div class="newwrap" id="${id}New"><div class="row" id="${id}NewRow" style="background:#fff4d6"><div><div class="rn">Garden peas</div><div class="rs">1 pack · 750 g · best before Aug 2027</div></div><span class="pill newp">New</span></div></div>
+    ${row('Leg of lamb', '1 · frozen 7 months ago', '<span class="pill soon">Use soon</span>')}
+    ${row('Chicken curry', '2 portions · frozen 3 weeks ago')}
+    ${row('Blackberries', '500 g · frozen in September')}
+    ${row('Vanilla ice cream', '1 tub · best before Mar 2027')}
+    ${row('Sausages', '8 · frozen 2 weeks ago')}
+  </div>${TABS()}`;
+document.getElementById('aPlace').innerHTML = placeHTML('a');
+document.getElementById('bPlace').innerHTML = placeHTML('b');
+
+const urow = (img, n, place, cls, label) => `<div class="urow" data-a><img src="${IMG(img)}" alt=""><div class="m"><div class="rn">${n}</div><div class="rs">${place}</div></div><span class="pill ${cls}">${label}</span></div>`;
+document.getElementById('aUse').innerHTML = `${SBD}
+  <div class="usehead"><h3>Use first</h3><p>Across The Riverside House</p></div>
+  <div class="ulist">
+    ${urow('fridge', 'Greek yoghurt', 'Kitchen fridge', 'late', 'Use by yesterday')}
+    ${urow('fridge', 'Mature cheddar', 'Kitchen fridge', 'soon', 'Use by Sat')}
+    ${urow('fridge', 'Free-range eggs', 'Kitchen fridge', 'soon', 'Best before Tue')}
+    ${urow('freezer', 'Leg of lamb', 'Garage freezer', 'soon', 'Frozen 7 months')}
+    ${urow('pantry', 'Passata', 'Pantry', 'ok', 'Best before Jan')}
+    ${urow('freezer', 'Chicken curry', 'Garage freezer', 'ok', 'Frozen 3 weeks')}
+    ${urow('pantry', 'Basmati rice', 'Pantry', 'ok', 'Best before 2027')}
+  </div>${TABS('home')}`;
+
+const PLACES = [
+  ['freezer', 'Garage freezer', '14 things'], ['fridge', 'Kitchen fridge', '22 things'], ['pantry', 'Pantry', '31 things'],
+  ['attic', 'Attic', '9 things'], ['shed', 'Garden shed', '17 things'], ['wardrobe', 'Bedroom wardrobe', '12 things'],
+];
+const GX = 980, GY = 262, GW = 258, GH = 250, GG = 17;
+document.getElementById('grid').innerHTML = PLACES.map(([img, n, s], k) =>
+  `<div class="gcard abs" data-a id="g${k}" style="left:${GX + (k % 3) * (GW + GG)}px;top:${GY + Math.floor(k / 3) * (GH + GG)}px"><img src="${IMG(img)}" alt=""><div class="gn">${n}</div><div class="gs">${s}</div></div>`).join('');
+
+// ---------- Timeline helpers ----------
+const $ = id => document.getElementById(id);
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const P = (t, a, b) => clamp((t - a) / (b - a));
+const eo = x => 1 - Math.pow(1 - x, 3);
+const eio = x => x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+const back = x => { const c1 = 1.5, c3 = c1 + 1; return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2); };
+const L = (a, b, x) => a + (b - a) * x;
+function S(el, o = 1, x = 0, y = 0, s = 1, r = 0) {
+  if (typeof el === 'string') el = $(el);
+  el.style.opacity = clamp(o);
+  el.style.visibility = o <= 0.002 ? 'hidden' : 'visible';
+  el.style.transform = `translate(${x}px,${y}px) scale(${s}) rotate(${r}deg)`;
+}
+// Fade-in [a,a+d], fade-out [b-d2,b]; returns {o, y} for a gentle rise in and lift out.
+function win(t, a, b, d = .55, d2 = .4, rise = 40) {
+  const i = eo(P(t, a, a + d)), u = eio(P(t, b - d2, b));
+  return { o: Math.min(i, 1 - u), y: (1 - i) * rise - u * 30 };
+}
+// Phone placed by centre point.
+function phone(el, o, cx, cy, s = 1, r = 0) { S(el, o, cx - 195, cy - 410, s, r); }
+function typed(el, text, x) { $(el).textContent = text.slice(0, Math.round(text.length * clamp(x))); }
+function drawMark(svg, t0, t) {
+  const box = svg.querySelector('.box'), lid = svg.querySelector('.lid'), rays = svg.querySelector('.rays');
+  [box, lid].forEach(p => { p.style.strokeDasharray = 140; p.style.strokeDashoffset = 140 * (1 - eio(P(t, t0, t0 + .8))); });
+  lid.style.fillOpacity = .22 * P(t, t0 + .6, t0 + 1);
+  rays.style.opacity = P(t, t0 + .8, t0 + 1.0);
+  rays.style.transformOrigin = '32px 30px';
+  rays.style.transform = `scale(${L(.6, 1, back(P(t, t0 + .8, t0 + 1.3)))})`;
+}
+
+// ---------- Scenes ----------
+const T = { hookEnd: 7.2, logoIn: 6.8, lightIn: 10.6, s1: 11.0, tap: 14.2, s2: 18.0, s3: 26.0, s4: 32.0, s5: 38.0, end: 43.4, total: 49 };
+window.DURATION = T.total;
+
+function hook(t) {
+  const on = t < 7.6; $('hook').style.display = on ? '' : 'none'; if (!on) return;
+  const starts = [0, 1.25, 2.5, 3.75, 5.0];
+  starts.forEach((a, i) => S('h' + i, i === 0 ? 1 : eo(P(t, a, a + .4)), 0, 0, L(1.12, 1.0, eo(P(t, a, a + 2.6)))));
+  S('hookDark', P(t, 4.9, 5.4));
+  const ht = win(t, 0.15, 5.05, .6, .35, 30); S('hookText', ht.o, 0, ht.y);
+  for (let i = 0; i < 4; i++) {
+    const a = starts[i], b = i < 3 ? starts[i + 1] : 9;
+    const ii = eo(P(t, a + (i ? 0 : .2), a + (i ? .3 : .7))), uu = eio(P(t, b - .25, b));
+    S('w' + i, Math.min(ii, 1 - uu), 0, (1 - ii) * 70 - uu * 70);
+  }
+  const a = win(t, 5.15, 9, .5, .3, 40); S('h2a', a.o, 0, a.y);
+  const b = win(t, 5.75, 9, .5, .3, 30); S('h2b', b.o, 0, b.y);
+}
+
+function brand(t) {
+  const o = Math.max(Math.min(P(t, 6.8, 7.3), 1 - P(t, 10.6, 11.2)), P(t, T.end, T.end + .6));
+  S('brand', o); if (o <= 0) return;
+  const logo = t < 20; $('logoG').style.display = logo ? '' : 'none'; $('endG').style.display = logo ? 'none' : '';
+  if (logo) {
+    S('lm', eo(P(t, 7.0, 7.4)), 0, 0, L(.8, 1, back(P(t, 7.0, 7.7))));
+    drawMark($('lmark'), 7.15, t);
+    const a = win(t, 8.0, 99, .6, .3, 36); S('lt', a.o, 0, a.y);
+    const b = win(t, 8.5, 99, .6, .3, 26); S('ls', b.o, 0, b.y);
+  } else {
+    const e = T.end;
+    S('em', eo(P(t, e + .3, e + .7)), 0, 0, L(.8, 1, back(P(t, e + .3, e + 1.0))));
+    drawMark($('emark'), e + .4, t);
+    const a = win(t, e + 1.0, 99, .6, .3, 36); S('et', a.o, 0, a.y);
+    const b = win(t, e + 1.6, 99, .5, .3, 26); S('eg', b.o, 0, b.y, L(.9, 1, back(P(t, e + 1.6, e + 2.1))));
+    const c = win(t, e + 2.2, 99, .6, .3, 20); S('eu', c.o, 0, c.y);
+  }
+}
+
+function captions(t) {
+  const W = [[T.s1, T.s2 - .1], [T.s2, T.s3 - .1], [T.s3, T.s4 - .1], [T.s4, T.s5 - .1], [T.s5, 99]];
+  W.forEach(([a, b], i) => {
+    const kids = $('c' + (i + 1)).children;
+    [0, .12, .26].forEach((d, k) => { const w = win(t, a + d, b, .6, .4, 44); S(kids[k], w.o, 0, w.y); });
+  });
+}
+
+function stepTap(t) {
+  // Freezer card with its sticker.
+  const ci = eo(P(t, T.s1, T.s1 + .7)), co = eio(P(t, 15.0, 15.7));
+  S('fcard', Math.min(ci, 1 - co), (1 - ci) * 80 - co * 80, 0, L(.97, 1, ci));
+  // Rings pulse out of the sticker centre (card left 960 + 441, top 240 + 462).
+  for (let k = 0; k < 3; k++) {
+    const p = P(t, T.tap + k * .22, T.tap + k * .22 + .9);
+    S('r' + k, p > 0 && p < 1 ? (1 - p) * .95 : 0, 960 + 441, 240 + 462, L(.4, 2.6, eo(p)));
+  }
+}
+
+function phoneA(t) {
+  const el = $('phoneA');
+  if (t < 11.5 || t > 38.6) { S(el, 0); return; }
+  let cx, cy, s, r;
+  const rest = [1390, 540, 1, 0];
+  if (t < 15.0) {
+    const up = eo(P(t, 11.8, 12.8)), go = eio(P(t, 13.1, 14.1));
+    const A = [1690, 1420, .78, 10], B = [1690, 700, .78, 9], C = [1430, 960, .78, -7];
+    const from = up < 1 ? A : B, to = up < 1 ? B : C, x = up < 1 ? up : go;
+    [cx, cy, s, r] = from.map((v, i) => L(v, to[i], x));
+    if (t > T.tap && t < 14.6) cy += -6 * Math.sin(P(t, T.tap, 14.5) * Math.PI); // tiny press
+  } else if (t < T.s3) {
+    const x = eio(P(t, 15.0, 15.9));
+    [cx, cy, s, r] = [1430, 960, .78, -7].map((v, i) => L(v, rest[i], x));
+  } else if (t < T.s4) {
+    const x = eio(P(t, T.s3, T.s3 + .8)), back_ = eio(P(t, 31.5, 32.3));
+    const side = [1525, 545, .92, 3];
+    [cx, cy, s, r] = rest.map((v, i) => L(L(v, side[i], x), v, back_));
+  } else {
+    const x = eio(P(t, 37.7, 38.5));
+    [cx, cy, s, r] = rest.map((v, i) => L(v, [1500, 1500, 1, 10][i], x));
+  }
+  phone(el, 1, cx, cy, s, r);
+
+  // Screens.
+  const lockO = 1 - P(t, 14.85, 15.25);
+  S('aLock', lockO);
+  const bn = eo(P(t, 14.3, 14.65)), bu = eio(P(t, 15.35, 15.7));
+  S('aBanner', Math.min(bn, 1 - bu), 0, (1 - bn) * -110 - bu * 40);
+  // Camera: slides up after tapping Add.
+  const camIn = eo(P(t, 18.15, 18.6)), camOut = P(t, 21.5, 21.8);
+  S('aCam', camIn > 0 && t < 21.9 ? 1 : 0, 0, (1 - camIn) * 800);
+  const sw = P(t, 19.0, 20.6);
+  S('scan', sw > 0 && sw < 1 ? 1 : 0, 0, 40 + 440 * (0.5 - 0.5 * Math.cos(sw * Math.PI * 2)));
+  const det = P(t, 20.2, 20.6);
+  ['bn', 'bw', 'bd'].forEach(id => $(id).style.boxShadow = `0 0 0 ${det > 0 ? 4 : 0}px rgba(246,198,91,${det})`);
+  $('campillT').textContent = t < 20.3 ? 'Reading the label…' : 'Found name, size and date';
+  const sp = P(t, 20.85, 21.1); S('shutter', 1, 0, 0, 1 - .12 * Math.sin(sp * Math.PI));
+  const fl = P(t, 21.0, 21.45); S('flash', fl > 0 && fl < 1 ? .9 * (1 - fl) : 0);
+  // Form.
+  const fi = eo(P(t, 21.3, 21.75)), fo = P(t, 25.0, 25.35);
+  S('aForm', Math.min(fi, 1 - fo), 0, (1 - fi) * 40);
+  S('ainote', eo(P(t, 21.6, 22.0)), 0, 0, L(.85, 1, back(P(t, 21.6, 22.1))));
+  const vals = ['Garden peas', '1 pack', '750 g', 'August 2027', 'Garage freezer'];
+  vals.forEach((v, k) => {
+    const a = 21.9 + k * .34, x = P(t, a, a + .3);
+    typed('f' + k, v, x); $('fv' + k).classList.toggle('hl', x > 0 && t < a + .6);
+  });
+  const bp = P(t, 24.05, 24.3); S('fbtn', 1, 0, 0, 1 - .05 * Math.sin(bp * Math.PI));
+  const ti = eo(P(t, 24.3, 24.6)), to = P(t, 25.6, 25.9);
+  S('aToast', Math.min(ti, 1 - to), 0, (1 - ti) * 30);
+  // New row in the list.
+  $('aNew').style.height = 70 * eio(P(t, 25.3, 25.8)) + 'px';
+  $('aNewRow').style.background = `rgba(255,244,214,${1 - P(t, 29, 31)})`;
+  // Use first.
+  const ui = P(t, 31.9, 32.4); S('aUse', ui);
+  $('aUse').querySelectorAll('.urow').forEach((r, k) => { const x = eo(P(t, 32.4 + k * .14, 32.9 + k * .14)); S(r, x, (1 - x) * 40); });
+  // Touches: Add button, shutter, Add button on the form.
+  const touches = [[17.45, 17.95, 183, 735], [20.7, 21.15, 183, 722], [23.85, 24.35, 183, 739]];
+  let tch = null; touches.forEach(([a, b, x, y]) => { if (t >= a && t <= b) tch = [P(t, a, b), x, y]; });
+  if (tch) S('touchA', Math.sin(tch[0] * Math.PI), tch[1], tch[2], L(1.2, .85, tch[0])); else S('touchA', 0);
+  const addP = P(t, 17.6, 17.9); $('aPlace').querySelector('[data-add]').style.transform = `scale(${1 - .14 * Math.sin(addP * Math.PI)})`;
+}
+
+function phoneB(t) {
+  const el = $('phoneB');
+  liveLink(t);
+  if (t < T.s3 || t > 32.6) { S(el, 0); return; }
+  const i = eo(P(t, T.s3 + .2, T.s3 + 1.0)), u = eio(P(t, 31.4, 32.1));
+  phone(el, 1, 1135, L(1450, 535, i) + u * 900, .92, L(-12, -4, i));
+  const bn = eo(P(t, 27.55, 27.9)), bu = eio(P(t, 29.6, 30.0));
+  S('bBanner', Math.min(bn, 1 - bu), 0, (1 - bn) * -110 - bu * 40);
+  $('bNew').style.height = 70 * eio(P(t, 27.75, 28.25)) + 'px';
+  $('bNewRow').style.background = `rgba(255,244,214,${1 - P(t, 30, 31.4)})`;
+}
+function liveLink(t) {
+  // The change travels from Alex's phone to the other one.
+  const lo = Math.min(P(t, 26.9, 27.2), 1 - P(t, 30.6, 31.1));
+  const x0 = 1440, y0 = 215, x1 = 1220, y1 = 215, cx = 1330, cy = 90;
+  $('livePath').setAttribute('d', `M${x0} ${y0} Q${cx} ${cy} ${x1} ${y1}`);
+  $('live').style.opacity = lo;
+  const d = eio(P(t, 27.0, 27.6)), q = 1 - d;
+  $('liveDot').setAttribute('cx', q * q * x0 + 2 * q * d * cx + d * d * x1);
+  $('liveDot').setAttribute('cy', q * q * y0 + 2 * q * d * cy + d * d * y1);
+  S('livetag', lo, 1280, 40 - (1 - eo(P(t, 26.9, 27.3))) * 20);
+}
+
+function stepFind(t) {
+  const sOn = t > T.s5 - .5;
+  const si = eo(P(t, 38.3, 38.85)); S('gsearch', sOn ? si : 0, 0, (1 - si) * -24);
+  const q = 'tent', tp = P(t, 39.7, 40.4);
+  $('gq').textContent = q.slice(0, Math.round(q.length * tp));
+  $('gph').style.display = tp > 0 ? 'none' : '';
+  $('gcaret').style.opacity = (t > 39.2 && (Math.floor(t * 2.2) % 2 === 0 || (tp > 0 && tp < 1))) ? 1 : 0;
+  const f = eio(P(t, 40.6, 41.0));
+  for (let k = 0; k < 6; k++) {
+    const a = 38.5 + k * .09, x = eo(P(t, a, a + .55));
+    const hit = k === 3;
+    S('g' + k, sOn ? x * (hit ? 1 : L(1, .28, f)) : 0, 0, (1 - x) * 50 - (hit ? 10 * f : 0), L(.94, 1, x) * (hit ? L(1, 1.05, f) : L(1, .96, f)));
+  }
+  $('g3').style.boxShadow = `0 0 0 ${4 * f}px #f6c65b, 0 30px 50px -26px rgba(21,33,28,.5)`;
+  const fi = P(t, 40.9, 41.4);
+  S('found', fi > 0 ? eo(fi) : 0, GX + 22, GY + 2 * GH + GG + 22 - (1 - eo(fi)) * 10, L(.6, 1, back(fi)));
+}
+
+function renderAt(t) {
+  hook(t);
+  const lightOn = t > 10.3 && t < 44.3; $('light').style.display = lightOn ? '' : 'none';
+  if (lightOn) { captions(t); stepTap(t); phoneA(t); phoneB(t); stepFind(t); }
+  brand(t);
+}
+window.renderAt = renderAt;
+renderAt(0);
+</script>
+</body>
+</html>

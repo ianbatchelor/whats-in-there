@@ -21,3 +21,6 @@ android/app/build/
 android/local.properties
 ios/App/Pods/
 ios/DerivedData/
+marketing/explainer/*.mp4
+marketing/explainer/*.wav
+marketing/explainer/t*.png
