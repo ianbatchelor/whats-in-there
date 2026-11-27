@@ -22,6 +22,8 @@ import { IdeaRow } from "@/components/presents/IdeaRow";
 import { IdeaSheet } from "@/components/presents/IdeaSheet";
 import { ShareSheet } from "@/components/presents/ShareSheet";
 import { NewListSheet } from "@/components/presents/NewListSheet";
+import { SharedPresentLists } from "@/components/presents/SharedLists";
+import { loadListsSharedWithMe, type SharedPresentList } from "@/lib/listViewers";
 
 export default function PresentsPage() {
   return <AuthGate>{(session) => <PresentIdeas session={session} />}</AuthGate>;
@@ -40,6 +42,13 @@ function PresentIdeas({ session }: { session: Session }) {
   const [toast, setToast] = useState<ToastData | null>(null);
   /** The list kept for someone, while asking "is this really you?". */
   const [claiming, setClaiming] = useState<string | null>(null);
+  /** Lists in other households someone let you into (Carol's view of Michele's). */
+  const [elsewhere, setElsewhere] = useState<SharedPresentList[]>([]);
+  useEffect(() => {
+    loadListsSharedWithMe()
+      .then(setElsewhere)
+      .catch(() => setElsewhere([]));
+  }, []);
   const say = (message: string, undo?: () => void) =>
     setToast((t) => ({ id: (t?.id ?? 0) + 1, message, actionLabel: undo ? "Undo" : undefined, onAction: undo }));
 
@@ -240,11 +249,15 @@ function PresentIdeas({ session }: { session: Session }) {
         </div>
       ) : null}
 
+      <SharedPresentLists lists={elsewhere} title="Shared with you" />
+
       {circles && circles.length === 0 ? (
-        <div className="flex flex-col gap-3 rounded-[var(--radius-card)] border-2 border-dashed border-line bg-sunk/40 p-5 text-[15px] text-mute">
-          <p>Present lists are shared with your household or your family. Open the invitation link someone sent you, or set up your own household.</p>
-          <Link href="/welcome/" className="font-semibold text-leaf">Set up a household</Link>
-        </div>
+        elsewhere.length > 0 ? null : (
+          <div className="flex flex-col gap-3 rounded-[var(--radius-card)] border-2 border-dashed border-line bg-sunk/40 p-5 text-[15px] text-mute">
+            <p>Present lists are shared with your household or your family. Open the invitation link someone sent you, or set up your own household.</p>
+            <Link href="/welcome/" className="font-semibold text-leaf">Set up a household</Link>
+          </div>
+        )
       ) : data === null || !current ? (
         <HouseholdLoading />
       ) : (
@@ -425,6 +438,7 @@ function PresentIdeas({ session }: { session: Session }) {
           list={person.list}
           name={person.name}
           mine={mine}
+          canInvite={current?.role !== "family"}
           onChanged={refresh}
           onRemoved={
             person.userId
