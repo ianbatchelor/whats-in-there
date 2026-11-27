@@ -38,6 +38,9 @@ const CHOICES: { key: Choice; title: string; sub: string; Icon: (p: { className?
   { key: "list", title: "Add to a list", sub: "Shopping, presents or jobs", Icon: IconList },
 ];
 
+/** The Lists page's tints, so the choices read as the same family as the household cards. */
+const TINT: Partial<Record<Choice, string>> = { many: "bg-sage", type: "bg-honey", list: "bg-slate" };
+
 type Open = null | "item" | "many" | "list" | "where" | "place";
 
 /**
@@ -125,18 +128,18 @@ function Add({ session }: { session: Session }) {
                 <button
                   onClick={() => choose(key)}
                   className={`lift flex h-full min-h-[148px] w-full flex-col justify-between gap-4 rounded-[var(--radius-card)] p-4 text-left ${
-                    primary ? "bg-go text-on-go shadow-[0_14px_28px_-16px_rgba(24,63,50,0.9)]" : "border border-line bg-card shadow-[var(--shadow-card)]"
+                    primary ? "bg-go text-on-go shadow-[0_14px_28px_-16px_rgba(24,63,50,0.9)]" : (TINT[key] ?? "bg-card")
                   }`}
                 >
                   <span
-                    className={`grid size-12 place-items-center rounded-2xl ${primary ? "bg-white/15" : "bg-sage text-forest"}`}
+                    className={`grid size-12 place-items-center rounded-2xl ${primary ? "bg-white/15" : "bg-white/60 text-forest dark:bg-black/20"}`}
                     aria-hidden="true"
                   >
                     <Icon className="size-6" />
                   </span>
                   <span className="min-w-0">
                     <span className="block font-display text-[17px] leading-snug font-bold">{title}</span>
-                    <span className={`mt-0.5 block text-[13.5px] leading-snug ${primary ? "opacity-80" : "text-mute"}`}>{sub}</span>
+                    <span className={`mt-0.5 block text-[13.5px] leading-snug ${primary ? "opacity-80" : "text-fg/70"}`}>{sub}</span>
                   </span>
                 </button>
               </li>
