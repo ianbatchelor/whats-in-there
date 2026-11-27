@@ -33,13 +33,27 @@ const NAV: NavItem[] = [
  * Frame for signed-in screens: bottom tabs on phones, a sidebar on wide screens.
  * Every tab is a real screen; nothing here is decoration.
  */
-export function AppShell({ children, wide = false, rail, roomy = false }: { children: React.ReactNode; wide?: boolean; rail?: React.ReactNode; /** More space between sections (Home). */ roomy?: boolean }) {
+export function AppShell({
+  children,
+  wide = false,
+  rail,
+  roomy = false,
+  cream = false,
+}: {
+  children: React.ReactNode;
+  wide?: boolean;
+  rail?: React.ReactNode;
+  /** More space between sections (Home). */
+  roomy?: boolean;
+  /** The homepage's warm cream behind the page (Lists). */
+  cream?: boolean;
+}) {
   const path = usePathname() || "/";
   // From a place, Add starts out adding to that place.
   const placeId = useQueryParam("id");
   const addHref = path.startsWith("/place") && placeId ? `/add/?place=${encodeURIComponent(placeId)}` : "/add/";
   return (
-    <div className="min-h-dvh bg-bg lg:flex">
+    <div className={`min-h-dvh lg:flex ${cream ? "bg-cream" : "bg-bg"}`}>
       <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col gap-7 border-r border-line bg-card/60 px-4 py-6 lg:flex">
         <Link href="/" className="flex items-center gap-2.5">
           <BrandMark size={30} />
@@ -96,7 +110,9 @@ export function AppShell({ children, wide = false, rail, roomy = false }: { chil
               <li key={href}>
                 {primary ? (
                   <Link href={addHref} aria-current={active ? "page" : undefined} aria-label="Add something" className="flex min-h-[60px] items-start justify-center">
-                    <span className="-mt-4 grid size-[54px] place-items-center rounded-[18px] bg-go text-on-go shadow-[0_10px_20px_-8px_rgba(30,74,56,0.65)] ring-4 ring-bg transition active:scale-95">
+                    <span
+                      className={`-mt-4 grid size-[54px] place-items-center rounded-[18px] bg-go text-on-go shadow-[0_10px_20px_-8px_rgba(30,74,56,0.65)] ring-4 ${cream ? "ring-cream" : "ring-bg"} transition active:scale-95`}
+                    >
                       <Icon className="size-6" />
                     </span>
                   </Link>
