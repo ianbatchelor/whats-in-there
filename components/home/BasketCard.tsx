@@ -7,7 +7,6 @@ import { splitList, type ShoppingItem } from "@/lib/domain/shopping";
 import { basketLine } from "@/lib/domain/basket";
 import { friendlyError } from "@/lib/supabase/errors";
 import { Button } from "@/components/ui/Button";
-import { IconBasket } from "@/components/ui/icons";
 
 /**
  * Back from the shops: what was ticked off in the shop, with one button that puts it all away in
@@ -62,13 +61,13 @@ export function BasketCard({
   }
 
   return (
-    <section aria-label="Shopping to put away" className="flex flex-wrap items-center gap-x-3 gap-y-2.5 rounded-[var(--radius-card)] border border-line bg-card px-4 py-3 shadow-[var(--shadow-card)]">
-      <span className="grid size-10 shrink-0 place-items-center rounded-full bg-leaf/10 text-leaf" aria-hidden="true">
-        <IconBasket className="size-5" />
-      </span>
+    <section aria-label="Shopping to put away" className="flex flex-wrap items-center gap-x-3 gap-y-2.5 rounded-[var(--radius-card)] bg-sage py-2.5 pr-4 pl-3">
+      {/* The basket from the Lists page. Static export: plain img, pre-sized webp. */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/lists/shopping-basket.webp" alt="" aria-hidden="true" width={192} height={192} decoding="async" className="size-11 shrink-0 object-contain" />
       <span className="min-w-0 flex-1 text-[14.5px] leading-snug">
         <span className="block font-semibold">{line.title}</span>
-        <span className="block truncate text-[13.5px] text-mute">{bought.map((i) => i.name).join(", ")}</span>
+        <span className="block truncate text-[13.5px] text-fg/70">{bought.map((i) => i.name).join(", ")}</span>
       </span>
       {ready.length > 0 ? (
         <Button busy={busy} onClick={putAll} className="min-h-11 shrink-0 px-4 max-[380px]:w-full">

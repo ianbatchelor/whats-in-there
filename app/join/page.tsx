@@ -84,7 +84,7 @@ export default function JoinPage() {
   if (!preview) {
     return (
       <AuthFrame>
-        <h1 className="font-display text-3xl font-bold tracking-tight">This link doesn&apos;t work any more</h1>
+        <h1 className="font-serif text-[2.1rem] leading-[1.05] font-semibold tracking-[-0.015em] text-forest">This link doesn&apos;t work any more</h1>
         <p className="text-mute">Links last 7 days, and the person who sent it may have made a new one. Ask them to send it again.</p>
         <Button variant="ghost" onClick={() => router.replace("/")}>
           Go to the app
@@ -100,7 +100,7 @@ export default function JoinPage() {
     <AuthFrame>
       <div className="flex flex-col gap-2">
         <p className="font-display text-[12px] font-bold tracking-[0.08em] text-plum uppercase">You&apos;re invited</p>
-        <h1 className="font-display text-[1.9rem] leading-[1.1] font-bold tracking-[-0.02em]">
+        <h1 className="font-serif text-[2.1rem] leading-[1.05] font-semibold tracking-[-0.015em] text-forest">
           {preview.ownerName} asked you to join “{preview.title}”
         </h1>
         <p className="text-mute">

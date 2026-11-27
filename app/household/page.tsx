@@ -337,7 +337,7 @@ function Household({ session }: { session: Session }) {
         href="/how-it-works/"
         className="-mt-2 flex min-h-12 items-center gap-3 rounded-2xl border border-line bg-card px-4 text-[14.5px] transition hover:bg-sunk/50"
       >
-        <span className="grid size-7 shrink-0 place-items-center rounded-full bg-sunk text-leaf" aria-hidden="true">
+        <span className="grid size-7 shrink-0 place-items-center rounded-full bg-sage text-forest" aria-hidden="true">
           <IconPlay className="size-3.5 translate-x-px" />
         </span>
         <span className="min-w-0 flex-1">

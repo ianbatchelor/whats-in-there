@@ -7,34 +7,33 @@ export function PageHeader({
   sub,
   back,
   action,
-  serif = false,
+  art,
 }: {
   title: string;
   sub?: React.ReactNode;
   back?: { href: string; label: string };
   action?: React.ReactNode;
-  /** Collections (presents, books, Christmas) take the serif, like the Wine Rack's heading. */
-  serif?: boolean;
+  /** One of the Lists page's illustrations, beside the title (decoration only). */
+  art?: string;
 }) {
   return (
-    <header className="flex flex-col gap-2">
+    <header className="flex flex-col gap-1.5">
       {back ? (
         <Link href={back.href} className="-ml-1 flex min-h-11 w-fit items-center gap-1 pr-3 font-display font-semibold text-leaf">
           <IconChevronLeft className="size-5" /> {back.label}
         </Link>
       ) : null}
       <div className="flex flex-wrap items-end justify-between gap-3">
-        <div className="min-w-0">
-          <h1
-            className={
-              serif
-                ? "font-serif text-[2rem] leading-[1.05] font-semibold tracking-[-0.015em] sm:text-[2.3rem]"
-                : "font-display text-[1.75rem] leading-tight font-bold tracking-[-0.025em] sm:text-[2rem]"
-            }
-          >
-            {title}
-          </h1>
-          {sub ? <p className="mt-1.5 text-mute">{sub}</p> : null}
+        <div className="flex min-w-0 flex-1 items-start gap-3">
+          <div className="min-w-0 flex-1">
+            <h1 className="font-serif text-[2.1rem] leading-[1.05] font-semibold tracking-[-0.015em] text-balance text-forest sm:text-[2.4rem]">{title}</h1>
+            {sub ? <p className="mt-1 text-[14.5px] text-mute">{sub}</p> : null}
+          </div>
+          {art ? (
+            // Static export: plain img, pre-sized webp files.
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={art} alt="" aria-hidden="true" width={192} height={192} decoding="async" className="size-14 shrink-0 object-contain sm:size-16" />
+          ) : null}
         </div>
         {action}
       </div>

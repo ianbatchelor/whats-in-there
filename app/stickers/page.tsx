@@ -77,7 +77,7 @@ function Stickers({ session }: { session: Session }) {
           <IconChevronLeft className="size-5" />
         </Link>
         <div className="min-w-0">
-          <h1 className="font-display text-[1.6rem] leading-tight font-bold tracking-[-0.02em]">Print QR labels</h1>
+          <h1 className="font-serif text-[2.1rem] leading-[1.05] font-semibold tracking-[-0.015em] text-forest">Print QR labels</h1>
           <p className="text-[14px] text-mute">Stick one on each place. Scan it with your phone camera to open that place.</p>
         </div>
       </header>

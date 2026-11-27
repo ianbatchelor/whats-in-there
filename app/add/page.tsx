@@ -129,7 +129,7 @@ function Add({ session }: { session: Session }) {
                   }`}
                 >
                   <span
-                    className={`grid size-12 place-items-center rounded-2xl ${primary ? "bg-white/15" : "bg-sunk text-leaf"}`}
+                    className={`grid size-12 place-items-center rounded-2xl ${primary ? "bg-white/15" : "bg-sage text-forest"}`}
                     aria-hidden="true"
                   >
                     <Icon className="size-6" />

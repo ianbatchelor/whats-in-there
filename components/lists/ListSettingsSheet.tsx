@@ -139,7 +139,7 @@ export function ListSettingsSheet({
               >
                 <input type="radio" name="list-visibility" value={o.value} checked={on} onChange={() => setVisibility(o.value)} className="sr-only" />
                 <span
-                  className={`grid size-10 shrink-0 place-items-center rounded-xl ${o.group ? "bg-plum-bg text-plum" : "bg-sunk text-leaf"}`}
+                  className={`grid size-10 shrink-0 place-items-center rounded-xl ${o.group ? "bg-plum-bg text-plum" : "bg-sage text-forest"}`}
                   aria-hidden="true"
                 >
                   <o.Icon className="size-5" />

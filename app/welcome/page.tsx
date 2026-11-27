@@ -78,7 +78,7 @@ function Welcome({ session }: { session: Session }) {
   return (
     <AuthFrame>
       <div className="rise flex flex-col gap-2">
-        <h1 className="font-display text-[2.2rem] leading-none font-bold tracking-[-0.03em]">Welcome in</h1>
+        <h1 className="font-serif text-[2.1rem] leading-[1.05] font-semibold tracking-[-0.015em] text-forest">Welcome in</h1>
         <p className="text-mute">Set up your household. You can invite everyone else in a moment.</p>
       </div>
       {shared.length > 0 || family || hasLists ? (

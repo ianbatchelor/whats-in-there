@@ -138,7 +138,7 @@ export function AppShell({
 /** Title above a section. */
 export function SectionLabel({ children, id }: { children: React.ReactNode; id?: string }) {
   return (
-    <h2 id={id} className="font-display text-[15px] font-bold tracking-[-0.01em]">
+    <h2 id={id} className="font-serif text-[1.2rem] leading-tight font-semibold tracking-[-0.01em] text-forest">
       {children}
     </h2>
   );

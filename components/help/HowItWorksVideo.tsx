@@ -37,7 +37,7 @@ export function HowItWorksVideo() {
       </p>
 
       <section className="flex flex-col gap-2.5">
-        <h2 className="mt-0! font-display text-[17px]! font-bold tracking-[-0.01em]">Jump to a part</h2>
+        <h2 className="mt-0! font-serif text-[1.3rem]! font-semibold tracking-[-0.01em] text-forest">Jump to a part</h2>
         <ol className="mt-0! list-none! divide-y divide-line overflow-hidden rounded-[var(--radius-card)] border border-line bg-card pl-0! shadow-[var(--shadow-card)]">
           {CHAPTERS.map((c, i) => {
             const now = playing === c.id;

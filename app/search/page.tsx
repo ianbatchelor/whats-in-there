@@ -298,7 +298,7 @@ function ListHitRow({ hit, query, onOpen }: { hit: ListHit; query: string; onOpe
   return (
     <li>
       <Link href={hit.href} onClick={onOpen} className="flex min-h-14 items-center gap-3 px-3 py-2 transition hover:bg-sunk/60">
-        <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-sunk text-leaf" aria-hidden="true">
+        <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-sage text-forest" aria-hidden="true">
           <Icon className="size-5" />
         </span>
         <span className="min-w-0 flex-1">

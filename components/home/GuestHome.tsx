@@ -79,7 +79,7 @@ export function GuestHome({ session }: { session: Session }) {
     <AppShell wide>
       <header className="flex flex-col gap-1">
         <p className="text-[13.5px] text-mute">{new Date().toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })}</p>
-        <h1 className="font-display text-[1.75rem] leading-tight font-bold tracking-[-0.025em] sm:text-[2rem]">
+        <h1 className="font-serif text-[1.65rem] leading-[1.1] font-semibold tracking-[-0.015em] text-forest sm:text-[2.3rem]">
           {greeting()}
           {first ? `, ${first}` : ""}
         </h1>
@@ -95,7 +95,7 @@ export function GuestHome({ session }: { session: Session }) {
             {state.families.map((f) => (
               <li key={f.householdId}>
                 <button onClick={() => openPresents(f)} className="flex min-h-[72px] w-full items-center gap-3.5 px-4 py-3 text-left transition hover:bg-sunk/50">
-                  <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-sunk text-leaf" aria-hidden="true">
+                  <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-sage text-forest" aria-hidden="true">
                     <IconGift className="size-[22px]" />
                   </span>
                   <span className="min-w-0 flex-1">
@@ -109,7 +109,7 @@ export function GuestHome({ session }: { session: Session }) {
             {isChristmasTime() ? (
               <li>
                 <Link href="/christmas/" className="flex min-h-[72px] w-full items-center gap-3.5 px-4 py-3 text-left transition hover:bg-sunk/50">
-                  <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-sunk text-leaf" aria-hidden="true">
+                  <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-sage text-forest" aria-hidden="true">
                     <IconStar className="size-[22px]" />
                   </span>
                   <span className="min-w-0 flex-1">
@@ -139,7 +139,7 @@ export function GuestHome({ session }: { session: Session }) {
               return (
                 <li key={l.id}>
                   <Link href={`/my-list/?id=${l.id}`} className="flex min-h-[72px] items-center gap-3.5 px-4 py-3 transition hover:bg-sunk/50">
-                    <span className={`grid size-11 shrink-0 place-items-center rounded-xl ${l.visibility === "group" ? "bg-plum-bg text-plum" : "bg-sunk text-leaf"}`} aria-hidden="true">
+                    <span className={`grid size-11 shrink-0 place-items-center rounded-xl ${l.visibility === "group" ? "bg-plum-bg text-plum" : "bg-sage text-forest"}`} aria-hidden="true">
                       <Icon className="size-[22px]" />
                     </span>
                     <span className="min-w-0 flex-1">

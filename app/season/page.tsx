@@ -24,7 +24,7 @@ function Season({ session }: { session: Session }) {
     <AppShell>
       <PageHeader
         title={`${seasonal.season} jobs`}
-        back={{ href: "/lists/", label: "Lists" }}
+        back={{ href: "/lists/", label: "Lists" }} art="/lists/autumn-jobs.webp"
         sub="Jobs that come round each year, for the places you have. Tick one off and it's gone for everyone at home until next time."
       />
       {error ? <Notice>{error}</Notice> : null}

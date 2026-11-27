@@ -49,7 +49,7 @@ export function HelpTopics() {
 
       {groups.map((g) => (
         <section key={g} className="flex flex-col gap-2.5">
-          <h2 className="mt-0! font-display text-[17px]! font-bold tracking-[-0.01em]">{g}</h2>
+          <h2 className="mt-0! font-serif text-[1.3rem]! font-semibold tracking-[-0.01em] text-forest">{g}</h2>
           <ul className="mt-0! list-none! divide-y divide-line overflow-hidden rounded-[var(--radius-card)] border border-line bg-card pl-0! shadow-[var(--shadow-card)]">
             {shown
               .filter((t) => t.group === g)

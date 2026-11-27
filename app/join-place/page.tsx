@@ -84,7 +84,7 @@ export default function JoinPlacePage() {
   if (!preview) {
     return (
       <AuthFrame>
-        <h1 className="font-display text-3xl font-bold tracking-tight">This link doesn&apos;t work any more</h1>
+        <h1 className="font-serif text-[2.1rem] leading-[1.05] font-semibold tracking-[-0.015em] text-forest">This link doesn&apos;t work any more</h1>
         <p className="text-mute">Each link lets one person in, and lasts 7 days. Ask the person who sent it for a new one.</p>
         <Button variant="ghost" onClick={() => router.replace("/")}>
           Go to the app
@@ -97,7 +97,7 @@ export default function JoinPlacePage() {
     <AuthFrame>
       <div className="flex flex-col gap-2">
         <p className="font-display text-[12px] font-bold tracking-[0.08em] text-leaf uppercase">You&apos;re invited</p>
-        <h1 className="font-display text-[1.9rem] leading-[1.1] font-bold tracking-[-0.02em]">
+        <h1 className="font-serif text-[2.1rem] leading-[1.05] font-semibold tracking-[-0.015em] text-forest">
           {preview.invitedBy} shared the {preview.place} with you
         </h1>
         <p className="text-mute">
