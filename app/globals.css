@@ -31,6 +31,17 @@
   --color-plum: #5b3f6b;
   --color-plum-bg: #efe8f3;
 
+  /* Lists page: the homepage's warm cream and forest green, and a soft tint for each household list. */
+  --color-cream: #f7f3eb;
+  --color-forest: #18382b;
+  --color-on-forest: #fbf6ea;
+  --color-gold: #e3c27a;
+  --color-sage: #dfe9d9;
+  --color-rose: #f2dde0;
+  --color-honey: #f6e9c6;
+  --color-slate: #dde7ee;
+  --color-terracotta: #f3dfd1;
+
   --font-display: var(--font-jakarta), "Avenir Next", system-ui, sans-serif;
   --font-sans: var(--font-inter), "Segoe UI", system-ui, sans-serif;
   --font-serif: var(--font-fraunces), Georgia, serif;
@@ -67,6 +78,13 @@
     --color-ok-bg: #17301f;
     --color-plum: #d2b6e2;
     --color-plum-bg: #2b2033;
+    --color-cream: #0e1814;
+    --color-forest: #d9e8dd;
+    --color-sage: #1c2c22;
+    --color-rose: #33232a;
+    --color-honey: #322a17;
+    --color-slate: #1c2832;
+    --color-terracotta: #352419;
     color-scheme: dark;
   }
 }

@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import type { Session } from "@supabase/supabase-js";
 import { AuthGate } from "@/components/AuthGate";
 import { AppShell } from "@/components/AppShell";
-import { HouseholdLoading, PageHeader } from "@/components/common/PageHeader";
+import { HouseholdLoading } from "@/components/common/PageHeader";
 import { useSeasonal } from "@/components/home/SeasonalReminders";
 import { useHousehold } from "@/lib/hooks/useHousehold";
 import { useQueryParam } from "@/lib/hooks/useQueryParam";
@@ -18,48 +18,30 @@ import { isLongLent } from "@/lib/domain/lending";
 import type { StockItem } from "@/lib/domain/stock";
 import { Notice } from "@/components/ui/Notice";
 import { ListSettingsSheet } from "@/components/lists/ListSettingsSheet";
+import { ChristmasFeature, HouseholdCards, ListSection, ShoppingRow, type HouseholdCardData, type ListRowData } from "@/components/lists/ListsLayout";
 import { createList, loadEntries, loadLists, loadPeople } from "@/lib/ownLists";
 import { shortNames } from "@/lib/domain/access";
-import { countdown, daysToChristmas, isChristmasTime } from "@/lib/domain/christmas";
+import { daysToChristmas, isChristmasTime } from "@/lib/domain/christmas";
 import { listCaption, listsForTab, splitEntries, type ListEntry, type ListPerson, type OwnList } from "@/lib/domain/ownLists";
 import { supabase } from "@/lib/supabase/client";
 import { loadNames } from "@/lib/sharedPlaces";
-import {
-  IconBasket,
-  IconBook,
-  IconBulb,
-  IconChevronRight,
-  IconGift,
-  IconHandOver,
-  IconHouse,
-  IconLeaf,
-  IconList,
-  IconLock,
-  IconPeople,
-  IconPlus,
-  IconStar,
-} from "@/components/ui/icons";
+import { IconBasket, IconBulb, IconChevronRight, IconGift, IconHouse, IconList, IconLock, IconPeople, IconPlus } from "@/components/ui/icons";
 
 export default function ListsPage() {
   return <AuthGate>{(session) => <Lists session={session} />}</AuthGate>;
 }
 
-type Row = {
-  href: string;
-  Icon: (p: { className?: string }) => React.ReactNode;
-  title: string;
-  /** What's on it, in a few words. Null while loading. */
-  caption: string | null;
-  n: number | null;
-  /** Something wants doing: the count shows in the late colour. */
-  urgent?: boolean;
-  /** A group list: people outside the household. */
-  group?: boolean;
-};
-
 const CHRISTMAS_START = { title: "Christmas dinner", kind: "buy" as const, visibility: "family" as const };
 
 const KIND_ICON = { todo: IconList, ideas: IconBulb, buy: IconBasket } as const;
+/** A small tint behind each kind of list, so they're easy to tell apart at a glance. */
+const KIND_TONE = { todo: "bg-slate text-forest", ideas: "bg-honey text-forest", buy: "bg-sage text-forest" } as const;
+
+/** "Batchelor household": the name as people typed it, with a capital to start. */
+function sentenceCase(name: string): string {
+  const t = name.trim();
+  return t.charAt(0).toUpperCase() + t.slice(1);
+}
 
 function Lists({ session }: { session: Session }) {
   const router = useRouter();
@@ -146,36 +128,28 @@ function Lists({ session }: { session: Session }) {
   const longLent = lent?.filter((i) => isLongLent(i)).length ?? 0;
   const jobs = seasonal.shown?.length ?? null;
 
-  const rows: Row[] = [
-    // From November to Boxing Day, Christmas leads.
-    ...(isChristmasTime()
-      ? [{ href: "/christmas/", Icon: IconStar, title: "Christmas", n: null, caption: `${countdown(daysToChristmas())}. Presents, lists and decorations` }]
-      : []),
-    {
-      href: "/list/",
-      Icon: IconBasket,
-      title: "Shopping list",
-      n: toBuy?.length ?? null,
-      caption: toBuy === null ? null : toBuy.length === 0 ? "Nothing to buy" : toBuy.slice(0, 3).join(", ") + (toBuy.length > 3 ? "…" : ""),
-    },
+  const cards: HouseholdCardData[] = [
     {
       href: "/presents/",
-      Icon: IconGift,
       title: "Present ideas",
+      art: "/lists/present-ideas.webp",
+      tint: "bg-rose",
       n: ideas,
       caption: ideas === null ? null : ideas === 0 ? "Start a wish list" : "Everyone's wish lists",
     },
     {
       href: "/books/",
-      Icon: IconBook,
       title: "Book wish lists",
+      art: "/lists/book-wish-lists.webp",
+      tint: "bg-honey",
       n: books,
       caption: books === null ? null : books === 0 ? "Start a reading list" : "What everyone wants to read next",
     },
     {
       href: "/lent/",
-      Icon: IconHandOver,
       title: "Lent out",
+      art: "/lists/lent-out.webp",
+      tint: "bg-slate",
       n: lent?.length ?? null,
       urgent: longLent > 0,
       caption:
@@ -184,28 +158,28 @@ function Lists({ session }: { session: Session }) {
           : lent.length === 0
             ? "Nothing lent right now"
             : longLent > 0
-              ? `${lent.length} lent · ${longLent} over a month`
-              : lent.length === 1
-                ? `With ${lent[0]!.lentTo}`
-                : `${lent.length} things lent`,
+              ? `${longLent} out for over a month`
+              : `With ${shortNames([...new Set(lent.map((i) => i.lentTo ?? "").filter(Boolean))])}`,
     },
     {
       href: "/season/",
-      Icon: IconLeaf,
       title: `${seasonal.season} jobs`,
+      art: "/lists/autumn-jobs.webp",
+      tint: "bg-terracotta",
       n: jobs,
       caption: jobs === null ? null : jobs === 0 ? "All done for now" : seasonal.shown!.map((r) => r.title).join(", "),
     },
   ];
 
   const tab = own ? listsForTab(own, session.user.id, current?.householdId ?? null) : { mine: [], home: [], groups: [], family: [] };
-  const toRow = (l: OwnList, privateList: boolean): Row => {
+  const toRow = (l: OwnList, privateList: boolean): ListRowData => {
     const { open, done } = splitEntries(ownEntries.filter((e) => e.listId === l.id));
     const ownerName = names.get(l.owner) ?? ownerNames.get(l.owner) ?? people.find((p) => p.listId === l.id && p.isOwner)?.name;
     const by = !privateList && l.owner !== session.user.id ? ownerName : null;
     return {
       href: `/my-list/?id=${l.id}`,
       Icon: KIND_ICON[l.kind] ?? IconList,
+      tone: KIND_TONE[l.kind] ?? KIND_TONE.todo,
       title: l.title,
       n: open.length,
       caption: (by ? `${by}'s · ` : "") + listCaption(open.map((e) => e.text), done.length),
@@ -216,53 +190,56 @@ function Lists({ session }: { session: Session }) {
   const groupRows = tab.groups.map((l) => {
     const row = toRow(l, false);
     const n = people.filter((p) => p.listId === l.id).length;
-    return { ...row, Icon: IconPeople, group: true, caption: `${n === 1 ? "Just you so far" : `${n} people`} · ${row.caption}` };
+    return { ...row, Icon: IconPeople, tone: "bg-plum-bg text-plum", caption: `${n === 1 ? "Just you so far" : `${n} people`} · ${row.caption}` };
   });
   const familyFirstNames = members.filter((m) => m.role === "family").map((m) => m.displayName.trim().split(/\s+/)[0]!);
   const familyRows = tab.family.map((l) => {
     const row = toRow(l, false);
     // Lists from this home say which family can see them; a family list from another home says whose it is already.
     const withWho = l.householdId === current?.householdId && familyFirstNames.length > 0 ? `With ${shortNames(familyFirstNames)} · ` : "";
-    return { ...row, Icon: IconGift, caption: withWho + row.caption };
+    return { ...row, Icon: IconGift, tone: "bg-rose text-forest", caption: withWho + row.caption };
   });
   // People who live here, and family with homes of their own, for the "who can see it" choices.
   const others = members.filter((m) => m.userId !== session.user.id && m.role !== "family").map((m) => m.displayName);
   const family = members.filter((m) => m.role === "family").map((m) => m.displayName);
 
+  const anyOwn = homeRows.length + familyRows.length + groupRows.length + mineRows.length > 0;
+
   return (
-    <AppShell>
-      <PageHeader title="Lists" sub="Lists for everyone at home, just for you, or for a group you invite." />
+    <AppShell cream>
+      <header className="flex flex-col gap-0.5">
+        <h1 className="font-serif text-[2.1rem] leading-[1.05] font-semibold tracking-[-0.015em] text-forest sm:text-[2.4rem]">Lists</h1>
+        {current ? <p className="text-[14.5px] font-medium text-mute">{sentenceCase(current.name)}</p> : null}
+      </header>
       {error ? <Notice>{error}</Notice> : null}
       {!ready || own === null ? (
         <HouseholdLoading />
       ) : (
         <>
           {current ? (
-            <section aria-labelledby="home-h" className="flex flex-col gap-2">
-              <h2 id="home-h" className="flex items-center gap-1.5 font-display text-[13px] font-bold tracking-[0.06em] text-mute uppercase">
-                <IconHouse className="size-4" /> Everyone in {current.name}
-              </h2>
-              <ul className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
-                {rows.map((r) => (
-                  <Tile key={r.href} row={r} />
-                ))}
-              </ul>
-            </section>
+            <div className="-mt-1 flex flex-col gap-2.5">
+              {/* From November to Boxing Day, Christmas leads; the rest of the year Shopping moves up. */}
+              {isChristmasTime() ? <ChristmasFeature days={daysToChristmas()} /> : null}
+              <ShoppingRow count={toBuy?.length ?? null} />
+              <HouseholdCards cards={cards} label={`Everyone in ${current.name}`} />
+            </div>
           ) : null}
-          {homeRows.length + familyRows.length + groupRows.length + mineRows.length > 0 ? (
-            <h2 className="-mb-2 pt-2 font-display text-[20px] font-bold tracking-[-0.015em]">Your lists</h2>
+          {anyOwn ? (
+            <div className="-mt-1 flex flex-col gap-4">
+              <h2 className="font-serif text-[1.45rem] leading-tight font-semibold tracking-[-0.01em] text-forest">Your lists</h2>
+              {homeRows.length > 0 ? <ListSection id="homelists-h" label="Everyone at home" Icon={IconHouse} rows={homeRows} /> : null}
+              {familyRows.length > 0 ? <ListSection id="family-h" label="With family" Icon={IconGift} rows={familyRows} /> : null}
+              {groupRows.length > 0 ? <ListSection id="groups-h" label="Groups" Icon={IconPeople} rows={groupRows} /> : null}
+              {mineRows.length > 0 ? <ListSection id="mine-h" label="Just you" Icon={IconLock} rows={mineRows} /> : null}
+            </div>
           ) : null}
-          {homeRows.length > 0 ? <Section id="homelists-h" label="Everyone at home" Icon={IconHouse} rows={homeRows} /> : null}
-          {familyRows.length > 0 ? <Section id="family-h" label="With family" Icon={IconGift} rows={familyRows} /> : null}
-          {groupRows.length > 0 ? <Section id="groups-h" label="Groups" Icon={IconPeople} rows={groupRows} /> : null}
-          {mineRows.length > 0 ? <Section id="mine-h" label="Just you" Icon={IconLock} rows={mineRows} /> : null}
           <button
             onClick={() => setMaking(true)}
             className="flex min-h-14 items-center justify-center gap-2 rounded-2xl border-[1.5px] border-dashed border-line font-display text-[15px] font-bold text-leaf transition hover:bg-sunk/50"
           >
             <IconPlus className="size-[18px]" /> New list
           </button>
-          {mineRows.length === 0 && groupRows.length === 0 && familyRows.length === 0 && homeRows.length === 0 ? (
+          {!anyOwn ? (
             <p className="-mt-2 text-center text-[13.5px] text-mute">Make a list just for you, for everyone at home, or for friends you invite.</p>
           ) : null}
           {!current ? (
@@ -290,54 +267,5 @@ function Lists({ session }: { session: Session }) {
         How lists work <IconChevronRight className="size-4" />
       </Link>
     </AppShell>
-  );
-}
-
-/** A built-in list as a small tile: icon, name, count, and a line of what's on it. */
-function Tile({ row: r }: { row: Row }) {
-  return (
-    <li>
-      <Link href={r.href} className="flex h-full min-h-[112px] flex-col gap-1.5 rounded-2xl border border-line bg-card p-3.5 shadow-[var(--shadow-card)] transition hover:bg-sunk/50">
-        <span className="flex items-center justify-between">
-          <span className="grid size-9 place-items-center rounded-xl bg-sunk text-leaf" aria-hidden="true">
-            <r.Icon className="size-5" />
-          </span>
-          {r.n !== null && r.n > 0 ? (
-            <span className={`font-display text-[1.25rem] leading-none font-bold tabular-nums ${r.urgent ? "text-late" : ""}`}>{r.n}</span>
-          ) : null}
-        </span>
-        <span className="font-display text-[15px] leading-snug font-bold">{r.title}</span>
-        <span className={`line-clamp-2 text-[13px] leading-snug ${r.urgent ? "text-late" : "text-mute"}`}>{r.caption ?? " "}</span>
-      </Link>
-    </li>
-  );
-}
-
-function Section({ id, label, Icon, rows }: { id: string; label: string; Icon: (p: { className?: string }) => React.ReactNode; rows: Row[] }) {
-  return (
-    <section aria-labelledby={id} className="flex flex-col gap-2">
-      <h2 id={id} className="flex items-center gap-1.5 font-display text-[13px] font-bold tracking-[0.06em] text-mute uppercase">
-        <Icon className="size-4" /> {label}
-      </h2>
-      <ul className="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-card shadow-[var(--shadow-card)]">
-        {rows.map((r) => (
-          <li key={r.href}>
-            <Link href={r.href} className="flex min-h-[76px] items-center gap-3.5 px-4 py-3 transition hover:bg-sunk/50">
-              <span className={`grid size-11 shrink-0 place-items-center rounded-xl ${r.group ? "bg-plum-bg text-plum" : "bg-sunk text-leaf"}`} aria-hidden="true">
-                <r.Icon className="size-[22px]" />
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block font-display text-[16px] leading-snug font-bold">{r.title}</span>
-                <span className={`block truncate text-[14px] ${r.urgent ? "text-late" : "text-mute"}`}>{r.caption ?? " "}</span>
-              </span>
-              {r.n !== null && r.n > 0 ? (
-                <span className={`font-display text-[1.35rem] leading-none font-bold tabular-nums ${r.urgent ? "text-late" : ""}`}>{r.n}</span>
-              ) : null}
-              <IconChevronRight className="size-5 shrink-0 text-mute/70" />
-            </Link>
-          </li>
-        ))}
-      </ul>
-    </section>
   );
 }
