@@ -79,7 +79,7 @@ export function GuestHome({ session }: { session: Session }) {
     <AppShell wide>
       <header className="flex flex-col gap-1">
         <p className="text-[13.5px] text-mute">{new Date().toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })}</p>
-        <h1 className="font-display text-[1.75rem] leading-tight font-bold tracking-[-0.025em] sm:text-[2rem]">
+        <h1 className="font-serif text-[2.1rem] leading-[1.05] font-semibold tracking-[-0.015em] text-forest sm:text-[2.4rem]">
           {greeting()}
           {first ? `, ${first}` : ""}
         </h1>

@@ -101,7 +101,7 @@ function Christmas({ session }: { session: Session }) {
 
   return (
     <AppShell>
-      <PageHeader serif
+      <PageHeader
         title="Christmas"
         back={{ href: "/lists/", label: "Lists" }}
         sub={`${countdown(days)}. Presents, lists, decorations and room in the freezer, all in one place.`}

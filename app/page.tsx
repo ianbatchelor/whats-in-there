@@ -222,9 +222,14 @@ function HouseholdHome({ session, hh }: { session: Session; hh: ReturnType<typeo
               {current.name} · {new Date().toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })}
               {isChristmasRun() ? <IconStar className="ml-1.5 inline-block size-3.5 -translate-y-px text-[#c98a14]" /> : null}
             </p>
-            <h1 className="font-display text-[1.75rem] leading-tight font-bold tracking-[-0.025em] sm:text-[2rem]">
+            {/* On phones the name takes its own line, so the greeting never breaks mid-phrase beside the faces. */}
+            <h1 className="mt-0.5 font-serif text-[clamp(1.55rem,7.6vw,1.8rem)] leading-[1.08] font-semibold tracking-[-0.015em] text-forest sm:text-[2.4rem]">
               {greeting()}
-              {firstName ? `, ${firstName}` : ""}
+              {firstName ? (
+                <>
+                  ,<span className="block sm:inline"> {firstName}</span>
+                </>
+              ) : null}
             </h1>
           </div>
           <Link href="/household/" className="mt-1 flex items-center sm:hidden" aria-label="Household and members">

@@ -213,7 +213,7 @@ function PresentIdeas({ session }: { session: Session }) {
 
   return (
     <AppShell>
-      <PageHeader serif
+      <PageHeader
         title="Present ideas"
         back={{ href: "/lists/", label: "Lists" }}
         sub={

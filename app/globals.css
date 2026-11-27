@@ -2,9 +2,10 @@
 
 /* "Warm storage" design tokens. Semantic names so dark mode only swaps values. */
 @theme {
-  --color-bg: #f6f5f1;
+  /* The homepage's warm cream, behind every screen. */
+  --color-bg: #f7f3eb;
   --color-card: #ffffff;
-  --color-sunk: #eeede8;
+  --color-sunk: #efe9de;
   --color-fg: #15211c;
   --color-mute: #66706b;
   --color-line: #e5e3dd;
@@ -31,7 +32,7 @@
   --color-plum: #5b3f6b;
   --color-plum-bg: #efe8f3;
 
-  /* Lists page: the homepage's warm cream and forest green, and a soft tint for each household list. */
+  /* The homepage's warm cream and forest green (titles), and a soft tint for each household list. */
   --color-cream: #f7f3eb;
   --color-forest: #18382b;
   --color-on-forest: #fbf6ea;

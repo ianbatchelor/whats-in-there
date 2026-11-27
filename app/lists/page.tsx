@@ -206,7 +206,7 @@ function Lists({ session }: { session: Session }) {
   const anyOwn = homeRows.length + familyRows.length + groupRows.length + mineRows.length > 0;
 
   return (
-    <AppShell cream>
+    <AppShell>
       <header className="flex flex-col gap-0.5">
         <h1 className="font-serif text-[2.1rem] leading-[1.05] font-semibold tracking-[-0.015em] text-forest sm:text-[2.4rem]">Lists</h1>
         {current ? <p className="text-[14.5px] font-medium text-mute">{sentenceCase(current.name)}</p> : null}
