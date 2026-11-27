@@ -7,7 +7,7 @@ import { loadPresents } from "@/lib/presents";
 import { people as presentPeople } from "@/lib/domain/presents";
 import { countdown, daysToChristmas, isChristmassy, presentProgress, stillToSort } from "@/lib/domain/christmas";
 import { loadEntries, loadLists } from "@/lib/ownLists";
-import { IconChevronRight, IconGift, IconList, IconStar } from "@/components/ui/icons";
+import { IconChevronRight, IconGift, IconList } from "@/components/ui/icons";
 
 type ListLine = { id: string; title: string; left: number };
 
@@ -43,14 +43,26 @@ export function ChristmasCard({ householdId, members, me, version }: { household
   const days = daysToChristmas();
   return (
     <section aria-labelledby="xmas-h" className="overflow-hidden rounded-[var(--radius-card)] border border-line bg-card shadow-[var(--shadow-card)]">
-      <Link href="/christmas/" className="flex items-center gap-3 px-4 pt-3.5 pb-2 transition hover:bg-sunk/40">
-        <IconStar className="size-5 shrink-0 text-[#c98a14]" />
-        <h2 id="xmas-h" className="min-w-0 flex-1 font-display text-[15px] font-bold tracking-[-0.01em]">
-          Christmas <span className="font-semibold text-mute">· {days === 0 ? "today" : days === 1 ? "tomorrow" : countdown(days)}</span>
+      {/* The same picture as the Lists page's Christmas card, shallower here. */}
+      <Link href="/christmas/" className="group relative isolate flex min-h-[84px] items-center gap-3 overflow-hidden bg-[#18382b] px-4 py-3">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/lists/christmas-hero.webp"
+          alt=""
+          aria-hidden="true"
+          width={1200}
+          height={675}
+          decoding="async"
+          className="absolute inset-0 -z-10 size-full object-cover object-[right_62%] transition duration-500 group-hover:scale-[1.02]"
+        />
+        <span aria-hidden="true" className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,rgba(16,36,27,0.85)_0%,rgba(16,36,27,0.55)_45%,rgba(16,36,27,0)_72%)]" />
+        <h2 id="xmas-h" className="flex min-w-0 flex-1 flex-col gap-0.5">
+          <span className="font-serif text-[1.45rem] leading-none font-semibold text-[#fbf6ea]">Christmas</span>
+          <span className="text-[13.5px] font-semibold text-gold">{days === 0 ? "Today" : days === 1 ? "Tomorrow" : countdown(days)}</span>
         </h2>
-        <IconChevronRight className="size-4 shrink-0 text-mute/70" />
+        <IconChevronRight className="size-5 shrink-0 text-[#fbf6ea]/80" />
       </Link>
-      <ul className="divide-y divide-line border-t border-line empty:hidden">
+      <ul className="divide-y divide-line empty:hidden">
         {presents === null || !presents.any ? null : presents.lines.length > 0 ? (
           presents.lines.map((line) => (
             <li key={line}>

@@ -246,7 +246,7 @@ function Choice({
         primary ? "border-go bg-go text-on-go shadow-[var(--shadow-card)]" : "border-line bg-card hover:bg-sunk/70"
       }`}
     >
-      <span className={`grid size-11 shrink-0 place-items-center rounded-xl ${primary ? "bg-on-go/15" : "bg-sunk text-leaf"}`}>
+      <span className={`grid size-11 shrink-0 place-items-center rounded-xl ${primary ? "bg-on-go/15" : "bg-sage text-forest"}`}>
         <Icon className="size-5" />
       </span>
       <span className="min-w-0 flex-1">

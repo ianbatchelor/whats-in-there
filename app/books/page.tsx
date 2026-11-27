@@ -291,7 +291,7 @@ function BookWishLists({ session }: { session: Session }) {
 
   return (
     <AppShell>
-      <PageHeader serif title="Book wish lists" back={{ href: "/lists/", label: "Lists" }} sub="The books everyone wants to read next. Share a list so friends and family know what to get." />
+      <PageHeader title="Book wish lists" back={{ href: "/lists/", label: "Lists" }} art="/lists/book-wish-lists.webp" sub="The books everyone wants to read next. Share a list so friends and family know what to get." />
 
       {error ? <Notice>{error}</Notice> : null}
 

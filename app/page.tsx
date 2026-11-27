@@ -222,7 +222,7 @@ function HouseholdHome({ session, hh }: { session: Session; hh: ReturnType<typeo
               {current.name} · {new Date().toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })}
               {isChristmasRun() ? <IconStar className="ml-1.5 inline-block size-3.5 -translate-y-px text-[#c98a14]" /> : null}
             </p>
-            <h1 className="font-display text-[1.75rem] leading-tight font-bold tracking-[-0.025em] sm:text-[2rem]">
+            <h1 className="font-serif text-[1.65rem] leading-[1.1] font-semibold tracking-[-0.015em] text-forest sm:text-[2.3rem]">
               {greeting()}
               {firstName ? `, ${firstName}` : ""}
             </h1>
@@ -276,7 +276,7 @@ function HouseholdHome({ session, hh }: { session: Session; hh: ReturnType<typeo
       ) : places && places.length > 0 ? (
         <section aria-labelledby="today-h" className="overflow-hidden rounded-[var(--radius-card)] border border-line bg-card shadow-[var(--shadow-card)]">
           <div className="flex items-baseline justify-between gap-3 px-4 pt-3.5 pb-1">
-            <h2 id="today-h" className="font-display text-[15px] font-bold tracking-[-0.01em]">
+            <h2 id="today-h" className="font-serif text-[1.2rem] leading-tight font-semibold tracking-[-0.01em] text-forest">
               {attention.length > 0 ? "Use soon" : "Today"}
             </h2>
             {attention.length > 0 ? (

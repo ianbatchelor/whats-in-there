@@ -62,13 +62,13 @@ export default function StickerPage() {
     <AuthFrame>
       {problem && problem !== "unknown" ? (
         <>
-          <h1 className="font-display text-3xl font-bold tracking-tight">Couldn&apos;t open this sticker</h1>
+          <h1 className="font-serif text-[2.1rem] leading-[1.05] font-semibold tracking-[-0.015em] text-forest">Couldn&apos;t open this sticker</h1>
           <p className="text-mute">{problem}</p>
           <Button onClick={() => window.location.reload()}>Try again</Button>
         </>
       ) : (
         <>
-          <h1 className="font-display text-3xl font-bold tracking-tight">This sticker isn&apos;t linked to your places</h1>
+          <h1 className="font-serif text-[2.1rem] leading-[1.05] font-semibold tracking-[-0.015em] text-forest">This sticker isn&apos;t linked to your places</h1>
           <p className="text-mute">
             {code
               ? "It may belong to a household you're not in, its place may have been removed, or it was replaced with a new link. If it's yours, open the place in the app and print or write a fresh one."
@@ -97,7 +97,7 @@ function StickerWelcome({ code }: { code: string }) {
     <AuthFrame>
       <div className="flex flex-col gap-3">
         <p className="text-sm font-semibold tracking-wide text-leaf uppercase">A See What&apos;s in Here sticker</p>
-        <h1 className="font-display text-3xl font-bold tracking-tight">Someone keeps track of what&apos;s in here</h1>
+        <h1 className="font-serif text-[2.1rem] leading-[1.05] font-semibold tracking-[-0.015em] text-forest">Someone keeps track of what&apos;s in here</h1>
         <p className="text-mute">
           This sticker shows a household what&apos;s stored here: in a freezer, a cupboard, a wine rack, a loft. Only people in that
           household can see inside.

@@ -93,7 +93,7 @@ export function Sheet({
         >
           <span className={`mx-auto h-1.5 w-10 rounded-full bg-line ${side ? "lg:hidden" : ""}`} aria-hidden="true" />
           <div className="flex items-start justify-between gap-3">
-            <h2 className="min-w-0 pt-1 font-display text-[1.35rem] font-bold tracking-[-0.02em]">{title}</h2>
+            <h2 className="min-w-0 pt-1 font-serif text-[1.5rem] leading-tight font-semibold tracking-[-0.01em] text-forest">{title}</h2>
             <button
               type="button"
               onClick={onClose}

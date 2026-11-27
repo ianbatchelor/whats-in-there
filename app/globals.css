@@ -2,12 +2,12 @@
 
 /* "Warm storage" design tokens. Semantic names so dark mode only swaps values. */
 @theme {
-  --color-bg: #f6f5f1;
+  --color-bg: #f7f3eb;
   --color-card: #ffffff;
-  --color-sunk: #eeede8;
+  --color-sunk: #efe9de;
   --color-fg: #15211c;
   --color-mute: #66706b;
-  --color-line: #e5e3dd;
+  --color-line: #e7e0d3;
   --color-ice: #edf0e6;
   --color-go: #1e4a38;
   --color-on-go: #ffffff;

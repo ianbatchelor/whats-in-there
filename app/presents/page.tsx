@@ -213,9 +213,9 @@ function PresentIdeas({ session }: { session: Session }) {
 
   return (
     <AppShell>
-      <PageHeader serif
+      <PageHeader
         title="Present ideas"
-        back={{ href: "/lists/", label: "Lists" }}
+        back={{ href: "/lists/", label: "Lists" }} art="/lists/present-ideas.webp"
         sub={
           current?.role === "family"
             ? `${current.name}: everyone's wish list in one place. You're here as family.`

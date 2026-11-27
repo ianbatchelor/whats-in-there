@@ -258,7 +258,7 @@ function Place({ me }: { me: string }) {
   if (missing) {
     return (
       <Screen className="justify-center">
-        <h1 className="font-display text-2xl font-bold">This place isn&apos;t available</h1>
+        <h1 className="font-serif text-[2.1rem] leading-[1.05] font-semibold tracking-[-0.015em] text-forest">This place isn&apos;t available</h1>
         <p className="text-mute">It may have been removed, or it belongs to a household you&apos;re not in.</p>
         <Link href="/" className="font-bold text-go">
           Go to your places

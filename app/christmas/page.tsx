@@ -101,7 +101,7 @@ function Christmas({ session }: { session: Session }) {
 
   return (
     <AppShell>
-      <PageHeader serif
+      <PageHeader
         title="Christmas"
         back={{ href: "/lists/", label: "Lists" }}
         sub={`${countdown(days)}. Presents, lists, decorations and room in the freezer, all in one place.`}
@@ -149,7 +149,7 @@ function Christmas({ session }: { session: Session }) {
               return (
                 <li key={l.id} className="border-b border-line last:border-b-0">
                   <Link href={`/my-list/?id=${l.id}`} className="flex min-h-16 items-center gap-3 px-4 py-2.5 transition hover:bg-sunk/50">
-                    <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-sunk text-leaf" aria-hidden="true">
+                    <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-sage text-forest" aria-hidden="true">
                       {l.visibility === "family" ? <IconGift className="size-5" /> : <IconList className="size-5" />}
                     </span>
                     <span className="min-w-0 flex-1">

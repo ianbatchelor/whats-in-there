@@ -15,7 +15,7 @@ export function DocPage({ title, updated, children }: { title: string; updated?:
         <BackLink />
       </header>
       <main className="mx-auto max-w-2xl px-5 pb-12">
-        <h1 className="mt-4 font-display text-[2.1rem] leading-[1.05] font-bold tracking-[-0.03em]">{title}</h1>
+        <h1 className="mt-4 font-serif text-[2.1rem] leading-[1.05] font-semibold tracking-[-0.015em] text-forest">{title}</h1>
         {updated ? <p className="mt-2 text-sm text-mute">Last updated {updated}</p> : null}
         <div className="doc mt-6 flex flex-col gap-4 leading-relaxed [&_a]:font-semibold [&_a]:underline [&_a]:underline-offset-4 [&_h2]:mt-4 [&_h2]:font-display [&_h2]:text-xl [&_h2]:font-bold [&_li]:mt-1 [&_ul]:list-disc [&_ul]:pl-5">
           {children}

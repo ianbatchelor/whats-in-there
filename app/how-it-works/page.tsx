@@ -11,7 +11,7 @@ export default function HowItWorksPage() {
   return (
     <DocPage title="How it works">
       <HowItWorksVideo />
-      <h2 className="mt-4! font-display text-[17px]! font-bold tracking-[-0.01em]">Getting ready for Christmas</h2>
+      <h2 className="mt-4! font-serif text-[1.3rem]! font-semibold tracking-[-0.01em] text-forest">Getting ready for Christmas</h2>
       <ShortVideo id="christmas" {...CHRISTMAS_SHORT} />
       <p className="mt-2 text-mute">
         Want the details on something? <Link href="/help/">Help</Link> has a short answer for everything.

@@ -159,7 +159,7 @@ function ShoppingList({ session }: { session: Session }) {
     <AppShell>
       <PageHeader
         title="Shopping list"
-        back={{ href: "/lists/", label: "Lists" }}
+        back={{ href: "/lists/", label: "Lists" }} art="/lists/shopping-basket.webp"
         sub={current ? `Shared with everyone in ${current.name}. Tick things off as you shop.` : "Tick things off as you shop."}
       />
 

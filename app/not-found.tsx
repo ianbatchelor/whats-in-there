@@ -31,7 +31,7 @@ export default function NotFound() {
 
   return (
     <AuthFrame>
-      <h1 className="font-display text-3xl font-bold tracking-tight">This page isn&apos;t here</h1>
+      <h1 className="font-serif text-[2.1rem] leading-[1.05] font-semibold tracking-[-0.015em] text-forest">This page isn&apos;t here</h1>
       <p className="text-mute">The link may be old or mistyped.</p>
       <Link href="/" className={`${buttonBase} ${buttonStyles.go}`}>
         Go to See What&apos;s in Here
