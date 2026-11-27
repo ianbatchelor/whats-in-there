@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { doneKey, dueReminders, isSouthern, liveSnoozes, seasonName } from "@/lib/domain/seasons";
+import { doneKey, dueReminders, isSouthern, jobsBySeason, liveSnoozes, seasonName } from "@/lib/domain/seasons";
 
 const ids = (r: { id: string }[]) => r.map((x) => x.id);
 
@@ -44,5 +44,28 @@ describe("seasonal reminders", () => {
 
   it("forgets snoozes once they run out", () => {
     expect(liveSnoozes({ a: "2026-11-12", b: "2026-11-11", c: "2026-11-01" }, "2026-11-11")).toEqual({ a: "2026-11-12" });
+  });
+});
+
+describe("the year's jobs by season", () => {
+  it("puts each job in the season it starts in, for the places the household has", () => {
+    const year = jobsBySeason(["garden", "medicine", "fridge"]);
+    expect(ids(year.Spring)).toEqual(["medicine-check", "garden-spring"]);
+    expect(ids(year.Summer)).toEqual([]);
+    expect(ids(year.Autumn)).toEqual(["medicine-check", "garden-autumn"]);
+    expect(year.Winter).toEqual([]);
+  });
+
+  it("counts a job once a season, even with two windows in it", () => {
+    const year = jobsBySeason(["freezer"]);
+    expect(ids(year.Winter)).toEqual(["freezer-clearout"]);
+    expect(ids(year.Summer)).toEqual(["freezer-clearout"]);
+  });
+
+  it("agrees with the card's season name in the southern hemisphere", () => {
+    const year = jobsBySeason(["garden", "attic"], true);
+    expect(ids(year.Spring)).toEqual(["garden-spring", "decorations"]);
+    expect(ids(year.Autumn)).toEqual(["garden-autumn"]);
+    expect(seasonName("2026-11-25", true)).toBe("Spring");
   });
 });

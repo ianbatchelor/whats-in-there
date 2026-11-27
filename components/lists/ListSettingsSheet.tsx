@@ -10,6 +10,8 @@ import { friendlyError } from "@/lib/supabase/errors";
 import { KINDS, type ListKind, type ListVisibility, type OwnList } from "@/lib/domain/ownLists";
 import type { ListSettings } from "@/lib/ownLists";
 import { whoHave } from "@/lib/domain/names";
+import { LIST_CATEGORIES, listCategory } from "@/lib/domain/listArt";
+import { ListArt } from "@/components/lists/ListArt";
 
 type Option = { value: ListVisibility; title: string; body: string; Icon: (p: { className?: string }) => React.ReactNode; group?: boolean };
 
@@ -40,13 +42,16 @@ export function ListSettingsSheet({
   family?: string[];
   list?: OwnList | null;
   /** For a new list: a ready-made start, such as "Christmas dinner" shared with family. */
-  start?: { title: string; kind: ListKind; visibility: ListVisibility } | null;
+  start?: { title: string; kind: ListKind; visibility: ListVisibility; category?: string | null } | null;
   onSave: (s: ListSettings) => Promise<void>;
   onDelete?: () => Promise<void>;
 }) {
   const [title, setTitle] = useState("");
   const [kind, setKind] = useState<ListKind>("todo");
   const [visibility, setVisibility] = useState<ListVisibility>("me");
+  const [category, setCategory] = useState<string | null>(null);
+  /** Once someone picks the kind themselves, a picture no longer suggests one. */
+  const [kindChosen, setKindChosen] = useState(false);
   const [busy, setBusy] = useState<"save" | "delete" | null>(null);
   const [confirming, setConfirming] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -58,6 +63,8 @@ export function ListSettingsSheet({
     setTitle(list?.title ?? start?.title ?? "");
     setKind(list?.kind ?? start?.kind ?? "todo");
     setVisibility(list?.visibility ?? (start?.visibility === "family" && !householdId ? "me" : start?.visibility) ?? "me");
+    setCategory(listCategory(list?.category ?? start?.category)?.id ?? null);
+    setKindChosen(!!list);
     setConfirming(false);
     setError(null);
     /* eslint-enable react-hooks/set-state-in-effect */
@@ -69,7 +76,7 @@ export function ListSettingsSheet({
     setBusy("save");
     setError(null);
     try {
-      await onSave({ title, kind, visibility, householdId });
+      await onSave({ title, kind, visibility, householdId, category });
     } catch (err) {
       setError(friendlyError(err));
     } finally {
@@ -87,6 +94,15 @@ export function ListSettingsSheet({
       setError(friendlyError(err));
       setBusy(null);
     }
+  }
+
+  function pick(id: string | null) {
+    setCategory(id);
+    const c = listCategory(id);
+    if (!c) return;
+    // A new list takes the picture's name and kind, unless they've been filled in already.
+    if (!title.trim()) setTitle(c.label);
+    if (!kindChosen) setKind(c.kind);
   }
 
   const home = others.length === 0 ? "You and anyone who joins your household." : `You, ${joinNames(others)}.`;
@@ -128,6 +144,33 @@ export function ListSettingsSheet({
           required
         />
 
+        <fieldset className="flex flex-col gap-1.5">
+          <legend className="mb-1.5 font-display text-sm font-bold">
+            Picture <span className="font-sans font-normal text-mute">(if you like)</span>
+          </legend>
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(4.6rem,1fr))] gap-2">
+            {[null, ...LIST_CATEGORIES].map((c) => {
+              const on = category === (c?.id ?? null);
+              return (
+                <label
+                  key={c?.id ?? "none"}
+                  className={`flex cursor-pointer flex-col items-center gap-1 rounded-2xl border-[1.5px] px-1 pt-1.5 pb-2 text-center transition has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-leaf/50 ${c ? c.tint : "bg-card"} ${on ? "border-go shadow-[0_0_0_1px_var(--color-go)]" : "border-transparent"} ${!c && !on ? "border-line!" : ""}`}
+                >
+                  <input type="radio" name="list-picture" value={c?.id ?? ""} checked={on} onChange={() => pick(c?.id ?? null)} className="sr-only" />
+                  {c ? (
+                    <ListArt src={c.art} className="size-12" />
+                  ) : (
+                    <span className="grid size-12 place-items-center text-[13px] font-semibold text-mute" aria-hidden="true">
+                      —
+                    </span>
+                  )}
+                  <span className="line-clamp-2 text-[12px] leading-tight font-semibold text-fg">{c?.label ?? "No picture"}</span>
+                </label>
+              );
+            })}
+          </div>
+        </fieldset>
+
         <fieldset className="flex flex-col gap-2">
           <legend className="mb-1.5 font-display text-sm font-bold">Who can see it?</legend>
           {options.map((o) => {
@@ -168,7 +211,10 @@ export function ListSettingsSheet({
                 key={k.kind}
                 className={`flex min-h-10 flex-1 cursor-pointer items-center justify-center rounded-[9px] px-2 text-center text-[14px] font-semibold transition has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-leaf/50 ${kind === k.kind ? "bg-card text-fg shadow-[0_1px_2px_rgba(0,0,0,0.08)]" : "text-mute"}`}
               >
-                <input type="radio" name="list-kind" value={k.kind} checked={kind === k.kind} onChange={() => setKind(k.kind)} className="sr-only" />
+                <input type="radio" name="list-kind" value={k.kind} checked={kind === k.kind} onChange={() => {
+                    setKind(k.kind);
+                    setKindChosen(true);
+                  }} className="sr-only" />
                 {k.label}
               </label>
             ))}

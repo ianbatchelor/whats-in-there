@@ -1,7 +1,11 @@
 import { supabase } from "@/lib/supabase/client";
 import type { ListEntry, ListKind, ListPerson, ListVisibility, OwnList } from "@/lib/domain/ownLists";
 
-const LIST_COLUMNS = "id, owner, household_id, title, kind, visibility, created_at";
+const BASE_COLUMNS = "id, owner, household_id, title, kind, visibility, created_at";
+const LIST_COLUMNS = `${BASE_COLUMNS}, category`;
+
+/** "No such column" (from Postgres, or PostgREST's schema cache): list pictures (20261127000001) aren't in the database yet. */
+const noColumn = (e: unknown) => ["42703", "PGRST204"].includes((e as { code?: string } | null)?.code ?? "");
 const ENTRY_COLUMNS = "id, list_id, text, note, added_by, added_at, done_at, done_by";
 
 function toList(r: Record<string, unknown>): OwnList {
@@ -12,6 +16,7 @@ function toList(r: Record<string, unknown>): OwnList {
     title: r.title as string,
     kind: r.kind as ListKind,
     visibility: r.visibility as ListVisibility,
+    category: (r.category as string | null) ?? null,
     createdAt: r.created_at as string,
   };
 }
@@ -31,15 +36,20 @@ function toEntry(r: Record<string, unknown>): ListEntry {
 
 /** Every list the signed-in person can see. The database only ever returns those. */
 export async function loadLists(): Promise<OwnList[]> {
-  const { data, error } = await supabase().from("lists").select(LIST_COLUMNS).order("created_at");
+  const read = (cols: string) => supabase().from("lists").select(cols).order("created_at");
+  let { data, error } = await read(LIST_COLUMNS);
+  // Until the pictures column is there, lists still load, just without pictures.
+  if (noColumn(error)) ({ data, error } = await read(BASE_COLUMNS));
   if (error) throw error;
-  return (data ?? []).map(toList);
+  return ((data ?? []) as unknown as Record<string, unknown>[]).map(toList);
 }
 
 export async function loadList(id: string): Promise<OwnList | null> {
-  const { data, error } = await supabase().from("lists").select(LIST_COLUMNS).eq("id", id).maybeSingle();
+  const read = (cols: string) => supabase().from("lists").select(cols).eq("id", id).maybeSingle();
+  let { data, error } = await read(LIST_COLUMNS);
+  if (noColumn(error)) ({ data, error } = await read(BASE_COLUMNS));
   if (error) throw error;
-  return data ? toList(data) : null;
+  return data ? toList(data as unknown as Record<string, unknown>) : null;
 }
 
 /** Entries on several lists at once, for the Lists tab. */
@@ -55,24 +65,37 @@ export type ListSettings = {
   kind: ListKind;
   visibility: ListVisibility;
   householdId: string | null;
+  /** The picture picked for the list, or null for none. */
+  category: string | null;
 };
 
 const settingsRow = (s: ListSettings) => ({
   title: s.title.trim(),
   kind: s.kind,
   visibility: s.visibility,
+  category: s.category,
   // Only a shared list belongs to a household, so a private one goes with you everywhere.
   household_id: s.visibility === "household" || s.visibility === "family" ? s.householdId : null,
 });
 
+/** Without the picture, for a database that hasn't had list pictures added yet. */
+function withoutPicture(row: ReturnType<typeof settingsRow>) {
+  const { category: _, ...rest } = row; // eslint-disable-line @typescript-eslint/no-unused-vars
+  return rest;
+}
+
 export async function createList(s: ListSettings): Promise<string> {
-  const { data, error } = await supabase().from("lists").insert(settingsRow(s)).select("id").single();
+  const insert = (row: object) => supabase().from("lists").insert(row).select("id").single();
+  let { data, error } = await insert(settingsRow(s));
+  if (noColumn(error)) ({ data, error } = await insert(withoutPicture(settingsRow(s))));
   if (error) throw error;
-  return data.id as string;
+  return data!.id as string;
 }
 
 export async function updateList(id: string, s: ListSettings): Promise<void> {
-  const { error } = await supabase().from("lists").update(settingsRow(s)).eq("id", id);
+  const update = (row: object) => supabase().from("lists").update(row).eq("id", id);
+  let { error } = await update(settingsRow(s));
+  if (noColumn(error)) ({ error } = await update(withoutPicture(settingsRow(s))));
   if (error) throw error;
 }
 

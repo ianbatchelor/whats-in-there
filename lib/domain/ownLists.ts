@@ -11,6 +11,8 @@ export type OwnList = {
   title: string;
   kind: ListKind;
   visibility: ListVisibility;
+  /** The picture picked for it (Drinks, Meal plan…), or null. See LIST_CATEGORIES. */
+  category?: string | null;
   createdAt: string;
 };
 

@@ -1,20 +1,12 @@
 import Link from "next/link";
 import { IconChevronRight } from "@/components/ui/icons";
 import { countdown } from "@/lib/domain/christmas";
+import { ListArt as Art } from "@/components/lists/ListArt";
 
 /**
  * Pieces of the Lists page: the Christmas feature, the Shopping row, the household cards and the
  * rows for your own lists. The artwork is decoration: every word and count is real text beside it.
  */
-
-/** The artwork's resting place: a fixed box so nothing moves when it loads. */
-function Art({ src, className }: { src: string; className: string }) {
-  return (
-    // Static export: plain img, pre-sized webp files.
-    // eslint-disable-next-line @next/next/no-img-element
-    <img src={src} alt="" aria-hidden="true" width={192} height={192} decoding="async" className={`shrink-0 object-contain ${className}`} />
-  );
-}
 
 /** November to Boxing Day: a shallow full-width picture card that opens the Christmas page. */
 export function ChristmasFeature({ days }: { days: number }) {
@@ -99,6 +91,8 @@ export function HouseholdCards({ cards, label }: { cards: HouseholdCardData[]; l
 export type ListRowData = {
   href: string;
   Icon: (p: { className?: string }) => React.ReactNode;
+  /** The picture picked for the list, shown in place of the icon. */
+  art?: string | null;
   /** Background and colour for the icon's tile, by kind of list. */
   tone: string;
   title: string;
@@ -120,9 +114,15 @@ export function ListSection({ id, label, Icon, rows }: { id: string; label: stri
         {rows.map((r) => (
           <li key={r.href}>
             <Link href={r.href} className="@container flex min-h-16 items-center gap-3 px-3.5 py-2.5 transition hover:bg-sunk/50">
-              <span className={`grid size-10 shrink-0 place-items-center rounded-xl ${r.tone}`} aria-hidden="true">
-                <r.Icon className="size-5" />
-              </span>
+              {r.art ? (
+                <span className={`grid size-10 shrink-0 place-items-center overflow-hidden rounded-xl ${r.tone}`} aria-hidden="true">
+                  <Art src={r.art} className="size-10 p-0.5" />
+                </span>
+              ) : (
+                <span className={`grid size-10 shrink-0 place-items-center rounded-xl ${r.tone}`} aria-hidden="true">
+                  <r.Icon className="size-5" />
+                </span>
+              )}
               <span className="min-w-0 flex-1">
                 <span className="block font-display text-[15.5px] leading-snug font-bold">{r.title}</span>
                 <span className="block truncate text-[13.5px] text-mute">

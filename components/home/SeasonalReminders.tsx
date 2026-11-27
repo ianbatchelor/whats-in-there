@@ -7,7 +7,7 @@ import type { ToastData } from "@/components/ui/Toast";
 import { IconCheck, IconX } from "@/components/ui/icons";
 import { placeType } from "@/components/home/placeTypes";
 import { formatDay, todayIso } from "@/lib/domain/dates";
-import { deviceTimeZone, doneKey, dueReminders, isSouthern, seasonName, type DueReminder } from "@/lib/domain/seasons";
+import { deviceTimeZone, doneKey, dueReminders, isSouthern, jobsBySeason, seasonName, type DueReminder } from "@/lib/domain/seasons";
 import { loadSeasonDone, loadSnoozes, markSeasonDone, snoozeReminder } from "@/lib/seasons";
 
 /** How long the Undo on "Done" lasts before it's saved for everyone at home. */
@@ -91,7 +91,7 @@ export function useSeasonal(householdId: string | undefined, places: Place[] | n
     onToast?.({ id: ++toastId.current, message: "Hidden for a week" });
   }
 
-  return { shown, season: seasonName(today, southern), tick, notNow };
+  return { shown, season: seasonName(today, southern), year: jobsBySeason(typeList, southern), tick, notNow };
 }
 
 export type Seasonal = ReturnType<typeof useSeasonal>;

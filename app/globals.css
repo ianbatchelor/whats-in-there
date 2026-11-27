@@ -41,6 +41,10 @@
   --color-honey: #f6e9c6;
   --color-slate: #dde7ee;
   --color-terracotta: #f3dfd1;
+  /* The seasons' jobs and the pictures people pick for their own lists. */
+  --color-sun: #f9e4b3;
+  --color-frost: #e1eef3;
+  --color-champagne: #f6e6d0;
 
   --font-display: var(--font-jakarta), "Avenir Next", system-ui, sans-serif;
   --font-sans: var(--font-inter), "Segoe UI", system-ui, sans-serif;
@@ -85,6 +89,9 @@
     --color-honey: #322a17;
     --color-slate: #1c2832;
     --color-terracotta: #352419;
+    --color-sun: #352a14;
+    --color-frost: #18282e;
+    --color-champagne: #33271b;
     color-scheme: dark;
   }
 }
