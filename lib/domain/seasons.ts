@@ -224,10 +224,36 @@ export function dueReminders(types: Iterable<LocationType>, today: string = toda
   return out.sort((a, b) => a.until.localeCompare(b.until));
 }
 
+const SEASON_OF_MONTH = ["Winter", "Winter", "Spring", "Spring", "Spring", "Summer", "Summer", "Summer", "Autumn", "Autumn", "Autumn", "Winter"] as const;
+export type SeasonName = (typeof SEASON_OF_MONTH)[number];
+
 /** "Autumn" and so on, for the section heading. */
-export function seasonName(today: string = todayIso(), southern = false): string {
+export function seasonName(today: string = todayIso(), southern = false): SeasonName {
   const m = (Number(today.slice(5, 7)) - 1 + (southern ? 6 : 0)) % 12;
-  return ["Winter", "Winter", "Spring", "Spring", "Spring", "Summer", "Summer", "Summer", "Autumn", "Autumn", "Autumn", "Winter"][m]!;
+  return SEASON_OF_MONTH[m]!;
+}
+
+/**
+ * The whole year's jobs for these kinds of place, by the season each one starts in, so the other
+ * seasons' jobs can always be looked at. It matches what the card says at the time: in the south,
+ * finding the decorations in November is a Spring job.
+ */
+export function jobsBySeason(types: Iterable<LocationType>, southern = false): Record<SeasonName, SeasonalReminder[]> {
+  const have = new Set(types);
+  const out: Record<SeasonName, SeasonalReminder[]> = { Spring: [], Summer: [], Autumn: [], Winter: [] };
+  for (const r of SEASONAL_REMINDERS) {
+    if (!r.types.some((t) => have.has(t))) continue;
+    const by = southern && r.weather ? 6 : 0;
+    const seen = new Set<SeasonName>();
+    for (const [from] of r.windows) {
+      // Which season it belongs to, as people there would say it.
+      const month = shift(from, by)[0];
+      const season = SEASON_OF_MONTH[(month - 1 + (southern ? 6 : 0)) % 12]!;
+      if (!seen.has(season)) out[season].push(r);
+      seen.add(season);
+    }
+  }
+  return out;
 }
 
 export const doneKey = (r: { id: string; period: string }) => `${r.id}@${r.period}`;

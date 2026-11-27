@@ -12,8 +12,10 @@ import { useHousehold } from "@/lib/hooks/useHousehold";
 import { useQueryParam } from "@/lib/hooks/useQueryParam";
 import { supabase } from "@/lib/supabase/client";
 import { friendlyError } from "@/lib/supabase/errors";
-import { addEntry, deleteList, loadEntries, loadList, loadPeople, removeEntries, setDone, updateList } from "@/lib/ownLists";
+import { addEntry, deleteList, loadEntries, loadList, loadPeople, removeEntries, setDone, updateEntry, updateList } from "@/lib/ownLists";
+import { EntrySheet } from "@/components/lists/EntrySheet";
 import { GroupSheet } from "@/components/lists/GroupSheet";
+import { listCategory } from "@/lib/domain/listArt";
 import { groupNames, kindInfo, splitEntries, visibilityLine, type ListEntry, type ListPerson, type OwnList } from "@/lib/domain/ownLists";
 import { Button } from "@/components/ui/Button";
 import { Notice } from "@/components/ui/Notice";
@@ -42,6 +44,8 @@ function MyList({ session }: { session: Session }) {
   /** A family list from a home you don't live in (Dad's, seen by his daughter): its name and people. */
   const [away, setAway] = useState<{ name: string | null; names: Map<string, string> } | null>(null);
   const [toast, setToast] = useState<ToastData | null>(null);
+  /** The thing being changed (its words or its note), if any. */
+  const [editing, setEditing] = useState<ListEntry | null>(null);
   const say = (message: string, undo?: () => void) =>
     setToast((t) => ({
       id: (t?.id ?? 0) + 1,
@@ -115,6 +119,8 @@ function MyList({ session }: { session: Session }) {
   }
 
   const info = list ? kindInfo(list.kind) : null;
+  const picture = listCategory(list?.category);
+  const placeholder = picture?.placeholder ?? info?.placeholder ?? "Add something";
   const tick = (entry: ListEntry, done: boolean) =>
     run(entry.id, async () => {
       await setDone(entry.id, done);
@@ -183,6 +189,7 @@ function MyList({ session }: { session: Session }) {
       <PageHeader
         title={list?.title ?? "List"}
         back={{ href: "/lists/", label: "Lists" }}
+        art={picture?.art}
         sub={
           list ? (
             <span>
@@ -242,13 +249,13 @@ function MyList({ session }: { session: Session }) {
 
       <form onSubmit={add} className="flex gap-2">
         <label htmlFor="own-add" className="sr-only">
-          {info?.placeholder ?? "Add something"}
+          {placeholder}
         </label>
         <input
           id="own-add"
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder={info?.placeholder ?? "Add something"}
+          placeholder={placeholder}
           maxLength={200}
           autoComplete="off"
           enterKeyHint="done"
@@ -271,7 +278,7 @@ function MyList({ session }: { session: Session }) {
           ) : (
             <ul className="overflow-hidden rounded-[var(--radius-card)] border border-line bg-card shadow-[var(--shadow-card)]">
               {open.map((e) => (
-                <Row key={e.id} entry={e} by={shared && e.addedBy !== session.user.id ? who(e.addedBy) : null} busy={busy === e.id} onTick={tick} onRemove={remove} />
+                <Row key={e.id} entry={e} by={shared && e.addedBy !== session.user.id ? who(e.addedBy) : null} busy={busy === e.id} onTick={tick} onRemove={remove} onEdit={setEditing} />
               ))}
             </ul>
           )}
@@ -310,6 +317,7 @@ function MyList({ session }: { session: Session }) {
                     busy={busy === e.id}
                     onTick={tick}
                     onRemove={remove}
+                    onEdit={setEditing}
                   />
                 ))}
               </ul>
@@ -318,6 +326,17 @@ function MyList({ session }: { session: Session }) {
         </>
       )}
 
+      <EntrySheet
+        entry={editing}
+        hint={picture?.id === "drinks" ? "Say how many, like 6 bottles of prosecco or 2 crates of beer." : undefined}
+        onClose={() => setEditing(null)}
+        onSave={async (t, note) => {
+          if (!editing) return;
+          await updateEntry(editing.id, t, note);
+          setEditing(null);
+          refresh();
+        }}
+      />
       {list && isGroup ? (
         <GroupSheet
           open={group}
@@ -371,6 +390,7 @@ function Row({
   busy,
   onTick,
   onRemove,
+  onEdit,
 }: {
   entry: ListEntry;
   /** Who added it (or ticked it off), shown on shared lists. */
@@ -379,6 +399,7 @@ function Row({
   busy: boolean;
   onTick: (entry: ListEntry, done: boolean) => void;
   onRemove: (entry: ListEntry) => void;
+  onEdit: (entry: ListEntry) => void;
 }) {
   const done = !!entry.doneAt;
   const caption = done ? (by ? `${doneLabel ?? "Done"} by ${by}` : null) : by ? `added by ${by}` : null;
@@ -397,11 +418,17 @@ function Row({
           <IconCheck className="size-4" />
         </span>
       </button>
-      <div className="flex min-w-0 flex-1 flex-col gap-0.5 py-1">
-        <p className={`font-medium break-words ${done ? "text-mute line-through decoration-mute/60" : ""}`}>{entry.text}</p>
-        {entry.note ? <p className="text-[13.5px] text-mute">{entry.note}</p> : null}
-        {caption ? <p className="text-[13px] text-mute">{caption}</p> : null}
-      </div>
+      {/* Tap the words to change them or add a note. */}
+      <button
+        onClick={() => onEdit(entry)}
+        disabled={busy}
+        aria-label={`Change ${entry.text}${entry.note ? "" : " or add a note"}`}
+        className="flex min-w-0 flex-1 flex-col gap-0.5 py-1 text-left"
+      >
+        <span className={`font-medium break-words ${done ? "text-mute line-through decoration-mute/60" : ""}`}>{entry.text}</span>
+        {entry.note ? <span className="text-[13.5px] text-mute">{entry.note}</span> : null}
+        {caption ? <span className="text-[13px] text-mute">{caption}</span> : null}
+      </button>
       <button
         onClick={() => onRemove(entry)}
         disabled={busy}

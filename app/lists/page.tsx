@@ -24,6 +24,7 @@ import { shortNames } from "@/lib/domain/access";
 import { daysToChristmas, isChristmasTime } from "@/lib/domain/christmas";
 import { listCaption, listsForTab, splitEntries, type ListEntry, type ListPerson, type OwnList } from "@/lib/domain/ownLists";
 import { supabase } from "@/lib/supabase/client";
+import { listCategory, seasonArt } from "@/lib/domain/listArt";
 import { loadNames } from "@/lib/sharedPlaces";
 import { IconBasket, IconBulb, IconChevronRight, IconGift, IconHouse, IconList, IconLock, IconPeople, IconPlus } from "@/components/ui/icons";
 
@@ -164,8 +165,8 @@ function Lists({ session }: { session: Session }) {
     {
       href: "/season/",
       title: `${seasonal.season} jobs`,
-      art: "/lists/autumn-jobs.webp",
-      tint: "bg-terracotta",
+      // Each season has its own picture and tint; the card itself is there all year.
+      ...seasonArt(seasonal.season),
       n: jobs,
       caption: jobs === null ? null : jobs === 0 ? "All done for now" : seasonal.shown!.map((r) => r.title).join(", "),
     },
@@ -176,10 +177,12 @@ function Lists({ session }: { session: Session }) {
     const { open, done } = splitEntries(ownEntries.filter((e) => e.listId === l.id));
     const ownerName = names.get(l.owner) ?? ownerNames.get(l.owner) ?? people.find((p) => p.listId === l.id && p.isOwner)?.name;
     const by = !privateList && l.owner !== session.user.id ? ownerName : null;
+    const picture = listCategory(l.category);
     return {
       href: `/my-list/?id=${l.id}`,
       Icon: KIND_ICON[l.kind] ?? IconList,
-      tone: KIND_TONE[l.kind] ?? KIND_TONE.todo,
+      art: picture?.art ?? null,
+      tone: picture ? `${picture.tint} text-forest` : (KIND_TONE[l.kind] ?? KIND_TONE.todo),
       title: l.title,
       n: open.length,
       caption: (by ? `${by}'s · ` : "") + listCaption(open.map((e) => e.text), done.length),
@@ -190,14 +193,14 @@ function Lists({ session }: { session: Session }) {
   const groupRows = tab.groups.map((l) => {
     const row = toRow(l, false);
     const n = people.filter((p) => p.listId === l.id).length;
-    return { ...row, Icon: IconPeople, tone: "bg-plum-bg text-plum", caption: `${n === 1 ? "Just you so far" : `${n} people`} · ${row.caption}` };
+    return { ...row, Icon: IconPeople, tone: row.art ? row.tone : "bg-plum-bg text-plum", caption: `${n === 1 ? "Just you so far" : `${n} people`} · ${row.caption}` };
   });
   const familyFirstNames = members.filter((m) => m.role === "family").map((m) => m.displayName.trim().split(/\s+/)[0]!);
   const familyRows = tab.family.map((l) => {
     const row = toRow(l, false);
     // Lists from this home say which family can see them; a family list from another home says whose it is already.
     const withWho = l.householdId === current?.householdId && familyFirstNames.length > 0 ? `With ${shortNames(familyFirstNames)} · ` : "";
-    return { ...row, Icon: IconGift, tone: "bg-rose text-forest", caption: withWho + row.caption };
+    return { ...row, Icon: IconGift, tone: row.art ? row.tone : "bg-rose text-forest", caption: withWho + row.caption };
   });
   // People who live here, and family with homes of their own, for the "who can see it" choices.
   const others = members.filter((m) => m.userId !== session.user.id && m.role !== "family").map((m) => m.displayName);
